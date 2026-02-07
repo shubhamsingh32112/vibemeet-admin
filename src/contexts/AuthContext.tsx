@@ -1,98 +1,66 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import { auth } from '../config/firebase';
 import api from '../config/api';
 
+interface AdminUser {
+  id: string;
+  email: string;
+  role: string;
+  firebaseUid: string;
+}
+
 interface AuthContextType {
-  user: User | null;
-  userRole: 'user' | 'creator' | 'admin' | null;
+  user: AdminUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<'user' | 'creator' | 'admin' | null>(null);
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // On mount, check if we have a saved session
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        const token = await firebaseUser.getIdToken();
-        localStorage.setItem('firebaseToken', token);
-        
-        // Provision user + fetch role from backend (creates user ONLY in /auth/login)
-        try {
-          const response = await api.post('/auth/login');
-          const role = response.data.data.user.role || 'user';
-          setUserRole(role);
-        } catch (error) {
-          console.error('Failed to fetch user role:', error);
-          setUserRole('user');
-        }
-      } else {
-        setUser(null);
-        setUserRole(null);
-        localStorage.removeItem('firebaseToken');
-      }
-      setLoading(false);
-    });
+    const token = localStorage.getItem('adminToken');
+    const savedUser = localStorage.getItem('adminUser');
 
-    return unsubscribe;
+    if (token && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+      }
+    }
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const token = await userCredential.user.getIdToken();
-    localStorage.setItem('firebaseToken', token);
-    
-    // Provision user + fetch role
-    const response = await api.post('/auth/login');
-    const role = response.data.data.user.role || 'user';
-    setUserRole(role);
+    const response = await api.post('/auth/admin-login', { email, password });
+    const { token, user: adminUser } = response.data.data;
+
+    localStorage.setItem('adminToken', token);
+    localStorage.setItem('adminUser', JSON.stringify(adminUser));
+    setUser(adminUser);
   };
 
-  const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    const token = await userCredential.user.getIdToken();
-    localStorage.setItem('firebaseToken', token);
-    
-    // Provision user + fetch role
-    const response = await api.post('/auth/login');
-    const role = response.data.data.user.role || 'user';
-    setUserRole(role);
+  const logout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    setUser(null);
   };
 
-  const logout = async () => {
-    await signOut(auth);
-    localStorage.removeItem('firebaseToken');
-    setUserRole(null);
-  };
-
-  const isAdmin = userRole === 'admin';
+  const isAdmin = user?.role === 'admin';
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        userRole,
         loading,
         login,
-        loginWithGoogle,
         logout,
         isAdmin,
       }}

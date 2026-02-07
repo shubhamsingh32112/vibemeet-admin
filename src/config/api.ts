@@ -9,16 +9,29 @@ export const api = axios.create({
   },
 });
 
-// Add auth token to requests
+// Add admin auth token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('firebaseToken');
+    const token = localStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle 401 responses (expired token) — auto logout
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      window.location.href = '/login';
+    }
     return Promise.reject(error);
   }
 );
