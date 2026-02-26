@@ -2,23 +2,96 @@ import React, { useEffect, useState } from 'react';
 import MetricCard from '../components/ui/MetricCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
-import { adminService, type CoinEconomy } from '../services/adminService';
+import {
+  adminService,
+  type CoinEconomy,
+  type WalletPricingConfig,
+  type WalletPricingPack,
+} from '../services/adminService';
 
 const CoinsPage: React.FC = () => {
   const [data, setData] = useState<CoinEconomy | null>(null);
+  const [walletPricing, setWalletPricing] = useState<WalletPricingConfig | null>(null);
+  const [pricingDraft, setPricingDraft] = useState<WalletPricingPack[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingPricing, setSavingPricing] = useState(false);
   const [error, setError] = useState('');
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
-      const economy = await adminService.getCoinEconomy();
+      const [economy, pricing] = await Promise.all([
+        adminService.getCoinEconomy(),
+        adminService.getWalletPricing(),
+      ]);
       setData(economy);
+      setWalletPricing(pricing);
+      setPricingDraft(pricing.packages);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateDraftPack = (
+    index: number,
+    key: keyof WalletPricingPack,
+    value: string | number | boolean | undefined
+  ) => {
+    setPricingDraft((prev) =>
+      prev.map((pack, i) => (i === index ? { ...pack, [key]: value } : pack))
+    );
+  };
+
+  const addPack = () => {
+    setPricingDraft((prev) => [
+      ...prev,
+      {
+        coins: 100,
+        tier1PriceInr: 99,
+        tier2PriceInr: 99,
+        oldPriceInr: undefined,
+        badge: '',
+        isActive: true,
+        sortOrder: prev.length + 1,
+      },
+    ]);
+  };
+
+  const removePack = (index: number) => {
+    setPricingDraft((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const savePricing = async () => {
+    try {
+      setSavingPricing(true);
+      setError('');
+      const payload = pricingDraft.map((p) => ({
+        ...p,
+        coins: Number(p.coins),
+        tier1PriceInr: Number(p.tier1PriceInr),
+        tier2PriceInr: Number(p.tier2PriceInr),
+        oldPriceInr: p.oldPriceInr ? Number(p.oldPriceInr) : undefined,
+        sortOrder: Number(p.sortOrder),
+      }));
+      const updated = await adminService.updateWalletPricing(payload);
+      setPricingDraft(updated.packages);
+      setWalletPricing((prev) =>
+        prev
+          ? {
+              ...prev,
+              packages: updated.packages,
+              updatedAt: updated.updatedAt,
+              updatedByAdminId: updated.updatedByAdminId,
+            }
+          : null
+      );
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to save wallet pricing');
+    } finally {
+      setSavingPricing(false);
     }
   };
 
@@ -48,6 +121,141 @@ const CoinsPage: React.FC = () => {
         >
           ↻ Refresh
         </button>
+      </div>
+
+      {/* ── Wallet Pricing Management ───────────────────────────────────── */ }
+      <div className="mb-6 rounded-lg border border-gray-800 bg-gray-900 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-300">Wallet Tier Pricing</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPricingDraft(walletPricing?.packages || [])}
+              className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
+            >
+              Reset
+            </button>
+            <button
+              onClick={addPack}
+              className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
+            >
+              + Add Pack
+            </button>
+            <button
+              onClick={savePricing}
+              disabled={savingPricing}
+              className="px-3 py-1.5 text-xs bg-emerald-700 border border-emerald-600 rounded text-white disabled:opacity-60"
+            >
+              {savingPricing ? 'Saving…' : 'Save Pricing'}
+            </button>
+          </div>
+        </div>
+        {walletPricing && (
+          <p className="mb-3 text-[11px] text-gray-500">
+            Last updated: {new Date(walletPricing.updatedAt).toLocaleString()}
+          </p>
+        )}
+        <div className="overflow-auto border border-gray-800 rounded-lg">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="px-2 py-2 text-left text-gray-400">Coins</th>
+                <th className="px-2 py-2 text-left text-gray-400">Tier 1 (₹)</th>
+                <th className="px-2 py-2 text-left text-gray-400">Tier 2 (₹)</th>
+                <th className="px-2 py-2 text-left text-gray-400">Old Price (₹)</th>
+                <th className="px-2 py-2 text-left text-gray-400">Badge</th>
+                <th className="px-2 py-2 text-left text-gray-400">Order</th>
+                <th className="px-2 py-2 text-left text-gray-400">Active</th>
+                <th className="px-2 py-2 text-left text-gray-400">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {pricingDraft.map((pack, index) => (
+                <tr key={`${pack.coins}-${index}`} className="bg-gray-900">
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      value={pack.coins}
+                      onChange={(e) => updateDraftPack(index, 'coins', Number(e.target.value))}
+                      className="w-20 rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-200"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      value={pack.tier1PriceInr}
+                      onChange={(e) =>
+                        updateDraftPack(index, 'tier1PriceInr', Number(e.target.value))
+                      }
+                      className="w-24 rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-200"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      value={pack.tier2PriceInr}
+                      onChange={(e) =>
+                        updateDraftPack(index, 'tier2PriceInr', Number(e.target.value))
+                      }
+                      className="w-24 rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-200"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      value={pack.oldPriceInr ?? ''}
+                      onChange={(e) =>
+                        updateDraftPack(
+                          index,
+                          'oldPriceInr',
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                      className="w-24 rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-200"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="text"
+                      value={pack.badge ?? ''}
+                      onChange={(e) => updateDraftPack(index, 'badge', e.target.value)}
+                      className="w-36 rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-200"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      value={pack.sortOrder}
+                      onChange={(e) => updateDraftPack(index, 'sortOrder', Number(e.target.value))}
+                      className="w-20 rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-200"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="checkbox"
+                      checked={pack.isActive}
+                      onChange={(e) => updateDraftPack(index, 'isActive', e.target.checked)}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <button
+                      onClick={() => removePack(index)}
+                      className="rounded border border-red-700 px-2 py-1 text-[11px] text-red-300 hover:bg-red-950"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {pricingDraft.length === 0 && (
+                <tr>
+                  <td className="px-3 py-3 text-gray-500" colSpan={8}>
+                    No packages configured.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ── High-level metrics ────────────────── */}

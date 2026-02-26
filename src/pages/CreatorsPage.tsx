@@ -5,11 +5,14 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type CreatorPerformance } from '../services/adminService';
 import { creatorService } from '../services/creatorService';
-import { userService, type PromoteToCreatorDto } from '../services/userService';
-import CreatorForm from '../components/CreatorForm';
-import type { CreateCreatorDto } from '../types/creator';
+import { userService, type PromoteToCreatorDto, type User } from '../services/userService';
 
 const CreatorsPage: React.FC = () => {
+  const maleDefaultPhotoUrl =
+    'https://firebasestorage.googleapis.com/v0/b/matchvibe-d55f9.firebasestorage.app/o/avatars%2Fpresets%2Fmale%2Fa2.png?alt=media&token=aeb7e524-83f2-492a-a80d-a107374a4fe9';
+  const femaleDefaultPhotoUrl =
+    'https://firebasestorage.googleapis.com/v0/b/matchvibe-d55f9.firebasestorage.app/o/avatars%2Fpresets%2Ffemale%2Ffa2.png?alt=media&token=9bbefab7-7734-47f2-bb5a-9d16790436a3';
+
   const [creators, setCreators] = useState<CreatorPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,16 +21,22 @@ const CreatorsPage: React.FC = () => {
   const [forceOfflineTarget, setForceOfflineTarget] = useState<CreatorPerformance | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Creator management
-  const [showForm, setShowForm] = useState(false);
-  const [editingCreator, setEditingCreator] = useState<any>(null);
-
   // Promote flow
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userSearchError, setUserSearchError] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showPromoteForm, setShowPromoteForm] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  const [promoteForm, setPromoteForm] = useState<PromoteToCreatorDto>({
+    name: '',
+    about: '',
+    photo: '',
+    categories: [],
+    price: 0,
+  });
 
   const load = useCallback(async () => {
     try {
@@ -70,56 +79,92 @@ const CreatorsPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (creator: CreatorPerformance) => {
-    setEditingCreator({
-      id: creator.creatorId,
-      name: creator.name,
-      about: '',
-      photo: creator.photo,
-      categories: creator.categories,
-      price: creator.price,
-      userId: creator.userId,
-    });
-    setShowForm(true);
-  };
-
-  const handleCreate = async (data: CreateCreatorDto) => {
-    await creatorService.create(data);
-    setShowForm(false);
-    load();
-  };
-
-  const handleUpdate = async (data: Partial<CreateCreatorDto>) => {
-    if (editingCreator) {
-      await creatorService.update(editingCreator.id, data);
-      setShowForm(false);
-      setEditingCreator(null);
-      load();
-    }
-  };
-
-  const handleSearchUsers = async () => {
-    if (!searchQuery.trim()) return;
+  const loadPromotableUsers = useCallback(async (query?: string) => {
     setSearching(true);
+    setUserSearchError('');
     try {
-      const users = await userService.search(searchQuery, 'user');
+      const users = await userService.search(query?.trim() || undefined, 'user');
       setSearchResults(users);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Search failed');
+      const message = err.response?.data?.error || err.message || 'Search failed';
+      setUserSearchError(message);
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
+  }, []);
+
+  const handleSearchUsers = async () => {
+    await loadPromotableUsers(searchQuery);
   };
+
+  useEffect(() => {
+    if (!showUserSearch || selectedUser) return;
+    // On open, show all promotable users below the search bar.
+    loadPromotableUsers();
+  }, [showUserSearch, selectedUser, loadPromotableUsers]);
 
   const handlePromote = async (data: PromoteToCreatorDto) => {
     if (!selectedUser) return;
     await userService.promoteToCreator(selectedUser.id, data);
     setSelectedUser(null);
     setShowUserSearch(false);
-    setShowForm(false);
+    setShowPromoteForm(false);
     setSearchResults([]);
     setSearchQuery('');
+    setPromoteForm({
+      name: '',
+      about: '',
+      photo: '',
+      categories: [],
+      price: 0,
+    });
     load();
+  };
+
+  const toCreatorName = (user: User): string => {
+    const username = user.username?.trim();
+    if (username) return username;
+    const emailPrefix = user.email?.split('@')[0]?.trim();
+    if (emailPrefix) return emailPrefix;
+    const phone = user.phone?.trim();
+    if (phone) return phone;
+    return 'Creator';
+  };
+
+  const toCreatorPhoto = (user: User): string => {
+    const avatar = user.avatar?.trim();
+    if (!avatar) return maleDefaultPhotoUrl;
+    const lowered = avatar.toLowerCase();
+    if (lowered.startsWith('http://') || lowered.startsWith('https://') || lowered.startsWith('data:')) {
+      return avatar;
+    }
+    if (lowered.startsWith('fa')) return femaleDefaultPhotoUrl;
+    return maleDefaultPhotoUrl;
+  };
+
+  const buildPromotePayloadFromUser = (user: User, price: number): PromoteToCreatorDto => {
+    const name = toCreatorName(user);
+    return {
+      name,
+      about: `Hi, I am ${name}.`,
+      photo: toCreatorPhoto(user),
+      categories: [],
+      price,
+    };
+  };
+
+  const handleSelectUserForPromotion = (user: User) => {
+    setSelectedUser(user);
+    setShowUserSearch(false);
+    setShowPromoteForm(true);
+    setPromoteForm({
+      name: '',
+      about: '',
+      photo: '',
+      categories: [],
+      price: 0,
+    });
   };
 
   const columns: Column<CreatorPerformance>[] = [
@@ -265,17 +310,18 @@ const CreatorsPage: React.FC = () => {
       render: (row) => (
         <div className="flex items-center gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
-            className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
+            onClick={(e) => { e.stopPropagation(); setForceOfflineTarget(row); }}
+            className="px-2 py-1 text-xs bg-yellow-900/30 border border-yellow-800 rounded text-yellow-400 hover:text-yellow-200 transition"
+            disabled={!row.isOnline}
           >
-            Edit
+            {row.isOnline ? 'Offline' : 'Offline'}
           </button>
-          {row.isOnline && (
+          {!row.isOnline && (
             <button
-              onClick={(e) => { e.stopPropagation(); setForceOfflineTarget(row); }}
-              className="px-2 py-1 text-xs bg-yellow-900/30 border border-yellow-800 rounded text-yellow-400 hover:text-yellow-200 transition"
+              disabled
+              className="px-2 py-1 text-xs bg-gray-900/30 border border-gray-800 rounded text-gray-600"
             >
-              Offline
+              —
             </button>
           )}
           <button
@@ -305,16 +351,14 @@ const CreatorsPage: React.FC = () => {
         <h1 className="text-xl font-bold text-white">Creators Performance</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => { setShowUserSearch(true); }}
+            onClick={() => {
+              setShowUserSearch(true);
+              setSearchQuery('');
+              setUserSearchError('');
+            }}
             className="px-3 py-1.5 text-xs bg-emerald-900/30 border border-emerald-700 rounded text-emerald-300 hover:text-emerald-100 transition"
           >
             + Promote User
-          </button>
-          <button
-            onClick={() => { setEditingCreator(null); setShowForm(true); }}
-            className="px-3 py-1.5 text-xs bg-blue-900/30 border border-blue-700 rounded text-blue-300 hover:text-blue-100 transition"
-          >
-            + Create Creator
           </button>
           <button
             onClick={load}
@@ -401,26 +445,39 @@ const CreatorsPage: React.FC = () => {
                 {searching ? '…' : 'Search'}
               </button>
             </div>
+            {userSearchError && (
+              <p className="text-xs text-red-400 mb-3">{userSearchError}</p>
+            )}
             <div className="max-h-64 overflow-auto space-y-1">
               {searchResults.map((user) => (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-2 bg-gray-900 rounded hover:bg-gray-700 cursor-pointer"
-                  onClick={() => { setSelectedUser(user); setShowForm(true); }}
+                  onClick={() => {
+                    if (user.isCreator || user.role === 'creator') return;
+                    handleSelectUserForPromotion(user);
+                  }}
                 >
                   <div>
                     <p className="text-sm text-white">{user.username || 'No username'}</p>
                     <p className="text-xs text-gray-500">{user.email || user.phone}</p>
                   </div>
-                  <span className="text-xs text-gray-500">{user.role}</span>
+                  <span className="text-xs text-gray-500">
+                    {user.isCreator || user.role === 'creator' ? 'already creator' : user.role}
+                  </span>
                 </div>
               ))}
-              {searchResults.length === 0 && !searching && searchQuery && (
-                <p className="text-sm text-gray-500 text-center py-4">No results</p>
+              {searchResults.length === 0 && !searching && !userSearchError && (
+                <p className="text-sm text-gray-500 text-center py-4">No users found</p>
               )}
             </div>
             <button
-              onClick={() => { setShowUserSearch(false); setSearchResults([]); setSearchQuery(''); }}
+              onClick={() => {
+                setShowUserSearch(false);
+                setSearchResults([]);
+                setSearchQuery('');
+                setUserSearchError('');
+              }}
               className="mt-4 text-sm text-gray-500 hover:text-gray-300"
             >
               Cancel
@@ -429,21 +486,63 @@ const CreatorsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Creator Form (Create/Edit/Promote) ──── */}
-      {showForm && (
+      {/* ── Promote User Form ───────────────────── */}
+      {showPromoteForm && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-auto">
           <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg mx-4 my-8 p-6">
-            <CreatorForm
-              onSubmit={selectedUser ? handlePromote as any : editingCreator ? handleUpdate as any : handleCreate as any}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingCreator(null);
-                setSelectedUser(null);
-              }}
-              initialData={editingCreator || undefined}
-              isEditing={!!editingCreator}
-              selectedUserId={selectedUser?.id}
-            />
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Promote {selectedUser.username || selectedUser.email || 'User'} to Creator
+            </h3>
+            <div className="space-y-3">
+              <p className="text-xs text-gray-400">
+                Name, about, photo and categories will be auto-filled from user profile.
+              </p>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                placeholder="Price"
+                value={promoteForm.price}
+                onChange={(e) =>
+                  setPromoteForm((prev) => ({
+                    ...prev,
+                    price: Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0,
+                  }))
+                }
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => {
+                  setShowPromoteForm(false);
+                  setSelectedUser(null);
+                }}
+                className="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={promoting}
+                onClick={async () => {
+                  if (promoteForm.price < 0) {
+                    alert('Price must be 0 or more');
+                    return;
+                  }
+                  try {
+                    setPromoting(true);
+                    await handlePromote(buildPromotePayloadFromUser(selectedUser, promoteForm.price));
+                  } catch (err: any) {
+                    alert(err.response?.data?.error || err.message || 'Failed to promote user');
+                  } finally {
+                    setPromoting(false);
+                  }
+                }}
+                className="px-3 py-2 text-sm bg-emerald-700 hover:bg-emerald-600 text-white rounded transition disabled:opacity-50"
+              >
+                {promoting ? 'Promoting…' : 'Promote'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -29,6 +29,16 @@ const navItems = [
     icon: '📞',
   },
   {
+    path: '/withdrawals',
+    label: 'Withdrawals',
+    icon: '💸',
+  },
+  {
+    path: '/support',
+    label: 'Support',
+    icon: '🛟',
+  },
+  {
     path: '/system',
     label: 'System Health',
     icon: '⚙️',

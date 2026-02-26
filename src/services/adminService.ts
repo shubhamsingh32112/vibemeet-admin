@@ -40,6 +40,14 @@ export interface OverviewData {
     exhaustedQuotas: number;
     freeToPayConversion: number;
   };
+  withdrawals?: {
+    pendingCount: number;
+    totalWithdrawn30d: number;
+  };
+  support?: {
+    openTickets: number;
+    highPriorityTickets: number;
+  };
   generatedAt: string;
 }
 
@@ -222,6 +230,23 @@ export interface FailedTransaction {
   createdAt: string;
 }
 
+export interface WalletPricingPack {
+  coins: number;
+  tier1PriceInr: number;
+  tier2PriceInr: number;
+  oldPriceInr?: number;
+  badge?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface WalletPricingConfig {
+  packages: WalletPricingPack[];
+  defaults: WalletPricingPack[];
+  updatedAt: string;
+  updatedByAdminId: string | null;
+}
+
 export interface AdminCall {
   callId: string;
   ownerUserId: string;
@@ -297,6 +322,83 @@ export interface SystemHealth {
   };
 }
 
+// ── Withdrawal Types ─────────────────────────────────────────────────────
+
+export interface AdminWithdrawal {
+  id: string;
+  creatorUserId: string;
+  creatorName: string;
+  creatorEmail: string | null;
+  creatorPhone: string | null;
+  creatorCurrentBalance: number;
+  amount: number;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+  requestedAt: string;
+  processedAt: string | null;
+  adminUserId: string | null;
+  notes: string | null;
+  transactionId: string | null;
+  createdAt: string;
+}
+
+export interface WithdrawalSummary {
+  pendingCount: number;
+  totalWithdrawn30d: number;
+  topWithdrawingCreators: {
+    creatorUserId: string;
+    name: string;
+    email: string | null;
+    totalWithdrawn: number;
+    withdrawalCount: number;
+  }[];
+}
+
+export interface WithdrawalsResponse {
+  withdrawals: AdminWithdrawal[];
+  summary: WithdrawalSummary;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+// ── Support Ticket Types ─────────────────────────────────────────────────
+
+export interface AdminSupportTicket {
+  id: string;
+  userId: string;
+  username: string;
+  email: string | null;
+  phone: string | null;
+  userRole: string | null;
+  role: 'user' | 'creator';
+  category: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  assignedAdminId: string | null;
+  adminNotes: string | null;
+  source?: 'chat' | 'post_call' | 'other';
+  relatedCallId?: string | null;
+  reportedCreatorUserId?: string | null;
+  reportedCreatorFirebaseUid?: string | null;
+  reportedCreatorName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportSummary {
+  openUserTickets: number;
+  openCreatorTickets: number;
+  highPriorityOpen: number;
+  unassigned: number;
+  agingOver24h: number;
+}
+
+export interface SupportTicketsResponse {
+  tickets: AdminSupportTicket[];
+  summary: SupportSummary;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
 // ── API Service ──────────────────────────────────────────────────────────
 
 export const adminService = {
@@ -350,6 +452,18 @@ export const adminService = {
   // ── Coins ────────────────────────────────────────────
   getCoinEconomy: async (): Promise<CoinEconomy> => {
     const res = await api.get('/admin/coins');
+    return res.data.data;
+  },
+
+  getWalletPricing: async (): Promise<WalletPricingConfig> => {
+    const res = await api.get('/admin/wallet-pricing');
+    return res.data.data;
+  },
+
+  updateWalletPricing: async (
+    packages: WalletPricingPack[]
+  ): Promise<{ packages: WalletPricingPack[]; updatedAt: string; updatedByAdminId: string | null }> => {
+    const res = await api.put('/admin/wallet-pricing', { packages });
     return res.data.data;
   },
 
@@ -408,6 +522,83 @@ export const adminService = {
     if (params?.page) searchParams.append('page', String(params.page));
     if (params?.limit) searchParams.append('limit', String(params.limit));
     const res = await api.get(`/admin/actions/log?${searchParams.toString()}`);
+    return res.data.data;
+  },
+
+  // ── Withdrawals ────────────────────────────────────
+  getWithdrawals: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<WithdrawalsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.page) searchParams.append('page', String(params.page));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    const res = await api.get(`/admin/withdrawals?${searchParams.toString()}`);
+    return res.data.data;
+  },
+
+  approveWithdrawal: async (
+    id: string,
+    notes?: string
+  ): Promise<{ withdrawalId: string; status: string; amount: number; transactionId: string }> => {
+    const res = await api.post(`/admin/withdrawals/${id}/approve`, { notes });
+    return res.data.data;
+  },
+
+  rejectWithdrawal: async (
+    id: string,
+    notes: string
+  ): Promise<{ withdrawalId: string; status: string; amount: number; notes: string }> => {
+    const res = await api.post(`/admin/withdrawals/${id}/reject`, { notes });
+    return res.data.data;
+  },
+
+  markWithdrawalPaid: async (
+    id: string,
+    notes?: string
+  ): Promise<{ withdrawalId: string; status: string; amount: number; processedAt: string }> => {
+    const res = await api.post(`/admin/withdrawals/${id}/mark-paid`, { notes });
+    return res.data.data;
+  },
+
+  // ── Support Tickets ────────────────────────────────
+  getSupportTickets: async (params?: {
+    role?: string;
+    status?: string;
+    priority?: string;
+    source?: string;
+    creatorReportsOnly?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<SupportTicketsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.role) searchParams.append('role', params.role);
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.priority) searchParams.append('priority', params.priority);
+    if (params?.source) searchParams.append('source', params.source);
+    if (params?.creatorReportsOnly) searchParams.append('creatorReports', 'true');
+    if (params?.page) searchParams.append('page', String(params.page));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    const res = await api.get(`/admin/support?${searchParams.toString()}`);
+    return res.data.data;
+  },
+
+  updateTicketStatus: async (
+    id: string,
+    status: string,
+    adminNotes?: string
+  ): Promise<{ ticketId: string; oldStatus: string; newStatus: string }> => {
+    const res = await api.patch(`/admin/support/${id}/status`, { status, adminNotes });
+    return res.data.data;
+  },
+
+  assignTicket: async (
+    id: string,
+    adminId?: string
+  ): Promise<{ ticketId: string; assignedAdminId: string | null }> => {
+    const res = await api.patch(`/admin/support/${id}/assign`, { adminId });
     return res.data.data;
   },
 };

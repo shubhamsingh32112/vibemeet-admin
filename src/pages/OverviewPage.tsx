@@ -37,7 +37,7 @@ const OverviewPage: React.FC = () => {
     );
   if (!data) return null;
 
-  const { users, coins, calls, chat } = data;
+  const { users, coins, calls, chat, withdrawals, support } = data;
 
   return (
     <div>
@@ -213,6 +213,45 @@ const OverviewPage: React.FC = () => {
           variant="info"
         />
       </div>
+
+      {/* ── Withdrawals Section ──────────────────────────────────────── */}
+      {withdrawals && (
+        <>
+          <SectionHeader title="💸 Withdrawals" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <MetricCard
+              label="Pending Withdrawals"
+              value={withdrawals.pendingCount}
+              variant={withdrawals.pendingCount > 0 ? 'warning' : 'default'}
+            />
+            <MetricCard
+              label="Withdrawn (30d)"
+              value={withdrawals.totalWithdrawn30d}
+              subtitle="coins"
+              variant="info"
+            />
+          </div>
+        </>
+      )}
+
+      {/* ── Support Section ──────────────────────────────────────────── */}
+      {support && (
+        <>
+          <SectionHeader title="🛟 Support" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <MetricCard
+              label="Open Tickets"
+              value={support.openTickets}
+              variant={support.openTickets > 0 ? 'info' : 'default'}
+            />
+            <MetricCard
+              label="High Priority"
+              value={support.highPriorityTickets}
+              variant={support.highPriorityTickets > 0 ? 'danger' : 'default'}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

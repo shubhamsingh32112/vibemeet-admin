@@ -8,6 +8,8 @@ import CreatorsPage from './pages/CreatorsPage';
 import UsersPage from './pages/UsersPage';
 import CoinsPage from './pages/CoinsPage';
 import CallsPage from './pages/CallsPage';
+import WithdrawalsPage from './pages/WithdrawalsPage';
+import SupportPage from './pages/SupportPage';
 import SystemPage from './pages/SystemPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,6 +70,8 @@ const AppRoutes: React.FC = () => {
         <Route path="users" element={<UsersPage />} />
         <Route path="coins" element={<CoinsPage />} />
         <Route path="calls" element={<CallsPage />} />
+        <Route path="withdrawals" element={<WithdrawalsPage />} />
+        <Route path="support" element={<SupportPage />} />
         <Route path="system" element={<SystemPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
