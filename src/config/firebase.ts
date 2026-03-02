@@ -3,13 +3,26 @@ import { getStorage } from 'firebase/storage';
 
 // Firebase config — used ONLY for Storage (creator profile images)
 // Auth is handled directly via backend /auth/admin-login endpoint
+// All values are loaded from environment variables (VITE_ prefix required for Vite)
+
+const getEnvVar = (key: string): string => {
+  const value = import.meta.env[key];
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${key}. ` +
+      `Please check your .env file and ensure all Firebase configuration variables are set.`
+    );
+  }
+  return value;
+};
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBCLsex6af5oBBJLmuK8lnzOCg67TfktD8",
-  authDomain: "matchvibe-d55f9.firebaseapp.com",
-  projectId: "matchvibe-d55f9",
-  storageBucket: "matchvibe-d55f9.firebasestorage.app",
-  messagingSenderId: "911372372113",
-  appId: "1:911372372113:web:7f02bc51b2751ad44d1730",
+  apiKey: getEnvVar('VITE_FIREBASE_API_KEY'),
+  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getEnvVar('VITE_FIREBASE_APP_ID'),
 };
 
 const app = initializeApp(firebaseConfig);

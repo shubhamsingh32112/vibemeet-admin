@@ -339,6 +339,12 @@ export interface AdminWithdrawal {
   notes: string | null;
   transactionId: string | null;
   createdAt: string;
+  // Withdrawal details
+  name: string | null;
+  number: string | null;
+  upi: string | null;
+  accountNumber: string | null;
+  ifsc: string | null;
 }
 
 export interface WithdrawalSummary {

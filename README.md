@@ -20,10 +20,29 @@ npm install
 ```
 
 2. **Configure environment variables:**
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (copy from `.env.example`):
+```bash
+cp .env.example .env
 ```
+
+Then edit `.env` with your configuration:
+```bash
+# API Configuration
 VITE_API_BASE_URL=http://localhost:3000/api/v1
+
+# Firebase Configuration
+# Get these from Firebase Console: Project Settings > General > Your apps
+VITE_FIREBASE_API_KEY=your-firebase-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project-id.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
 ```
+
+**Getting Firebase Config:**
+- Go to [Firebase Console](https://console.firebase.google.com/) > Your Project > Settings ⚙️ > General
+- Scroll to "Your apps" and copy the config values from the Firebase SDK snippet
 
 3. **Run the development server:**
 ```bash

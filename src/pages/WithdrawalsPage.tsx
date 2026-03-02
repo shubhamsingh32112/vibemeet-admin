@@ -150,6 +150,32 @@ const WithdrawalsPage: React.FC = () => {
       ),
     },
     {
+      key: 'withdrawalDetails',
+      header: 'Withdrawal Details',
+      render: (row) => (
+        <div className="text-xs space-y-1">
+          {row.name && (
+            <p className="text-white"><span className="text-gray-500">Name:</span> {row.name}</p>
+          )}
+          {row.number && (
+            <p className="text-white"><span className="text-gray-500">Phone:</span> {row.number}</p>
+          )}
+          {row.upi && (
+            <p className="text-white"><span className="text-gray-500">UPI:</span> {row.upi}</p>
+          )}
+          {row.accountNumber && (
+            <p className="text-white"><span className="text-gray-500">Account:</span> {row.accountNumber}</p>
+          )}
+          {row.ifsc && (
+            <p className="text-white"><span className="text-gray-500">IFSC:</span> {row.ifsc}</p>
+          )}
+          {!row.name && !row.number && !row.upi && !row.accountNumber && !row.ifsc && (
+            <span className="text-gray-600">—</span>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'notes',
       header: 'Notes',
       render: (row) => row.notes ? (
@@ -367,6 +393,24 @@ const WithdrawalsPage: React.FC = () => {
               {actionType === 'approve' && (
                 <p className="text-gray-400">After Approval: <span className="text-emerald-300">{(actionTarget.creatorCurrentBalance - actionTarget.amount).toLocaleString()} coins</span></p>
               )}
+              <div className="pt-2 mt-2 border-t border-gray-700">
+                <p className="text-gray-500 font-semibold mb-1">Withdrawal Details:</p>
+                {actionTarget.name && (
+                  <p className="text-gray-400">Name: <span className="text-white">{actionTarget.name}</span></p>
+                )}
+                {actionTarget.number && (
+                  <p className="text-gray-400">Phone: <span className="text-white">{actionTarget.number}</span></p>
+                )}
+                {actionTarget.upi && (
+                  <p className="text-gray-400">UPI: <span className="text-white">{actionTarget.upi}</span></p>
+                )}
+                {actionTarget.accountNumber && (
+                  <p className="text-gray-400">Account: <span className="text-white">{actionTarget.accountNumber}</span></p>
+                )}
+                {actionTarget.ifsc && (
+                  <p className="text-gray-400">IFSC: <span className="text-white">{actionTarget.ifsc}</span></p>
+                )}
+              </div>
             </div>
           )}
           <textarea
