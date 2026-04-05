@@ -27,7 +27,7 @@ agentApi.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('agentToken');
       localStorage.removeItem('agentUser');
-      window.location.href = '/agent/login';
+      window.location.href = `${import.meta.env.BASE_URL}agent/login`;
     }
     return Promise.reject(error);
   }

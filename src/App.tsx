@@ -115,6 +115,7 @@ const AppRoutes: React.FC = () => {
       </Route>
 
       <Route
+        path="/"
         element={
           <ProtectedRoute>
             <DashboardLayout />
@@ -137,8 +138,11 @@ const AppRoutes: React.FC = () => {
 };
 
 function App() {
+  const basename =
+    import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
+
   return (
-    <Router>
+    <Router basename={basename}>
       <AuthProvider>
         <AgentAuthProvider>
           <div className="dark">
