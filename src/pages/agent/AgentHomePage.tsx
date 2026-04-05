@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MetricCard from '../../components/ui/MetricCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { agentPortalService, type AgentSummary } from '../../services/agentPortalService';
+import { agentPortalService } from '../../services/agentPortalService';
 
 const AgentHomePage: React.FC = () => {
-  const [s, setS] = useState<AgentSummary | null>(null);
+  const [s, setS] = useState<Awaited<ReturnType<typeof agentPortalService.getSummary>> | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +15,7 @@ const AgentHomePage: React.FC = () => {
       try {
         const data = await agentPortalService.getSummary();
         if (ok) setS(data);
-      } catch (e: unknown) {
+      } catch {
         if (ok) setErr('Failed to load summary');
       } finally {
         if (ok) setLoading(false);
@@ -34,6 +34,9 @@ const AgentHomePage: React.FC = () => {
     );
   }
 
+  const total = s?.totalCreators ?? s?.activeCreators ?? 0;
+  const online = s?.onlineCreators ?? 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,7 +44,7 @@ const AgentHomePage: React.FC = () => {
         <p className="text-sm text-zinc-500 mt-1">Your recruitment pipeline and payouts queue.</p>
       </div>
       {err && <p className="text-red-400 text-sm">{err}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/agent/pending" className="block">
           <MetricCard label="Pending applications" value={s?.pendingApplications ?? 0} subtitle="Tap to review" />
         </Link>
@@ -49,8 +52,15 @@ const AgentHomePage: React.FC = () => {
           <MetricCard label="Pending withdrawals" value={s?.pendingWithdrawals ?? 0} subtitle="Needs action" />
         </Link>
         <Link to="/agent/creators" className="block">
-          <MetricCard label="Active creators" value={s?.activeCreators ?? 0} subtitle="Under you" />
+          <MetricCard label="Total creators" value={total} subtitle="Under you" />
         </Link>
+        <div className="block">
+          <MetricCard
+            label="Creators online"
+            value={total > 0 ? `${online} / ${total}` : '0'}
+            subtitle="Live availability (app open)"
+          />
+        </div>
       </div>
     </div>
   );

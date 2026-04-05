@@ -1,5 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AgentAuthProvider, useAgentAuth } from './contexts/AgentAuthContext';
 import Login from './components/Login';
@@ -18,11 +24,21 @@ import AgentLoginPage from './pages/agent/AgentLoginPage';
 import AgentHomePage from './pages/agent/AgentHomePage';
 import AgentPendingPage from './pages/agent/AgentPendingPage';
 import AgentCreatorsPage from './pages/agent/AgentCreatorsPage';
-import AgentCreatorDetailPage from './pages/agent/AgentCreatorDetailPage';
+import AgentCreatorViewPage from './pages/agent/AgentCreatorViewPage';
+import AgentCreatorEditPage from './pages/agent/AgentCreatorEditPage';
 import AgentWithdrawalsPage from './pages/agent/AgentWithdrawalsPage';
+
+/** Agent-facing URLs: unauthenticated users go to /agent/login (not admin /login). */
+function isAgentPortalPath(pathname: string): boolean {
+  if (pathname === '/agent' || pathname.startsWith('/agent/')) {
+    return pathname !== '/agent/login';
+  }
+  return pathname === '/agents' || pathname.startsWith('/agents/');
+}
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAdmin, loading } = useAuth();
+  const { pathname } = useLocation();
 
   if (loading) {
     return (
@@ -33,7 +49,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const to = isAgentPortalPath(pathname) ? '/agent/login' : '/login';
+    return <Navigate to={to} replace />;
   }
 
   if (!isAdmin) {
@@ -76,6 +93,14 @@ const AgentProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
   return <>{children}</>;
 };
 
+const UnknownRouteRedirect: React.FC = () => {
+  const { pathname } = useLocation();
+  if (isAgentPortalPath(pathname)) {
+    return <Navigate to="/agent/login" replace />;
+  }
+  return <Navigate to="/" replace />;
+};
+
 const AppRoutes: React.FC = () => {
   const { user: adminUser, loading: adminLoading } = useAuth();
   const { user: agentUser, loading: agentLoading } = useAgentAuth();
@@ -110,7 +135,8 @@ const AppRoutes: React.FC = () => {
         <Route index element={<AgentHomePage />} />
         <Route path="pending" element={<AgentPendingPage />} />
         <Route path="creators" element={<AgentCreatorsPage />} />
-        <Route path="creators/:creatorId" element={<AgentCreatorDetailPage />} />
+        <Route path="creators/:creatorId/edit" element={<AgentCreatorEditPage />} />
+        <Route path="creators/:creatorId" element={<AgentCreatorViewPage />} />
         <Route path="withdrawals" element={<AgentWithdrawalsPage />} />
       </Route>
 
@@ -132,7 +158,7 @@ const AppRoutes: React.FC = () => {
         <Route path="system" element={<SystemPage />} />
         <Route path="agents" element={<AgentsManagePage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<UnknownRouteRedirect />} />
     </Routes>
   );
 };

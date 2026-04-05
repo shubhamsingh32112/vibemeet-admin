@@ -1,20 +1,89 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { agentPortalService, type AgentCreatorRow } from '../../services/agentPortalService';
+import {
+  agentPortalService,
+  type AgentCreatorRow,
+  type AgentCreatorsPeriod,
+  type AgentSearchUserRow,
+} from '../../services/agentPortalService';
+import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
+import { compressImage } from '../../utils/imageCompression';
+
+const PERIODS: { value: AgentCreatorsPeriod; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: 'all', label: 'All time' },
+];
+
+const SORTS: { value: string; label: string }[] = [
+  { value: 'talkMinutesPeriod', label: 'Talk time (period)' },
+  { value: 'earningsPeriod', label: 'Earnings (period)' },
+  { value: 'callsPeriod', label: 'Calls (period)' },
+  { value: 'name', label: 'Name' },
+  { value: 'username', label: 'Username' },
+  { value: 'coins', label: 'Coins' },
+  { value: 'earningsCoins', label: 'Lifetime earnings' },
+  { value: 'allTimeTalkMinutes', label: 'All-time talk' },
+  { value: 'online', label: 'Online first' },
+  { value: 'updatedAt', label: 'Updated' },
+];
+
+function periodColumnLabel(p: AgentCreatorsPeriod): string {
+  switch (p) {
+    case 'today':
+      return 'Today';
+    case '7d':
+      return '7d';
+    case '30d':
+      return '30d';
+    default:
+      return 'All';
+  }
+}
+
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
 
 const AgentCreatorsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<AgentCreatorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [period, setPeriod] = useState<AgentCreatorsPeriod>('today');
+  const [sort, setSort] = useState('talkMinutesPeriod');
+  const [dir, setDir] = useState<'asc' | 'desc'>('desc');
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState<AgentSearchUserRow[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formAbout, setFormAbout] = useState('');
+  const [formPrice, setFormPrice] = useState(60);
+  const [formPhoto, setFormPhoto] = useState('');
+  const [formCats, setFormCats] = useState('');
+  const [formAge, setFormAge] = useState<number | ''>('');
+  const [creating, setCreating] = useState(false);
+  const [createErr, setCreateErr] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr('');
     try {
-      const data = await agentPortalService.getCreators({ page, limit: 30 });
+      const data = await agentPortalService.getCreators({
+        page,
+        limit: 30,
+        period,
+        sort,
+        dir,
+      });
       setRows(data.creators);
       setTotalPages(data.pagination.totalPages);
     } catch {
@@ -22,11 +91,117 @@ const AgentCreatorsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, period, sort, dir]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const runSearch = async () => {
+    setSearching(true);
+    setCreateErr('');
+    try {
+      const users = await agentPortalService.searchUsersForAgent(searchQ.trim(), 30);
+      setSearchResults(users);
+    } catch {
+      setCreateErr('Search failed');
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const openAdd = () => {
+    setAddOpen(true);
+    setSelectedUser(null);
+    setSearchQ('');
+    setSearchResults([]);
+    setFormName('');
+    setFormAbout('');
+    setFormPrice(60);
+    setFormPhoto('');
+    setFormCats('');
+    setFormAge('');
+    setCreateErr('');
+  };
+
+  const handleMainPhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !selectedUser) return;
+    try {
+      const b64 = await compressImage(file, 1024, 1024, 0.82, 350);
+      const blob = await dataUrlToBlob(b64);
+      const jpeg = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+      const tempId = `temp-add-${selectedUser.id}`;
+      const url = await uploadCreatorProfileImage(jpeg, tempId);
+      setFormPhoto(url);
+    } catch (ex: unknown) {
+      const m = ex instanceof Error ? ex.message : 'Upload failed';
+      setCreateErr(m);
+    }
+  };
+
+  const submitCreate = async () => {
+    if (!selectedUser) {
+      setCreateErr('Select a user');
+      return;
+    }
+    if (!formName.trim() || formName.trim().length < 2) {
+      setCreateErr('Name at least 2 characters');
+      return;
+    }
+    if (formAbout.trim().length < 10) {
+      setCreateErr('About at least 10 characters');
+      return;
+    }
+    if (!formPhoto.trim()) {
+      setCreateErr('Upload a main photo');
+      return;
+    }
+    const cats = formCats
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 4);
+
+    setCreating(true);
+    setCreateErr('');
+    try {
+      const { creator } = await agentPortalService.createAgentCreator({
+        userId: selectedUser.id,
+        name: formName.trim(),
+        about: formAbout.trim(),
+        photo: formPhoto.trim(),
+        price: Number(formPrice),
+        categories: cats.length ? cats : undefined,
+        ...(formAge !== '' ? { age: Number(formAge) } : {}),
+      });
+      setAddOpen(false);
+      navigate(`/agent/creators/${creator.id}/edit`);
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        (e instanceof Error ? e.message : 'Create failed');
+      setCreateErr(msg);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (c: AgentCreatorRow) => {
+    if (!confirm(`Remove creator profile for "${c.name}"? The user becomes a regular user again.`)) return;
+    try {
+      await agentPortalService.deleteCreator(c.id);
+      load();
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Delete failed';
+      alert(msg);
+    }
+  };
+
+  const pl = periodColumnLabel(period);
 
   if (loading && rows.length === 0) {
     return (
@@ -38,50 +213,184 @@ const AgentCreatorsPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-white">Creators</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl font-bold text-white">Creators</h1>
+        <button
+          type="button"
+          onClick={openAdd}
+          className="rounded-xl bg-admin-accent text-admin-base font-semibold px-4 py-2.5 text-sm w-fit"
+        >
+          + Add creator
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-3 items-center">
+        <label className="text-xs text-zinc-500 flex items-center gap-2">
+          Period
+          <select
+            value={period}
+            onChange={(e) => {
+              setPage(1);
+              setPeriod(e.target.value as AgentCreatorsPeriod);
+            }}
+            className="rounded-lg bg-admin-base border border-admin-border text-white text-sm px-2 py-1.5"
+          >
+            {PERIODS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-zinc-500 flex items-center gap-2">
+          Sort by
+          <select
+            value={sort}
+            onChange={(e) => {
+              setPage(1);
+              setSort(e.target.value);
+            }}
+            className="rounded-lg bg-admin-base border border-admin-border text-white text-sm px-2 py-1.5"
+          >
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-zinc-500 flex items-center gap-2">
+          Direction
+          <select
+            value={dir}
+            onChange={(e) => {
+              setPage(1);
+              setDir(e.target.value as 'asc' | 'desc');
+            }}
+            className="rounded-lg bg-admin-base border border-admin-border text-white text-sm px-2 py-1.5"
+          >
+            <option value="desc">High → low</option>
+            <option value="asc">Low → high</option>
+          </select>
+        </label>
+      </div>
+
       {err && <p className="text-red-400 text-sm">{err}</p>}
+
       <div className="space-y-2 md:hidden">
         {rows.map((c) => (
-          <Link
+          <div
             key={c.id}
-            to={`/agent/creators/${c.id}`}
-            className="block rounded-xl border border-admin-border bg-admin-surface p-4"
+            className="rounded-xl border border-admin-border bg-admin-surface p-4 space-y-2"
           >
             <p className="text-white font-medium">{c.name}</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              {c.earningsCoins} earnings · {c.price} coins/min
+            <p className="text-xs text-zinc-500">
+              @{c.username || '—'} · {c.availability === 'online' ? '🟢 online' : '⚫ busy'} · coins{' '}
+              {c.coins ?? '—'}
             </p>
-          </Link>
+            <p className="text-xs text-zinc-400">
+              Talk ({pl}): {c.periodTalkMinutes}m · Earned: {c.periodCoinsEarned} · Calls:{' '}
+              {c.periodCallCount}
+            </p>
+            {c.pendingWithdrawal && (
+              <p className="text-xs text-amber-400">Withdrawal pending: {c.pendingWithdrawal.amount}</p>
+            )}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Link
+                to={`/agent/creators/${c.id}`}
+                className="text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5"
+              >
+                View
+              </Link>
+              <Link
+                to={`/agent/creators/${c.id}/edit`}
+                className="text-sm text-white border border-admin-border rounded-lg px-3 py-1.5"
+              >
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleDelete(c)}
+                className="text-sm text-red-400 border border-red-900/50 rounded-lg px-3 py-1.5"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         ))}
       </div>
+
       <div className="hidden md:block overflow-x-auto rounded-xl border border-admin-border">
         <table className="w-full text-sm">
           <thead className="bg-admin-elevated text-zinc-400 text-left">
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Username</th>
-              <th className="px-4 py-3">Earnings</th>
-              <th className="px-4 py-3">Price</th>
-              <th className="px-4 py-3">Coins</th>
+              <th className="px-3 py-3">Name</th>
+              <th className="px-3 py-3">User</th>
+              <th className="px-3 py-3">Status</th>
+              <th className="px-3 py-3">Coins</th>
+              <th className="px-3 py-3">Talk ({pl})</th>
+              <th className="px-3 py-3">Earned ({pl})</th>
+              <th className="px-3 py-3">Calls ({pl})</th>
+              <th className="px-3 py-3">All-time talk</th>
+              <th className="px-3 py-3">WD</th>
+              <th className="px-3 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((c) => (
               <tr key={c.id} className="border-t border-admin-border hover:bg-admin-elevated/40">
-                <td className="px-4 py-3">
-                  <Link to={`/agent/creators/${c.id}`} className="text-emerald-400 hover:underline">
-                    {c.name}
-                  </Link>
+                <td className="px-3 py-3 text-white font-medium">{c.name}</td>
+                <td className="px-3 py-3 text-zinc-400">{c.username || '—'}</td>
+                <td className="px-3 py-3">
+                  <span className={c.availability === 'online' ? 'text-emerald-400' : 'text-zinc-500'}>
+                    {c.availability === 'online' ? 'Online' : 'Busy'}
+                  </span>
                 </td>
-                <td className="px-4 py-3 text-zinc-400">{c.username || '—'}</td>
-                <td className="px-4 py-3">{c.earningsCoins}</td>
-                <td className="px-4 py-3">{c.price}</td>
-                <td className="px-4 py-3">{c.coins ?? '—'}</td>
+                <td className="px-3 py-3">{c.coins ?? '—'}</td>
+                <td className="px-3 py-3">{c.periodTalkMinutes}m</td>
+                <td className="px-3 py-3">{c.periodCoinsEarned}</td>
+                <td className="px-3 py-3">{c.periodCallCount}</td>
+                <td className="px-3 py-3">{c.allTimeTalkMinutes}m</td>
+                <td className="px-3 py-3">
+                  {c.pendingWithdrawal ? (
+                    <span className="text-amber-400" title={c.pendingWithdrawal.requestedAt}>
+                      {c.pendingWithdrawal.amount}
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td className="px-3 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    <Link
+                      to={`/agent/creators/${c.id}`}
+                      className="text-emerald-400 hover:underline whitespace-nowrap"
+                    >
+                      View
+                    </Link>
+                    <span className="text-zinc-600">·</span>
+                    <Link
+                      to={`/agent/creators/${c.id}/edit`}
+                      className="text-zinc-300 hover:underline whitespace-nowrap"
+                    >
+                      Edit
+                    </Link>
+                    <span className="text-zinc-600">·</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(c)}
+                      className="text-red-400 hover:underline whitespace-nowrap"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
       {totalPages > 1 && (
         <div className="flex gap-2 justify-center pt-4">
           <button
@@ -103,6 +412,153 @@ const AgentCreatorsPage: React.FC = () => {
           >
             Next
           </button>
+        </div>
+      )}
+
+      {addOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
+          <div className="bg-admin-surface border border-admin-border rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-admin-border">
+              <h2 className="text-lg font-semibold text-white">Add creator</h2>
+              <button
+                type="button"
+                onClick={() => setAddOpen(false)}
+                className="text-zinc-400 hover:text-white min-h-10 min-w-10"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {createErr && <p className="text-red-400 text-sm">{createErr}</p>}
+              <div>
+                <label className="text-xs text-zinc-500">Find user (no creator profile yet)</label>
+                <div className="flex gap-2 mt-1">
+                  <input
+                    value={searchQ}
+                    onChange={(e) => setSearchQ(e.target.value)}
+                    placeholder="Username, email, or phone"
+                    className="flex-1 rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                  />
+                  <button
+                    type="button"
+                    disabled={searching}
+                    onClick={runSearch}
+                    className="rounded-lg border border-admin-border px-3 py-2 text-sm text-white"
+                  >
+                    {searching ? '…' : 'Search'}
+                  </button>
+                </div>
+                <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                  {searchResults.map((u) => (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedUser(u);
+                          setFormName(u.username || u.email?.split('@')[0] || 'Creator');
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+                          selectedUser?.id === u.id
+                            ? 'bg-admin-accent/20 border border-admin-accent text-white'
+                            : 'bg-admin-base border border-admin-border text-zinc-300'
+                        }`}
+                      >
+                        {u.username || u.email || u.phone || u.id} ({u.id.slice(-6)})
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {selectedUser && (
+                <>
+                  <div>
+                    <label className="text-xs text-zinc-500">Display name</label>
+                    <input
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500">About (min 10 chars)</label>
+                    <textarea
+                      value={formAbout}
+                      onChange={(e) => setFormAbout(e.target.value)}
+                      rows={3}
+                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-zinc-500">Price (coins/min)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-500">Age (18–100)</label>
+                      <input
+                        type="number"
+                        value={formAge}
+                        onChange={(e) =>
+                          setFormAge(e.target.value === '' ? '' : Number(e.target.value))
+                        }
+                        className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500">Categories (comma, max 4)</label>
+                    <input
+                      value={formCats}
+                      onChange={(e) => setFormCats(e.target.value)}
+                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500">Main photo</label>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-2 text-sm text-emerald-300 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={handleMainPhotoFile}
+                        />
+                        <span className="px-3 py-2 rounded-xl border border-admin-border">Upload</span>
+                      </label>
+                      {formPhoto ? (
+                        <img src={formPhoto} alt="" className="h-14 w-14 rounded-xl object-cover border border-admin-border" />
+                      ) : null}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-admin-border">
+              <button
+                type="button"
+                onClick={() => setAddOpen(false)}
+                className="px-4 py-2 rounded-xl border border-admin-border text-zinc-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={creating || !selectedUser}
+                onClick={submitCreate}
+                className="px-4 py-2 rounded-xl bg-admin-accent text-admin-base font-semibold disabled:opacity-50"
+              >
+                {creating ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
