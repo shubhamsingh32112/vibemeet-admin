@@ -68,10 +68,20 @@ export interface AbuseSignals {
   isFlagged: boolean;
 }
 
+export interface GalleryImageDto {
+  id: string;
+  url: string;
+  storagePath: string;
+  position: number;
+  createdAt: string;
+}
+
 export interface CreatorPerformance {
   creatorId: string;
   userId: string;
   name: string;
+  username: string | null;
+  avatar: string | null;
   photo: string;
   categories: string[];
   price: number;
@@ -345,6 +355,7 @@ export interface AdminWithdrawal {
   upi: string | null;
   accountNumber: string | null;
   ifsc: string | null;
+  assignedAgentId?: string | null;
 }
 
 export interface WithdrawalSummary {
@@ -422,6 +433,47 @@ export const adminService = {
 
   forceCreatorOffline: async (creatorId: string): Promise<void> => {
     await api.post(`/admin/creators/${creatorId}/force-offline`);
+  },
+
+  patchCreatorLinkedUser: async (
+    creatorId: string,
+    body: { username?: string; avatar?: string | null; categories?: string[] }
+  ): Promise<{
+    id: string;
+    username?: string;
+    avatar?: string;
+    categories?: string[];
+    profileRevision: number;
+  }> => {
+    const res = await api.patch(`/admin/creators/${creatorId}/user`, body);
+    return res.data.data.user;
+  },
+
+  creatorGalleryUploadUrl: async (
+    creatorId: string,
+    contentType: string
+  ): Promise<{ uploadUrl: string; storagePath: string; imageId: string; expiresAt: string; contentType: string }> => {
+    const res = await api.post(`/admin/creators/${creatorId}/gallery/upload-url`, { contentType });
+    return res.data.data;
+  },
+
+  creatorGalleryCommit: async (
+    creatorId: string,
+    imageId: string,
+    storagePath: string
+  ): Promise<GalleryImageDto[]> => {
+    const res = await api.post(`/admin/creators/${creatorId}/gallery/commit`, { imageId, storagePath });
+    return res.data.data.galleryImages;
+  },
+
+  creatorGalleryDelete: async (creatorId: string, imageId: string): Promise<GalleryImageDto[]> => {
+    const res = await api.delete(`/admin/creators/${creatorId}/gallery/${imageId}`);
+    return res.data.data.galleryImages;
+  },
+
+  creatorGalleryReorder: async (creatorId: string, imageIds: string[]): Promise<GalleryImageDto[]> => {
+    const res = await api.patch(`/admin/creators/${creatorId}/gallery/reorder`, { imageIds });
+    return res.data.data.galleryImages;
   },
 
   // ── Users ────────────────────────────────────────────
@@ -536,11 +588,15 @@ export const adminService = {
     status?: string;
     page?: number;
     limit?: number;
+    /** true = only agent-assigned; false = unassigned / no agent id */
+    hasAssignedAgent?: boolean;
   }): Promise<WithdrawalsResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
     if (params?.page) searchParams.append('page', String(params.page));
     if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.hasAssignedAgent === true) searchParams.append('hasAssignedAgent', 'true');
+    if (params?.hasAssignedAgent === false) searchParams.append('hasAssignedAgent', 'false');
     const res = await api.get(`/admin/withdrawals?${searchParams.toString()}`);
     return res.data.data;
   },

@@ -1,82 +1,36 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAgentAuth } from '../../contexts/AgentAuthContext';
 
-const navItems = [
-  {
-    path: '/',
-    label: 'Overview',
-    icon: '📊',
-  },
-  {
-    path: '/creators',
-    label: 'Creators',
-    icon: '🎓',
-  },
-  {
-    path: '/users',
-    label: 'Users',
-    icon: '👥',
-  },
-  {
-    path: '/coins',
-    label: 'Coins & Txns',
-    icon: '💰',
-  },
-  {
-    path: '/calls',
-    label: 'Calls & Billing',
-    icon: '📞',
-  },
-  {
-    path: '/withdrawals',
-    label: 'Withdrawals',
-    icon: '💸',
-  },
-  {
-    path: '/agents',
-    label: 'Agents',
-    icon: '🤝',
-  },
-  {
-    path: '/support',
-    label: 'Support',
-    icon: '🛟',
-  },
-  {
-    path: '/system',
-    label: 'System Health',
-    icon: '⚙️',
-  },
+const items = [
+  { path: '/agent', label: 'Dashboard', icon: '📊', end: true },
+  { path: '/agent/pending', label: 'Applications', icon: '📋' },
+  { path: '/agent/creators', label: 'Creators', icon: '🎓' },
+  { path: '/agent/withdrawals', label: 'Withdrawals', icon: '💸' },
 ];
 
-type SidebarProps = {
+type Props = {
   className?: string;
   onNavigate?: () => void;
   showClose?: boolean;
   onClose?: () => void;
 };
 
-const Sidebar: React.FC<SidebarProps> = ({
+const AgentSidebar: React.FC<Props> = ({
   className = '',
   onNavigate,
   showClose,
   onClose,
 }) => {
-  const { logout, user } = useAuth();
-
+  const { logout, user } = useAgentAuth();
   return (
     <aside
       className={`w-56 min-h-screen bg-admin-surface border-r border-admin-border flex flex-col ${className}`}
     >
       <div className="px-4 py-4 border-b border-admin-border flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-base font-bold text-white tracking-tight">
-            Eazy Talks
-          </h1>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">
-            Admin Console
-          </p>
+          <h1 className="text-base font-bold text-white tracking-tight">Eazy Talks</h1>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Agent Portal</p>
         </div>
         {showClose && (
           <button
@@ -89,13 +43,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
         )}
       </div>
-
       <nav className="flex-1 py-3 overflow-y-auto">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === '/'}
+            end={item.end}
             onClick={() => onNavigate?.()}
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-4 py-3 min-h-[44px] text-sm transition-colors ${
@@ -112,9 +65,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           </NavLink>
         ))}
       </nav>
-
-      <div className="border-t border-admin-border px-4 py-3">
-        <p className="text-xs text-zinc-500 truncate mb-2">{user?.email || 'Admin'}</p>
+      <div className="border-t border-admin-border px-4 py-3 space-y-1">
+        <p className="text-[10px] text-zinc-500">Referral code</p>
+        <p className="text-xs font-mono text-emerald-400">{user?.referralCode || '—'}</p>
+        <p className="text-xs text-zinc-500 truncate pt-2">{user?.email}</p>
         <button
           type="button"
           onClick={logout}
@@ -127,4 +81,4 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 };
 
-export default Sidebar;
+export default AgentSidebar;

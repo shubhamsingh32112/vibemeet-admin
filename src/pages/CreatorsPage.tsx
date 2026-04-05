@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type CreatorPerformance } from '../services/adminService';
 import { creatorService } from '../services/creatorService';
 import { userService, type PromoteToCreatorDto, type User } from '../services/userService';
+import CreatorEditModal from '../components/CreatorEditModal';
 
 const CreatorsPage: React.FC = () => {
   const maleDefaultPhotoUrl =
@@ -20,6 +21,7 @@ const CreatorsPage: React.FC = () => {
   // Modals
   const [forceOfflineTarget, setForceOfflineTarget] = useState<CreatorPerformance | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingRow, setEditingRow] = useState<CreatorPerformance | null>(null);
 
   // Promote flow
   const [showUserSearch, setShowUserSearch] = useState(false);
@@ -183,7 +185,9 @@ const CreatorsPage: React.FC = () => {
           )}
           <div>
             <p className="text-white text-sm font-medium">{row.name}</p>
-            <p className="text-[10px] text-gray-500">{row.email || row.phone || '—'}</p>
+            <p className="text-[10px] text-gray-500">
+              {row.username ? `@${row.username}` : '—'} · {row.email || row.phone || '—'}
+            </p>
           </div>
         </div>
       ),
@@ -308,7 +312,17 @@ const CreatorsPage: React.FC = () => {
       header: '',
       width: '140px',
       render: (row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingRow(row);
+            }}
+            className="px-2 py-1 text-xs bg-violet-900/30 border border-violet-700 rounded text-violet-300 hover:text-violet-100 transition min-h-[36px]"
+          >
+            Edit
+          </button>
           <button
             onClick={(e) => { e.stopPropagation(); setForceOfflineTarget(row); }}
             className="px-2 py-1 text-xs bg-yellow-900/30 border border-yellow-800 rounded text-yellow-400 hover:text-yellow-200 transition"
@@ -370,7 +384,7 @@ const CreatorsPage: React.FC = () => {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
           <p className="text-[10px] text-gray-500 uppercase">Total</p>
           <p className="text-lg font-bold text-white">{creators.length}</p>
@@ -407,9 +421,10 @@ const CreatorsPage: React.FC = () => {
         columns={columns}
         data={creators}
         keyField="creatorId"
-        searchFields={['name', 'email', 'phone'] as any}
+        searchFields={['name', 'username', 'email', 'phone'] as any}
         searchPlaceholder="Search creators…"
         compact
+        stackedOnMobile
       />
 
       {/* ── Force Offline Confirm ──────────────── */}
@@ -487,6 +502,14 @@ const CreatorsPage: React.FC = () => {
       )}
 
       {/* ── Promote User Form ───────────────────── */}
+      {editingRow && (
+        <CreatorEditModal
+          row={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSaved={() => load()}
+        />
+      )}
+
       {showPromoteForm && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-auto">
           <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg mx-4 my-8 p-6">

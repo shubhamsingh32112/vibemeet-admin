@@ -19,6 +19,8 @@ interface DataTableProps<T> {
   searchFields?: (keyof T)[];
   maxHeight?: string;
   compact?: boolean;
+  /** Below md: render each row as a card (better touch UX). */
+  stackedOnMobile?: boolean;
 }
 
 function DataTable<T extends Record<string, any>>({
@@ -31,6 +33,7 @@ function DataTable<T extends Record<string, any>>({
   searchFields,
   maxHeight = '600px',
   compact = false,
+  stackedOnMobile = false,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -98,8 +101,49 @@ function DataTable<T extends Record<string, any>>({
         </div>
       )}
 
+      {stackedOnMobile && (
+        <div className="md:hidden space-y-3 mb-3">
+          {filteredData.length === 0 ? (
+            <p className="text-center text-zinc-500 text-sm py-8 border border-zinc-800 rounded-xl bg-zinc-900/50">
+              {emptyMessage}
+            </p>
+          ) : (
+            filteredData.map((row) => (
+              <div
+                key={String(row[keyField])}
+                role={onRowClick ? 'button' : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                className={`rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 space-y-2.5 shadow-sm shadow-black/20 ${
+                  onRowClick ? 'cursor-pointer active:bg-zinc-800/80' : ''
+                }`}
+                onClick={() => onRowClick?.(row)}
+                onKeyDown={(e) => {
+                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onRowClick(row);
+                  }
+                }}
+              >
+                {columns.map((col) => (
+                  <div key={col.key} className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-3 text-sm">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 shrink-0">
+                      {col.header || col.key}
+                    </span>
+                    <div className="text-zinc-200 text-right sm:text-right min-w-0 break-words [&_*]:whitespace-normal">
+                      {col.render ? col.render(row) : row[col.key] ?? '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       <div
-        className="overflow-auto border border-gray-700 rounded-lg"
+        className={`overflow-auto border border-zinc-800 rounded-xl ${
+          stackedOnMobile ? 'hidden md:block' : ''
+        }`}
         style={{ maxHeight }}
       >
         <table className="w-full text-sm">
