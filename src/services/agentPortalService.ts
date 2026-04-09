@@ -1,6 +1,9 @@
 import agentApi from '../config/agentApi';
 
 export interface AgentSummary {
+  /** Users referred by this agent who are not yet creators */
+  referredUsersAwaitingPromotion: number;
+  /** @deprecated Same as referredUsersAwaitingPromotion */
   pendingApplications: number;
   pendingWithdrawals: number;
   activeCreators: number;
@@ -8,18 +11,17 @@ export interface AgentSummary {
   onlineCreators: number;
 }
 
-export interface AgentApplicationRow {
+export interface AgentReferredUserRow {
   id: string;
-  referralCodeUsed: string;
+  username?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  role?: string;
   createdAt: string;
-  applicant: {
-    id: string;
-    email?: string;
-    phone?: string;
-    username?: string;
-    avatar?: string;
-    createdAt?: string;
-  } | null;
+  referralCodeUsed: string | null;
+  hasCreator: boolean;
+  creatorId: string | null;
 }
 
 export interface AgentCreatorRow {
@@ -128,22 +130,12 @@ export const agentPortalService = {
     return res.data.data;
   },
 
-  getPendingApplications: async (page = 1, limit = 50) => {
-    const res = await agentApi.get('/agent/pending-applications', { params: { page, limit } });
+  getReferredUsers: async (params?: { page?: number; limit?: number }) => {
+    const res = await agentApi.get('/agent/referred-users', { params });
     return res.data.data as {
-      applications: AgentApplicationRow[];
+      users: AgentReferredUserRow[];
       pagination: { page: number; limit: number; total: number; totalPages: number };
     };
-  },
-
-  acceptApplication: async (id: string) => {
-    const res = await agentApi.post(`/agent/applications/${id}/accept`);
-    return res.data.data;
-  },
-
-  rejectApplication: async (id: string, rejectionReason?: string) => {
-    const res = await agentApi.post(`/agent/applications/${id}/reject`, { rejectionReason });
-    return res.data.data;
   },
 
   getCreators: async (params?: {

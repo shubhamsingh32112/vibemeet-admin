@@ -4,7 +4,7 @@ import { useAgentAuth } from '../../contexts/AgentAuthContext';
 
 const items = [
   { path: '/agent', label: 'Dashboard', icon: '📊', end: true },
-  { path: '/agent/pending', label: 'Applications', icon: '📋' },
+  { path: '/agent/referred', label: 'Referred users', icon: '👥' },
   { path: '/agent/creators', label: 'Creators', icon: '🎓' },
   { path: '/agent/withdrawals', label: 'Withdrawals', icon: '💸' },
 ];

@@ -5,6 +5,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   adminService,
+  type AdminAgentBrief,
   type UserAnalytics,
   type UserLedger,
 } from '../services/adminService';
@@ -15,6 +16,8 @@ const UsersPage: React.FC = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [referrerAgentId, setReferrerAgentId] = useState('');
+  const [agents, setAgents] = useState<AdminAgentBrief[]>([]);
   const [sortBy, setSortBy] = useState('');
 
   // Ledger drill-down
@@ -35,6 +38,7 @@ const UsersPage: React.FC = () => {
         query: search || undefined,
         role: roleFilter !== 'all' ? roleFilter : undefined,
         sort: sortBy || undefined,
+        referrerAgentId: referrerAgentId || undefined,
       });
       setUsers(data);
     } catch (err: any) {
@@ -42,7 +46,22 @@ const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter, sortBy]);
+  }, [search, roleFilter, sortBy, referrerAgentId]);
+
+  useEffect(() => {
+    let ok = true;
+    (async () => {
+      try {
+        const list = await adminService.listAgentsBrief(200);
+        if (ok) setAgents(list);
+      } catch {
+        if (ok) setAgents([]);
+      }
+    })();
+    return () => {
+      ok = false;
+    };
+  }, []);
 
   useEffect(() => {
     load();
@@ -129,6 +148,26 @@ const UsersPage: React.FC = () => {
           }
           label={row.role}
         />
+      ),
+    },
+    {
+      key: 'referral',
+      header: 'Referral',
+      width: '200px',
+      render: (row) => (
+        <div className="text-xs">
+          {row.referralCodeUsed ? (
+            <span className="font-mono text-emerald-400/90">{row.referralCodeUsed}</span>
+          ) : (
+            <span className="text-gray-600">—</span>
+          )}
+          {row.referrerLabel && (
+            <p className="text-gray-500 mt-0.5 truncate max-w-[180px]" title={row.referrerLabel}>
+              via {row.referrerLabel}
+              {row.referrerIsAgent ? ' (agent)' : ''}
+            </p>
+          )}
+        </div>
       ),
     },
     {
@@ -258,6 +297,19 @@ const UsersPage: React.FC = () => {
           <option value="user">Users</option>
           <option value="creator">Creators</option>
           <option value="admin">Admins</option>
+        </select>
+        <select
+          value={referrerAgentId}
+          onChange={(e) => setReferrerAgentId(e.target.value)}
+          className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none max-w-[220px]"
+          title="Show only users referred by this agent"
+        >
+          <option value="">All referrers</option>
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.displayName || a.email || a.id.slice(-6)} ({a.referralCode || '—'})
+            </option>
+          ))}
         </select>
         <select
           value={sortBy}

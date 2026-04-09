@@ -22,7 +22,7 @@ import SystemPage from './pages/SystemPage';
 import AgentsManagePage from './pages/AgentsManagePage';
 import AgentLoginPage from './pages/agent/AgentLoginPage';
 import AgentHomePage from './pages/agent/AgentHomePage';
-import AgentPendingPage from './pages/agent/AgentPendingPage';
+import AgentReferredUsersPage from './pages/agent/AgentReferredUsersPage';
 import AgentCreatorsPage from './pages/agent/AgentCreatorsPage';
 import AgentCreatorViewPage from './pages/agent/AgentCreatorViewPage';
 import AgentCreatorEditPage from './pages/agent/AgentCreatorEditPage';
@@ -133,7 +133,7 @@ const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<AgentHomePage />} />
-        <Route path="pending" element={<AgentPendingPage />} />
+        <Route path="referred" element={<AgentReferredUsersPage />} />
         <Route path="creators" element={<AgentCreatorsPage />} />
         <Route path="creators/:creatorId/edit" element={<AgentCreatorEditPage />} />
         <Route path="creators/:creatorId" element={<AgentCreatorViewPage />} />

@@ -127,6 +127,17 @@ export interface UserAnalytics {
   chatChannels: number;
   freeMessages: number;
   paidMessages: number;
+  referredByUserId?: string | null;
+  referralCodeUsed?: string | null;
+  referrerLabel?: string | null;
+  referrerIsAgent?: boolean;
+}
+
+export interface AdminAgentBrief {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  referralCode: string | null;
 }
 
 export interface UserLedger {
@@ -481,13 +492,20 @@ export const adminService = {
     query?: string;
     role?: string;
     sort?: string;
+    referrerAgentId?: string;
   }): Promise<UserAnalytics[]> => {
     const searchParams = new URLSearchParams();
     if (params?.query) searchParams.append('query', params.query);
     if (params?.role) searchParams.append('role', params.role);
     if (params?.sort) searchParams.append('sort', params.sort);
+    if (params?.referrerAgentId) searchParams.append('referrerAgentId', params.referrerAgentId);
     const res = await api.get(`/admin/users/analytics?${searchParams.toString()}`);
     return res.data.data.users;
+  },
+
+  listAgentsBrief: async (limit = 200): Promise<AdminAgentBrief[]> => {
+    const res = await api.get('/admin/agents', { params: { page: 1, limit } });
+    return res.data.data.agents as AdminAgentBrief[];
   },
 
   getUserLedger: async (userId: string): Promise<UserLedger> => {

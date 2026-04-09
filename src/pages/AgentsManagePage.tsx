@@ -129,7 +129,9 @@ const AgentsManagePage: React.FC = () => {
             <tr>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Code</th>
-              <th className="px-4 py-3">Pending</th>
+              <th className="px-4 py-3" title="Referred users not yet creators">
+                Await promote
+              </th>
               <th className="px-4 py-3">Creators</th>
               <th className="px-4 py-3">WD pend.</th>
               <th className="px-4 py-3">Status</th>

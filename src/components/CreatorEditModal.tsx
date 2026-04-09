@@ -3,6 +3,7 @@ import { creatorService } from '../services/creatorService';
 import { adminService, type CreatorPerformance, type GalleryImageDto } from '../services/adminService';
 import { uploadCreatorProfileImage } from '../utils/firebaseStorage';
 import { compressImage } from '../utils/imageCompression';
+import { CREATOR_PRICE_TIERS, normalizeCreatorPriceTier } from '../constants/creatorPriceTiers';
 
 type Props = {
   row: CreatorPerformance;
@@ -38,7 +39,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
   const [name, setName] = useState(row.name);
   const [about, setAbout] = useState('');
   const [age, setAge] = useState<number | ''>('');
-  const [price, setPrice] = useState(row.price);
+  const [price, setPrice] = useState(() => normalizeCreatorPriceTier(row.price));
   const [photo, setPhoto] = useState(row.photo);
   const [username, setUsername] = useState(row.username || '');
   const [avatar, setAvatar] = useState(row.avatar || '');
@@ -54,7 +55,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       setName(c.name);
       setAbout(c.about || '');
       setPhoto(c.photo);
-      setPrice(c.price);
+      setPrice(normalizeCreatorPriceTier(c.price));
       setAge(c.age !== undefined && c.age !== null ? c.age : '');
       setCategoriesStr(categoriesToString(c.categories));
       setGalleryImages(
@@ -292,13 +293,17 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                   </div>
                   <div>
                     <label className="block text-xs text-zinc-500">Price / min (coins)</label>
-                    <input
-                      type="number"
-                      min={0}
+                    <select
                       value={price}
                       onChange={(e) => setPrice(Number(e.target.value))}
                       className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm"
-                    />
+                    >
+                      {CREATOR_PRICE_TIERS.map((t) => (
+                        <option key={t} value={t}>
+                          {t} coins/min
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <label className="block text-xs text-zinc-500">Categories (comma, max 4)</label>

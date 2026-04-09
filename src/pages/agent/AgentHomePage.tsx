@@ -45,8 +45,12 @@ const AgentHomePage: React.FC = () => {
       </div>
       {err && <p className="text-red-400 text-sm">{err}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link to="/agent/pending" className="block">
-          <MetricCard label="Pending applications" value={s?.pendingApplications ?? 0} subtitle="Tap to review" />
+        <Link to="/agent/referred" className="block">
+          <MetricCard
+            label="Awaiting promotion"
+            value={s?.referredUsersAwaitingPromotion ?? s?.pendingApplications ?? 0}
+            subtitle="Referred users — tap to review"
+          />
         </Link>
         <Link to="/agent/withdrawals" className="block">
           <MetricCard label="Pending withdrawals" value={s?.pendingWithdrawals ?? 0} subtitle="Needs action" />

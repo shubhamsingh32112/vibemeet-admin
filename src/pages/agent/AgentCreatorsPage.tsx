@@ -9,6 +9,7 @@ import {
 } from '../../services/agentPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
+import { CREATOR_PRICE_TIERS } from '../../constants/creatorPriceTiers';
 
 const PERIODS: { value: AgentCreatorsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -493,13 +494,17 @@ const AgentCreatorsPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-zinc-500">Price (coins/min)</label>
-                      <input
-                        type="number"
-                        min={0}
+                      <select
                         value={formPrice}
                         onChange={(e) => setFormPrice(Number(e.target.value))}
                         className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                      />
+                      >
+                        {CREATOR_PRICE_TIERS.map((t) => (
+                          <option key={t} value={t}>
+                            {t} coins/min
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="text-xs text-zinc-500">Age (18–100)</label>

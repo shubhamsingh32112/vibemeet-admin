@@ -8,6 +8,7 @@ import {
 } from '../../services/agentPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
+import { CREATOR_PRICE_TIERS, normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
 
 const GalleryContentType = 'image/jpeg' as const;
 
@@ -57,7 +58,7 @@ const AgentCreatorEditPage: React.FC = () => {
       setName(d.creator.name);
       setAbout(d.creator.about);
       setPhoto(d.creator.photo);
-      setPrice(d.creator.price);
+      setPrice(normalizeCreatorPriceTier(d.creator.price));
       setAge(d.creator.age ?? '');
       setUsername(d.user?.username || '');
       setAvatar(d.user?.avatar || '');
@@ -289,12 +290,17 @@ const AgentCreatorEditPage: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs text-zinc-400">Price (coins/min)</label>
-            <input
-              type="number"
+            <select
               value={price}
               onChange={(e) => setPrice(Number(e.target.value))}
               className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-            />
+            >
+              {CREATOR_PRICE_TIERS.map((t) => (
+                <option key={t} value={t}>
+                  {t} coins/min
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-xs text-zinc-400">Age (18–100)</label>

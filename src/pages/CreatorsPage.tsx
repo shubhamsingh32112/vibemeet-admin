@@ -7,6 +7,7 @@ import { adminService, type CreatorPerformance } from '../services/adminService'
 import { creatorService } from '../services/creatorService';
 import { userService, type PromoteToCreatorDto, type User } from '../services/userService';
 import CreatorEditModal from '../components/CreatorEditModal';
+import { CREATOR_PRICE_TIERS } from '../constants/creatorPriceTiers';
 
 const CreatorsPage: React.FC = () => {
   const maleDefaultPhotoUrl =
@@ -37,7 +38,7 @@ const CreatorsPage: React.FC = () => {
     about: '',
     photo: '',
     categories: [],
-    price: 0,
+    price: 60,
   });
 
   const load = useCallback(async () => {
@@ -119,7 +120,7 @@ const CreatorsPage: React.FC = () => {
       about: '',
       photo: '',
       categories: [],
-      price: 0,
+      price: 60,
     });
     load();
   };
@@ -165,7 +166,7 @@ const CreatorsPage: React.FC = () => {
       about: '',
       photo: '',
       categories: [],
-      price: 0,
+      price: 60,
     });
   };
 
@@ -520,20 +521,23 @@ const CreatorsPage: React.FC = () => {
               <p className="text-xs text-gray-400">
                 Name, about, photo and categories will be auto-filled from user profile.
               </p>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                placeholder="Price"
+              <label className="block text-xs text-gray-400 mb-1">Price (coins/min)</label>
+              <select
                 value={promoteForm.price}
                 onChange={(e) =>
                   setPromoteForm((prev) => ({
                     ...prev,
-                    price: Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0,
+                    price: Number(e.target.value),
                   }))
                 }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {CREATOR_PRICE_TIERS.map((t) => (
+                  <option key={t} value={t}>
+                    {t} coins/min
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="mt-5 flex gap-2">
               <button
@@ -548,8 +552,8 @@ const CreatorsPage: React.FC = () => {
               <button
                 disabled={promoting}
                 onClick={async () => {
-                  if (promoteForm.price < 0) {
-                    alert('Price must be 0 or more');
+                  if (!CREATOR_PRICE_TIERS.includes(promoteForm.price as (typeof CREATOR_PRICE_TIERS)[number])) {
+                    alert('Select a valid price tier');
                     return;
                   }
                   try {
