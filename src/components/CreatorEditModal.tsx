@@ -295,7 +295,9 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                     <label className="block text-xs text-zinc-500">Price / min (coins)</label>
                     <select
                       value={price}
-                      onChange={(e) => setPrice(Number(e.target.value))}
+                      onChange={(e) =>
+                        setPrice(normalizeCreatorPriceTier(Number(e.target.value)))
+                      }
                       className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm"
                     >
                       {CREATOR_PRICE_TIERS.map((t) => (
