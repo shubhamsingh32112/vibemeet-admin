@@ -68,6 +68,7 @@ export interface AgentCreatorDetailData {
     categories: string[];
     price: number;
     age?: number;
+    location?: string;
     earningsCoins: number;
     isOnline: boolean;
     createdAt: string;
@@ -173,6 +174,7 @@ export const agentPortalService = {
     price: number;
     categories?: string[];
     age?: number;
+    location?: string;
   }) => {
     const res = await agentApi.post('/agent/creators', body);
     return res.data.data as { creator: { id: string; userId: string; name: string } };
@@ -207,7 +209,15 @@ export const agentPortalService = {
 
   updateCreatorProfile: async (
     creatorId: string,
-    body: Partial<{ name: string; about: string; photo: string; categories: string[]; price: number; age: number }>
+    body: Partial<{
+      name: string;
+      about: string;
+      photo: string;
+      categories: string[];
+      price: number;
+      age: number;
+      location: string | null;
+    }>
   ) => {
     const res = await agentApi.put(`/creator/${creatorId}`, body);
     return res.data.data;

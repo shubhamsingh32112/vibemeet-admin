@@ -16,6 +16,7 @@ export type Creator = {
   categories: string[];
   price: number;
   age?: number;
+  location?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -28,4 +29,5 @@ export type CreateCreatorDto = {
   categories?: string[];
   price: number;
   age?: number;
+  location?: string;
 };
