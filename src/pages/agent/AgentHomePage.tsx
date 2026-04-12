@@ -11,7 +11,7 @@ const AgentHomePage: React.FC = () => {
 
   useEffect(() => {
     let ok = true;
-    (async () => {
+    const fetchSummary = async () => {
       try {
         const data = await agentPortalService.getSummary();
         if (ok) setS(data);
@@ -20,9 +20,12 @@ const AgentHomePage: React.FC = () => {
       } finally {
         if (ok) setLoading(false);
       }
-    })();
+    };
+    fetchSummary();
+    const id = window.setInterval(fetchSummary, 45_000);
     return () => {
       ok = false;
+      window.clearInterval(id);
     };
   }, []);
 

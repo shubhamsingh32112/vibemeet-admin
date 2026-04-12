@@ -2,111 +2,163 @@ import React, { useEffect, useState } from 'react';
 import MetricCard from '../components/ui/MetricCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type OverviewData } from '../services/adminService';
+import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
 
+/**
+ * Admin overview: work queues + growth + live signals. Detail lives on dedicated pages.
+ * (See admin routes: /withdrawals, /support, /coins, /calls.)
+ */
 const OverviewPage: React.FC = () => {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const overview = await adminService.getOverview();
-      setData(overview);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to load overview');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { refreshGeneration, connected, lastError } = useAdminRealtime();
 
   useEffect(() => {
-    load();
-  }, []);
+    let cancelled = false;
+    const silent = refreshGeneration > 0;
 
-  if (loading) return <LoadingSpinner label="Loading overview…" />;
-  if (error)
+    const run = async () => {
+      try {
+        if (!silent) {
+          setLoading(true);
+          setError('');
+        }
+        const overview = await adminService.getOverview();
+        if (!cancelled) setData(overview);
+      } catch (err: unknown) {
+        const ax = err as { response?: { data?: { error?: string } }; message?: string };
+        if (!cancelled && !silent) {
+          setError(ax.response?.data?.error || ax.message || 'Failed to load overview');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshGeneration]);
+
+  if (loading && !data) return <LoadingSpinner label="Loading overview…" />;
+  if (error && !data)
     return (
       <div className="py-12 text-center">
         <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={load} className="px-4 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700">
+        <button
+          onClick={() => {
+            setError('');
+            setLoading(true);
+            adminService
+              .getOverview()
+              .then(setData)
+              .catch((err: unknown) => {
+                const ax = err as { response?: { data?: { error?: string } }; message?: string };
+                setError(ax.response?.data?.error || ax.message || 'Failed to load overview');
+              })
+              .finally(() => setLoading(false));
+          }}
+          className="px-4 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700"
+        >
           Retry
         </button>
       </div>
     );
   if (!data) return null;
 
-  const { users, coins, calls, chat, withdrawals, support } = data;
+  const { users, coins, calls, withdrawals, support } = data;
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-bold text-white">Platform Overview</h1>
+          <h1 className="text-xl font-bold text-white">Operations overview</h1>
           <p className="text-xs text-gray-500 mt-0.5">
             Last updated: {new Date(data.generatedAt).toLocaleString()}
+            {connected ? (
+              <span className="ml-2 text-emerald-500">· Live sync on</span>
+            ) : (
+              <span className="ml-2 text-amber-600">· Live sync off</span>
+            )}
+            {lastError ? (
+              <span className="ml-2 text-red-400" title={lastError}>
+                ({lastError})
+              </span>
+            ) : null}
           </p>
         </div>
         <button
-          onClick={load}
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            adminService
+              .getOverview()
+              .then(setData)
+              .catch((err: unknown) => {
+                const ax = err as { response?: { data?: { error?: string } }; message?: string };
+                setError(ax.response?.data?.error || ax.message || 'Failed to load overview');
+              })
+              .finally(() => setLoading(false));
+          }}
           className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition"
         >
           ↻ Refresh
         </button>
       </div>
 
-      {/* ── Users Section ────────────────────────────────────────────── */}
-      <SectionHeader title="👥 Users & Creators" />
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard label="Total Users" value={users.total} />
+      <SectionHeader title="Queues" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {withdrawals && (
+          <MetricCard
+            label="Pending withdrawals"
+            value={withdrawals.pendingCount}
+            variant={withdrawals.pendingCount > 0 ? 'warning' : 'default'}
+          />
+        )}
+        {support && (
+          <>
+            <MetricCard
+              label="Open support tickets"
+              value={support.openTickets}
+              variant={support.openTickets > 0 ? 'info' : 'default'}
+            />
+            <MetricCard
+              label="High-priority open"
+              value={support.highPriorityTickets}
+              variant={support.highPriorityTickets > 0 ? 'danger' : 'default'}
+            />
+          </>
+        )}
+        <MetricCard
+          label="Creators online"
+          value={users.onlineCreators}
+          variant={users.onlineCreators > 0 ? 'success' : 'default'}
+        />
+      </div>
+
+      <SectionHeader title="Growth" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <MetricCard label="Total users" value={users.total} />
         <MetricCard
           label="Creators"
           value={users.creators}
-          subtitle={`${users.onlineCreators} online`}
-          variant={users.onlineCreators > 0 ? 'success' : 'default'}
+          subtitle={`${users.onlineCreators} online now`}
         />
-        <MetricCard label="Admins" value={users.admins} />
-        <MetricCard
-          label="Signups (7d)"
-          value={users.recentSignups7d}
-          variant="info"
-        />
+        <MetricCard label="Signups (7d)" value={users.recentSignups7d} variant="info" />
         <MetricCard
           label="Onboarded"
           value={users.onboarded}
           subtitle={`${users.total > 0 ? Math.round((users.onboarded / users.total) * 100) : 0}% of users`}
         />
-        <MetricCard
-          label="Welcome Bonus"
-          value={users.welcomeBonusClaimed}
-          subtitle="claimed"
-        />
       </div>
 
-      {/* ── Coins Section ────────────────────────────────────────────── */}
-      <SectionHeader title="💰 Coin Economy" />
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-3">
+      <SectionHeader title="Coin economy (snapshot)" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <MetricCard label="In circulation" value={coins.totalInCirculation} variant="warning" />
         <MetricCard
-          label="In Circulation"
-          value={coins.totalInCirculation}
-          variant="warning"
-        />
-        <MetricCard
-          label="Minted Today"
-          value={coins.today.credited}
-          subtitle={`${coins.today.creditCount} txns`}
-          variant="success"
-        />
-        <MetricCard
-          label="Burned Today"
-          value={coins.today.debited}
-          subtitle={`${coins.today.debitCount} txns`}
-          variant="danger"
-        />
-        <MetricCard
-          label="Net Today"
+          label="Net today"
           value={coins.today.net}
           variant={coins.today.net >= 0 ? 'success' : 'danger'}
         />
@@ -115,143 +167,38 @@ const OverviewPage: React.FC = () => {
           value={coins.last30d.net}
           variant={coins.last30d.net >= 0 ? 'success' : 'danger'}
         />
+        <MetricCard
+          label="Welcome bonus claimed"
+          value={users.welcomeBonusClaimed}
+          subtitle="users"
+        />
       </div>
 
-      {/* Source breakdown */}
-      {Object.keys(coins.bySource30d).length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
-          <h4 className="text-xs font-semibold text-gray-400 uppercase mb-3">
-            Coin Flow by Source (30d)
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {Object.entries(coins.bySource30d).map(([source, flow]) => (
-              <div key={source} className="text-sm">
-                <p className="text-gray-400 text-xs font-medium capitalize">
-                  {source.replace(/_/g, ' ')}
-                </p>
-                <p className="text-emerald-400 tabular-nums">
-                  +{flow.credited.toLocaleString()}
-                </p>
-                <p className="text-red-400 tabular-nums">
-                  −{flow.debited.toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Calls Section ────────────────────────────────────────────── */}
-      <SectionHeader title="📞 Calls" />
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+      <SectionHeader title="Calls (snapshot)" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MetricCard
-          label="Total Calls"
-          value={calls.totalAllTime}
-        />
-        <MetricCard
-          label="Today"
+          label="Calls today"
           value={calls.today.totalCalls}
-          subtitle={`${calls.today.totalCoinsSpent} coins spent`}
+          subtitle={`${calls.today.totalCoinsSpent} coins`}
           variant="info"
         />
+        <MetricCard label="Calls (30d)" value={calls.last30d.totalCalls} />
         <MetricCard
-          label="Calls (30d)"
-          value={calls.last30d.totalCalls}
-        />
-        <MetricCard
-          label="Minutes (30d)"
-          value={calls.last30d.totalDurationMin}
-        />
-        <MetricCard
-          label="Avg Duration"
-          value={`${Math.round(calls.last30d.avgDurationSec)}s`}
-        />
-        <MetricCard
-          label="Rev/min"
-          value={calls.last30d.revenuePerMinute}
-          subtitle="coins per minute"
+          label="Anomalies (30d)"
+          value={
+            calls.last30d.zeroDurationCalls + calls.last30d.shortCalls > 0
+              ? `${calls.last30d.zeroDurationCalls} zero-duration · ${calls.last30d.shortCalls} very short`
+              : 'None'
+          }
+          variant={
+            calls.last30d.zeroDurationCalls + calls.last30d.shortCalls > 0 ? 'danger' : 'success'
+          }
         />
       </div>
 
-      {/* Anomaly badges */}
-      {(calls.last30d.zeroDurationCalls > 0 || calls.last30d.shortCalls > 0) && (
-        <div className="flex gap-3 mb-6">
-          {calls.last30d.zeroDurationCalls > 0 && (
-            <div className="px-3 py-2 bg-red-900/20 border border-red-800 rounded text-xs text-red-300">
-              ⚠ {calls.last30d.zeroDurationCalls} zero-duration calls (30d)
-            </div>
-          )}
-          {calls.last30d.shortCalls > 0 && (
-            <div className="px-3 py-2 bg-yellow-900/20 border border-yellow-800 rounded text-xs text-yellow-300">
-              ⚠ {calls.last30d.shortCalls} very short calls {'<'}10s (30d)
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Chat Section ────────────────────────────────────────────── */}
-      <SectionHeader title="💬 Chat" />
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
-        <MetricCard label="Active Channels" value={chat.totalChannels} />
-        <MetricCard
-          label="Free Messages"
-          value={chat.totalFreeMessages}
-        />
-        <MetricCard
-          label="Paid Messages"
-          value={chat.totalPaidMessages}
-          variant={chat.totalPaidMessages > 0 ? 'success' : 'default'}
-        />
-        <MetricCard
-          label="Exhausted Quotas"
-          value={chat.exhaustedQuotas}
-          subtitle="users who used all free msgs"
-        />
-        <MetricCard
-          label="Free→Paid %"
-          value={`${chat.freeToPayConversion}%`}
-          variant="info"
-        />
-      </div>
-
-      {/* ── Withdrawals Section ──────────────────────────────────────── */}
-      {withdrawals && (
-        <>
-          <SectionHeader title="💸 Withdrawals" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <MetricCard
-              label="Pending Withdrawals"
-              value={withdrawals.pendingCount}
-              variant={withdrawals.pendingCount > 0 ? 'warning' : 'default'}
-            />
-            <MetricCard
-              label="Withdrawn (30d)"
-              value={withdrawals.totalWithdrawn30d}
-              subtitle="coins"
-              variant="info"
-            />
-          </div>
-        </>
-      )}
-
-      {/* ── Support Section ──────────────────────────────────────────── */}
-      {support && (
-        <>
-          <SectionHeader title="🛟 Support" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <MetricCard
-              label="Open Tickets"
-              value={support.openTickets}
-              variant={support.openTickets > 0 ? 'info' : 'default'}
-            />
-            <MetricCard
-              label="High Priority"
-              value={support.highPriorityTickets}
-              variant={support.highPriorityTickets > 0 ? 'danger' : 'default'}
-            />
-          </div>
-        </>
-      )}
+      <p className="text-[11px] text-gray-600 mt-4">
+        Chat metrics, full coin breakdown, and call analytics are on the Coins and Calls pages.
+      </p>
     </div>
   );
 };

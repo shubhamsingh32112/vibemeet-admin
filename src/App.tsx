@@ -28,12 +28,12 @@ import AgentCreatorViewPage from './pages/agent/AgentCreatorViewPage';
 import AgentCreatorEditPage from './pages/agent/AgentCreatorEditPage';
 import AgentWithdrawalsPage from './pages/agent/AgentWithdrawalsPage';
 
-/** Agent-facing URLs: unauthenticated users go to /agent/login (not admin /login). */
+/** True for `/agent` app routes (not admin `/agents` management). */
 function isAgentPortalPath(pathname: string): boolean {
   if (pathname === '/agent' || pathname.startsWith('/agent/')) {
     return pathname !== '/agent/login';
   }
-  return pathname === '/agents' || pathname.startsWith('/agents/');
+  return false;
 }
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -102,10 +102,17 @@ const UnknownRouteRedirect: React.FC = () => {
 };
 
 const AppRoutes: React.FC = () => {
+  const { pathname } = useLocation();
   const { user: adminUser, loading: adminLoading } = useAuth();
   const { user: agentUser, loading: agentLoading } = useAgentAuth();
 
-  if (adminLoading || agentLoading) {
+  const onAgentApp =
+    pathname === '/agent/login' ||
+    pathname === '/agent' ||
+    pathname.startsWith('/agent/');
+  const blockingLoading = onAgentApp ? agentLoading : adminLoading;
+
+  if (blockingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="text-gray-400 text-sm">Loading…</div>

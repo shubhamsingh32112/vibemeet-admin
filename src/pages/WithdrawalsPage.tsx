@@ -9,6 +9,7 @@ import {
   type AdminWithdrawal,
   type WithdrawalSummary,
 } from '../services/adminService';
+import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -21,6 +22,7 @@ const statusVariant = (s: string) => {
 };
 
 const WithdrawalsPage: React.FC = () => {
+  const { refreshGeneration } = useAdminRealtime();
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
   const [summary, setSummary] = useState<WithdrawalSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +56,7 @@ const WithdrawalsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, refreshGeneration]);
 
   useEffect(() => {
     load();

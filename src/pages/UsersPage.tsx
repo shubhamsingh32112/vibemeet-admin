@@ -52,7 +52,7 @@ const UsersPage: React.FC = () => {
     let ok = true;
     (async () => {
       try {
-        const list = await adminService.listAgentsBrief(200);
+        const list = await adminService.listAgentsBrief();
         if (ok) setAgents(list);
       } catch {
         if (ok) setAgents([]);
@@ -307,7 +307,7 @@ const UsersPage: React.FC = () => {
           <option value="">All referrers</option>
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.displayName || a.email || a.id.slice(-6)} ({a.referralCode || '—'})
+              {a.displayName || a.email || a.id.slice(-6)}
             </option>
           ))}
         </select>

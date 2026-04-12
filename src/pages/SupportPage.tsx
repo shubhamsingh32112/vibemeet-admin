@@ -9,6 +9,7 @@ import {
   type AdminSupportTicket,
   type SupportSummary,
 } from '../services/adminService';
+import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -31,6 +32,7 @@ const priorityVariant = (p: string) => {
 };
 
 const SupportPage: React.FC = () => {
+  const { refreshGeneration } = useAdminRealtime();
   type QuickTab = 'all' | 'creator_reports';
   const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
   const [summary, setSummary] = useState<SupportSummary | null>(null);
@@ -78,7 +80,7 @@ const SupportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab]);
+  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab, refreshGeneration]);
 
   useEffect(() => {
     load();

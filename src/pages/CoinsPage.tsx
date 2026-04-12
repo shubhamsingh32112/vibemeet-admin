@@ -16,6 +16,7 @@ const CoinsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savingPricing, setSavingPricing] = useState(false);
   const [error, setError] = useState('');
+  const [showExploratory, setShowExploratory] = useState(false);
 
   const load = async () => {
     try {
@@ -123,7 +124,7 @@ const CoinsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* ── Wallet Pricing Management ───────────────────────────────────── */ }
+      {/* ── Wallet Pricing Management ───────────────────────────────────── */}
       <div className="mb-6 rounded-lg border border-gray-800 bg-gray-900 p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-300">Wallet Tier Pricing</h2>
@@ -299,6 +300,21 @@ const CoinsPage: React.FC = () => {
         />
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowExploratory((v) => !v)}
+          className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700"
+        >
+          {showExploratory ? 'Hide detailed analytics' : 'Show detailed analytics'}
+        </button>
+        <span className="text-[11px] text-gray-500">
+          Daily flow, top actors, and large transactions (collapsed by default)
+        </span>
+      </div>
+
+      {showExploratory && (
+        <>
       {/* ── Daily Flow Table (last 30 days) ───── */}
       <h2 className="text-sm font-semibold text-gray-300 mb-3 border-b border-gray-800 pb-1">
         📈 Daily Coin Flow (30d)
@@ -522,6 +538,8 @@ const CoinsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </>
+      )}
         </>
       )}
     </div>

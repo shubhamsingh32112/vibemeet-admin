@@ -137,7 +137,6 @@ export interface AdminAgentBrief {
   id: string;
   email: string | null;
   displayName: string | null;
-  referralCode: string | null;
 }
 
 export interface UserLedger {
@@ -310,17 +309,6 @@ export interface RefundPreview {
     clawbackAmount: number;
     afterClawback: number;
   } | null;
-}
-
-export interface AdminActionLogEntry {
-  id: string;
-  adminEmail: string;
-  action: string;
-  targetType: string;
-  targetId: string;
-  reason: string;
-  details: Record<string, any>;
-  createdAt: string;
 }
 
 export interface SystemHealth {
@@ -503,8 +491,8 @@ export const adminService = {
     return res.data.data.users;
   },
 
-  listAgentsBrief: async (limit = 200): Promise<AdminAgentBrief[]> => {
-    const res = await api.get('/admin/agents', { params: { page: 1, limit } });
+  listAgentsBrief: async (): Promise<AdminAgentBrief[]> => {
+    const res = await api.get('/admin/agents/brief');
     return res.data.data.agents as AdminAgentBrief[];
   },
 
@@ -586,21 +574,6 @@ export const adminService = {
     return res.data.data;
   },
 
-  // ── Admin Action Log ────────────────────────────────
-  getActionLog: async (params?: {
-    page?: number;
-    limit?: number;
-  }): Promise<{
-    logs: AdminActionLogEntry[];
-    pagination: { page: number; limit: number; total: number; totalPages: number };
-  }> => {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', String(params.page));
-    if (params?.limit) searchParams.append('limit', String(params.limit));
-    const res = await api.get(`/admin/actions/log?${searchParams.toString()}`);
-    return res.data.data;
-  },
-
   // ── Withdrawals ────────────────────────────────────
   getWithdrawals: async (params?: {
     status?: string;
@@ -671,14 +644,6 @@ export const adminService = {
     adminNotes?: string
   ): Promise<{ ticketId: string; oldStatus: string; newStatus: string }> => {
     const res = await api.patch(`/admin/support/${id}/status`, { status, adminNotes });
-    return res.data.data;
-  },
-
-  assignTicket: async (
-    id: string,
-    adminId?: string
-  ): Promise<{ ticketId: string; assignedAdminId: string | null }> => {
-    const res = await api.patch(`/admin/support/${id}/assign`, { adminId });
     return res.data.data;
   },
 };
