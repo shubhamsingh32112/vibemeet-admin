@@ -331,6 +331,22 @@ export interface SystemHealth {
   };
 }
 
+export interface GlobalAppUpdatePayload {
+  title: string;
+  points: string[];
+  updateUrl: string;
+}
+
+export interface GlobalAppUpdate {
+  id: string;
+  version: string;
+  title: string;
+  points: string[];
+  updateUrl: string;
+  isActive: boolean;
+  publishedAt: string;
+}
+
 // ── Withdrawal Types ─────────────────────────────────────────────────────
 
 export interface AdminWithdrawal {
@@ -571,6 +587,23 @@ export const adminService = {
   // ── System Health ────────────────────────────────────
   getSystemHealth: async (): Promise<SystemHealth> => {
     const res = await api.get('/admin/system/health');
+    return res.data.data;
+  },
+
+  getCurrentAppUpdate: async (): Promise<GlobalAppUpdate | null> => {
+    const res = await api.get('/admin/app-updates/current');
+    return res.data.data ?? null;
+  },
+
+  publishAppUpdate: async (
+    payload: GlobalAppUpdatePayload
+  ): Promise<GlobalAppUpdate> => {
+    const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const res = await api.post('/admin/app-updates/publish', payload, {
+      headers: {
+        'x-idempotency-key': idempotencyKey,
+      },
+    });
     return res.data.data;
   },
 
