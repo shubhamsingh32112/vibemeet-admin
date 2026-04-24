@@ -113,7 +113,7 @@ export interface AgentWithdrawalRow {
   creatorName: string;
   creatorEmail: string | null;
   amount: number;
-  status: string;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
   requestedAt: string;
   processedAt: string | null;
   notes: string | null;

@@ -19,6 +19,12 @@ const statusVariant = (s: string) => {
   }
 };
 
+const payoutDetails = (w: AgentWithdrawalRow): string => {
+  if (w.upi) return `UPI: ${w.upi}`;
+  if (w.accountNumber && w.ifsc) return `A/C: ${w.accountNumber} | IFSC: ${w.ifsc}`;
+  return 'Payout details missing';
+};
+
 const AgentWithdrawalsPage: React.FC = () => {
   const [rows, setRows] = useState<AgentWithdrawalRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +122,8 @@ const AgentWithdrawalsPage: React.FC = () => {
               <StatusBadge label={w.status.toUpperCase()} variant={statusVariant(w.status)} />
             </div>
             <p className="text-sm text-zinc-400">{w.amount} coins</p>
+            <p className="text-xs text-zinc-500">{payoutDetails(w)}</p>
+            <p className="text-xs text-zinc-500">Name: {w.name ?? 'N/A'} | Phone: {w.number ?? 'N/A'}</p>
             {w.status === 'pending' && (
               <div className="flex gap-2 pt-2">
                 <button
@@ -155,6 +163,7 @@ const AgentWithdrawalsPage: React.FC = () => {
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Requested</th>
+              <th className="px-4 py-3">Payout Details</th>
               <th className="px-4 py-3 w-56">Actions</th>
             </tr>
           </thead>
@@ -168,6 +177,11 @@ const AgentWithdrawalsPage: React.FC = () => {
                 </td>
                 <td className="px-4 py-3 text-zinc-500 text-xs">
                   {new Date(w.requestedAt).toLocaleString()}
+                </td>
+                <td className="px-4 py-3 text-xs text-zinc-400">
+                  <div>{payoutDetails(w)}</div>
+                  <div>Name: {w.name ?? 'N/A'}</div>
+                  <div>Phone: {w.number ?? 'N/A'}</div>
                 </td>
                 <td className="px-4 py-3">
                   {w.status === 'pending' && (
