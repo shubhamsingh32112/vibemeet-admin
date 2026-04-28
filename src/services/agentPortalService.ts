@@ -139,6 +139,10 @@ export const agentPortalService = {
     };
   },
 
+  rejectReferredUser: async (userId: string, reason?: string) => {
+    await agentApi.post(`/agent/referred-users/${userId}/reject`, reason ? { reason } : undefined);
+  },
+
   getCreators: async (params?: {
     page?: number;
     limit?: number;

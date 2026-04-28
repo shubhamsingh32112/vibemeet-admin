@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import {
   agentPortalService,
   type AgentCreatorRow,
@@ -73,6 +74,11 @@ const AgentCreatorsPage: React.FC = () => {
   const [formAge, setFormAge] = useState<number | ''>('');
   const [creating, setCreating] = useState(false);
   const [createErr, setCreateErr] = useState('');
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AgentCreatorRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -191,14 +197,26 @@ const AgentCreatorsPage: React.FC = () => {
   };
 
   const handleDelete = async (c: AgentCreatorRow) => {
-    if (!confirm(`Remove creator profile for "${c.name}"? The user becomes a regular user again.`)) return;
+    setDeleteTarget(c);
+    setDeleteErr('');
+    setDeleteOpen(true);
+  };
+
+  const submitDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteErr('');
     try {
-      await agentPortalService.deleteCreator(c.id);
+      await agentPortalService.deleteCreator(deleteTarget.id);
+      setDeleteOpen(false);
+      setDeleteTarget(null);
       load();
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Delete failed';
-      alert(msg);
+      setDeleteErr(msg);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -415,6 +433,28 @@ const AgentCreatorsPage: React.FC = () => {
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen && !!deleteTarget}
+        title="Remove creator profile?"
+        message={
+          deleteTarget
+            ? `This will permanently remove the creator profile for "${deleteTarget.name}". The account will be downgraded back to a regular user.`
+            : 'This will permanently remove the creator profile. The account will be downgraded back to a regular user.'
+        }
+        confirmLabel={deleting ? 'Removing…' : 'Remove'}
+        confirmVariant="danger"
+        confirmDisabled={deleting}
+        onCancel={() => {
+          if (deleting) return;
+          setDeleteOpen(false);
+          setDeleteTarget(null);
+          setDeleteErr('');
+        }}
+        onConfirm={submitDelete}
+      >
+        {deleteErr ? <p className="text-red-400 text-sm">{deleteErr}</p> : null}
+      </ConfirmDialog>
 
       {addOpen && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">

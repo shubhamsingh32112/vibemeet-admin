@@ -86,6 +86,8 @@ export interface CreatorPerformance {
   categories: string[];
   price: number;
   isOnline: boolean;
+  assignedAgentId: string | null;
+  assignedAgentLabel: string | null;
   email: string | null;
   phone: string | null;
   coins: number;
@@ -510,6 +512,28 @@ export const adminService = {
   listAgentsBrief: async (): Promise<AdminAgentBrief[]> => {
     const res = await api.get('/admin/agents/brief');
     return res.data.data.agents as AdminAgentBrief[];
+  },
+
+  transferCreatorToAgent: async (
+    creatorId: string,
+    body: { targetAgentId: string; reason: string }
+  ): Promise<{
+    creatorId: string;
+    creatorUserId: string;
+    oldAssignedAgentId: string | null;
+    newAssignedAgentId: string;
+    oldReferredByUserId: string | null;
+    newReferredByUserId: string;
+    oldReferralCodeUsed: string | null;
+    newReferralCodeUsed: string;
+    rewardMoved: boolean;
+    pendingWithdrawalsReassigned: number;
+  }> => {
+    const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const res = await api.post(`/admin/creators/${creatorId}/transfer-agent`, body, {
+      headers: { 'x-idempotency-key': idempotencyKey },
+    });
+    return res.data.data;
   },
 
   getUserLedger: async (userId: string): Promise<UserLedger> => {

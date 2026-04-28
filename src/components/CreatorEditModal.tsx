@@ -36,6 +36,12 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const [galleryBusy, setGalleryBusy] = useState(false);
 
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [agentsError, setAgentsError] = useState('');
+  const [agents, setAgents] = useState<{ id: string; label: string }[]>([]);
+  const [targetAgentId, setTargetAgentId] = useState<string>(row.assignedAgentId || '');
+  const [transferReason, setTransferReason] = useState('');
+
   const [name, setName] = useState(row.name);
   const [about, setAbout] = useState('');
   const [age, setAge] = useState<number | ''>('');
@@ -51,6 +57,21 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     setLoadError('');
     setLoading(true);
     try {
+      setAgentsError('');
+      setAgentsLoading(true);
+      const agentRows = await adminService.listAgentsBrief().catch((e: unknown) => {
+        const err = e as { response?: { data?: { error?: string } }; message?: string };
+        setAgentsError(err.response?.data?.error || err.message || 'Failed to load agents');
+        return [];
+      });
+      setAgents(
+        (agentRows || []).map((a) => ({
+          id: a.id,
+          label: a.displayName || a.email || a.id,
+        }))
+      );
+      setAgentsLoading(false);
+
       const c = await creatorService.getById(row.creatorId);
       setName(c.name);
       setAbout(c.about || '');
@@ -68,12 +89,52 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       setLoadError(err.response?.data?.error || err.message || 'Failed to load creator');
     } finally {
       setLoading(false);
+      setAgentsLoading(false);
     }
   }, [row.creatorId, row.username, row.avatar]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleTransferAgent = async () => {
+    if (!targetAgentId) {
+      alert('Select a target agent');
+      return;
+    }
+    if (targetAgentId === row.assignedAgentId) {
+      alert('Creator is already assigned to this agent');
+      return;
+    }
+    const reason = transferReason.trim();
+    if (reason.length < 3) {
+      alert('Reason is required (min 3 characters)');
+      return;
+    }
+    if (
+      !confirm(
+        `Transfer this creator to the selected agent?\n\nCurrent: ${row.assignedAgentLabel || row.assignedAgentId || 'Unassigned'}\nTarget: ${
+          agents.find((a) => a.id === targetAgentId)?.label || targetAgentId
+        }\n\nThis will retroactively change referral attribution.`
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await adminService.transferCreatorToAgent(row.creatorId, {
+        targetAgentId,
+        reason,
+      });
+      onSaved();
+      onClose();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      alert(err.response?.data?.error || err.message || 'Transfer failed');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     const cats = parseCategories(categoriesStr);
@@ -384,6 +445,61 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                     </label>
                   </>
                 )}
+              </section>
+
+              <section className="space-y-3 border-t border-zinc-800 pt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                  Agent assignment
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  Current: {row.assignedAgentLabel || row.assignedAgentId || 'Unassigned'}
+                </p>
+
+                {agentsError ? (
+                  <p className="text-xs text-red-400">{agentsError}</p>
+                ) : null}
+
+                <label className="block text-xs text-zinc-500">Transfer to agent</label>
+                <select
+                  value={targetAgentId}
+                  onChange={(e) => setTargetAgentId(e.target.value)}
+                  disabled={agentsLoading || saving || loading}
+                  className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm disabled:opacity-50"
+                >
+                  <option value="">Unassigned</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block text-xs text-zinc-500">Reason (required)</label>
+                <input
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  placeholder="e.g. moved to new agent team"
+                  disabled={saving || loading}
+                  className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm"
+                />
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={
+                      saving ||
+                      loading ||
+                      !!loadError ||
+                      agentsLoading ||
+                      !targetAgentId ||
+                      targetAgentId === (row.assignedAgentId || '')
+                    }
+                    onClick={handleTransferAgent}
+                    className="min-h-[44px] px-4 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 font-medium disabled:opacity-50"
+                  >
+                    Transfer agent
+                  </button>
+                </div>
               </section>
 
               <section className="space-y-3 border-t border-zinc-800 pt-4">

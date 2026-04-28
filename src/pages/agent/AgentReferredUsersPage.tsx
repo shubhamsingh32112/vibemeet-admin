@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import {
   agentPortalService,
   type AgentReferredUserRow,
@@ -34,6 +35,12 @@ const AgentReferredUsersPage: React.FC = () => {
   const [err, setErr] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectErr, setRejectErr] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectTarget, setRejectTarget] = useState<AgentReferredUserRow | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
@@ -77,6 +84,37 @@ const AgentReferredUsersPage: React.FC = () => {
     setFormAge('');
     setCreateErr('');
     setAddOpen(true);
+  };
+
+  const openReject = (row: AgentReferredUserRow) => {
+    if (row.hasCreator) return;
+    setRejectTarget(row);
+    setRejectErr('');
+    setRejectReason('');
+    setRejectOpen(true);
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget) return;
+    setRejecting(true);
+    setRejectErr('');
+    try {
+      await agentPortalService.rejectReferredUser(
+        rejectTarget.id,
+        rejectReason.trim() ? rejectReason.trim() : undefined,
+      );
+      setRejectOpen(false);
+      setRejectTarget(null);
+      setRejectReason('');
+      load();
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        (e instanceof Error ? e.message : 'Reject failed');
+      setRejectErr(msg);
+    } finally {
+      setRejecting(false);
+    }
   };
 
   const handleMainPhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,13 +236,22 @@ const AgentReferredUsersPage: React.FC = () => {
                       View creator
                     </Link>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => openPromote(r)}
-                      className="text-sm text-white bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                    >
-                      Promote to creator
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openPromote(r)}
+                        className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+                      >
+                        Promote to creator
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openReject(r)}
+                        className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -230,17 +277,55 @@ const AgentReferredUsersPage: React.FC = () => {
                 View creator
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={() => openPromote(r)}
-                className="text-sm text-white bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-              >
-                Promote to creator
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => openPromote(r)}
+                  className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+                >
+                  Promote to creator
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openReject(r)}
+                  className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                >
+                  Reject
+                </button>
+              </div>
             )}
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={rejectOpen && !!rejectTarget}
+        title="Reject referred user?"
+        message="This will remove this user from your referred list and unlink your referral. They will remain a normal user and can’t be promoted by you unless they use your referral again."
+        confirmLabel={rejecting ? 'Rejecting…' : 'Reject'}
+        confirmVariant="danger"
+        confirmDisabled={rejecting}
+        onCancel={() => {
+          if (rejecting) return;
+          setRejectOpen(false);
+          setRejectTarget(null);
+          setRejectErr('');
+          setRejectReason('');
+        }}
+        onConfirm={submitReject}
+      >
+        {rejectErr ? <p className="text-red-400 text-sm">{rejectErr}</p> : null}
+        <div className="mt-3">
+          <label className="text-xs text-gray-400">Reason (optional)</label>
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            rows={3}
+            className="mt-1 w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-sm text-white"
+            placeholder="Why are you rejecting this referral?"
+          />
+        </div>
+      </ConfirmDialog>
 
       {totalPages > 1 && (
         <div className="flex items-center gap-2">
