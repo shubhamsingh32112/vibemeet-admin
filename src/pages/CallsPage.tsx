@@ -4,6 +4,9 @@ import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type AdminCall, type RefundPreview } from '../services/adminService';
+import DateRangeFilter from '../components/filters/DateRangeFilter';
+import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { formatDateTime } from '../utils/dateTime';
 
 const CallsPage: React.FC = () => {
   const [calls, setCalls] = useState<AdminCall[]>([]);
@@ -13,6 +16,7 @@ const CallsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [anomalyOnly, setAnomalyOnly] = useState(false);
+  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   // Refund modal
   const [refundTarget, setRefundTarget] = useState<AdminCall | null>(null);
@@ -28,6 +32,8 @@ const CallsPage: React.FC = () => {
         page,
         limit: 50,
         anomaly: anomalyOnly || undefined,
+        from: dateRange.from,
+        to: dateRange.to,
       });
       setCalls(data.calls);
       setTotalPages(data.pagination.totalPages);
@@ -37,7 +43,7 @@ const CallsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, anomalyOnly]);
+  }, [page, anomalyOnly, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     load();
@@ -155,7 +161,7 @@ const CallsPage: React.FC = () => {
       sortable: true,
       render: (row) => (
         <span className="text-xs text-gray-500">
-          {new Date(row.createdAt).toLocaleString()}
+          {formatDateTime(row.createdAt)}
         </span>
       ),
     },
@@ -193,7 +199,18 @@ const CallsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <DateRangeFilter
+          value={dateRange}
+          onPresetChange={(p) => {
+            setPreset(p);
+            setPage(1);
+          }}
+          onCustomChange={(from, to) => {
+            setCustom(from, to);
+            setPage(1);
+          }}
+        />
         <label className="flex items-center gap-2 text-sm text-gray-300">
           <input
             type="checkbox"

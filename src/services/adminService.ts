@@ -49,6 +49,14 @@ export interface OverviewData {
     highPriorityTickets: number;
   };
   generatedAt: string;
+  selectedRange?: { from: string; to: string };
+  rangeMetrics?: {
+    users: { signups: number };
+    coins: CoinFlow;
+    calls: { totalCalls: number; totalDurationSec: number; totalCoinsSpent: number };
+    withdrawals?: { totalCount: number; totalAmount: number };
+    support?: { totalCount: number; highPriorityCount: number };
+  };
 }
 
 export interface CoinFlow {
@@ -437,8 +445,12 @@ export interface SupportTicketsResponse {
 
 export const adminService = {
   // ── Overview ─────────────────────────────────────────
-  getOverview: async (): Promise<OverviewData> => {
-    const res = await api.get('/admin/overview');
+  getOverview: async (params?: { from?: string; to?: string }): Promise<OverviewData> => {
+    const searchParams = new URLSearchParams();
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
+    const suffix = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const res = await api.get(`/admin/overview${suffix}`);
     return res.data.data;
   },
 
@@ -499,12 +511,16 @@ export const adminService = {
     role?: string;
     sort?: string;
     referrerAgentId?: string;
+    from?: string;
+    to?: string;
   }): Promise<UserAnalytics[]> => {
     const searchParams = new URLSearchParams();
     if (params?.query) searchParams.append('query', params.query);
     if (params?.role) searchParams.append('role', params.role);
     if (params?.sort) searchParams.append('sort', params.sort);
     if (params?.referrerAgentId) searchParams.append('referrerAgentId', params.referrerAgentId);
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/users/analytics?${searchParams.toString()}`);
     return res.data.data.users;
   },
@@ -554,8 +570,12 @@ export const adminService = {
   },
 
   // ── Coins ────────────────────────────────────────────
-  getCoinEconomy: async (): Promise<CoinEconomy> => {
-    const res = await api.get('/admin/coins');
+  getCoinEconomy: async (params?: { from?: string; to?: string }): Promise<CoinEconomy> => {
+    const searchParams = new URLSearchParams();
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
+    const suffix = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const res = await api.get(`/admin/coins${suffix}`);
     return res.data.data;
   },
 
@@ -576,11 +596,15 @@ export const adminService = {
     page?: number;
     limit?: number;
     anomaly?: boolean;
+    from?: string;
+    to?: string;
   }): Promise<{ calls: AdminCall[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', String(params.page));
     if (params?.limit) searchParams.append('limit', String(params.limit));
     if (params?.anomaly) searchParams.append('anomaly', 'true');
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/calls?${searchParams.toString()}`);
     return res.data.data;
   },
@@ -638,6 +662,8 @@ export const adminService = {
     limit?: number;
     /** true = only agent-assigned; false = unassigned / no agent id */
     hasAssignedAgent?: boolean;
+    from?: string;
+    to?: string;
   }): Promise<WithdrawalsResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
@@ -645,6 +671,8 @@ export const adminService = {
     if (params?.limit) searchParams.append('limit', String(params.limit));
     if (params?.hasAssignedAgent === true) searchParams.append('hasAssignedAgent', 'true');
     if (params?.hasAssignedAgent === false) searchParams.append('hasAssignedAgent', 'false');
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/withdrawals?${searchParams.toString()}`);
     return res.data.data;
   },
@@ -682,6 +710,8 @@ export const adminService = {
     creatorReportsOnly?: boolean;
     page?: number;
     limit?: number;
+    from?: string;
+    to?: string;
   }): Promise<SupportTicketsResponse> => {
     const searchParams = new URLSearchParams();
     if (params?.role) searchParams.append('role', params.role);
@@ -691,6 +721,8 @@ export const adminService = {
     if (params?.creatorReportsOnly) searchParams.append('creatorReports', 'true');
     if (params?.page) searchParams.append('page', String(params.page));
     if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/support?${searchParams.toString()}`);
     return res.data.data;
   },

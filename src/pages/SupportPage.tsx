@@ -10,6 +10,9 @@ import {
   type SupportSummary,
 } from '../services/adminService';
 import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
+import DateRangeFilter from '../components/filters/DateRangeFilter';
+import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { formatDateTime } from '../utils/dateTime';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -48,6 +51,7 @@ const SupportPage: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [quickTab, setQuickTab] = useState<QuickTab>('all');
+  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   // Status update modal
   const [statusTarget, setStatusTarget] = useState<AdminSupportTicket | null>(null);
@@ -70,6 +74,8 @@ const SupportPage: React.FC = () => {
         creatorReportsOnly: quickTab === 'creator_reports',
         page,
         limit: 50,
+        from: dateRange.from,
+        to: dateRange.to,
       });
       setTickets(data.tickets);
       setSummary(data.summary);
@@ -80,7 +86,7 @@ const SupportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab, refreshGeneration]);
+  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab, refreshGeneration, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     load();
@@ -185,7 +191,7 @@ const SupportPage: React.FC = () => {
       header: 'Created',
       sortable: true,
       render: (row) => (
-        <span className="text-xs tabular-nums">{new Date(row.createdAt).toLocaleString()}</span>
+        <span className="text-xs tabular-nums">{formatDateTime(row.createdAt)}</span>
       ),
     },
     {
@@ -308,6 +314,17 @@ const SupportPage: React.FC = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-4 mb-4 flex-wrap">
+        <DateRangeFilter
+          value={dateRange}
+          onPresetChange={(p) => {
+            setPreset(p);
+            setPage(1);
+          }}
+          onCustomChange={(from, to) => {
+            setCustom(from, to);
+            setPage(1);
+          }}
+        />
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-400">Role:</label>
           <select
@@ -478,7 +495,7 @@ const SupportPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-gray-500">Created</p>
-                  <p className="text-white">{new Date(detailTicket.createdAt).toLocaleString()}</p>
+                  <p className="text-white">{formatDateTime(detailTicket.createdAt)}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Source</p>

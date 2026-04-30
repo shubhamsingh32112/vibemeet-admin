@@ -9,6 +9,9 @@ import {
   type UserAnalytics,
   type UserLedger,
 } from '../services/adminService';
+import DateRangeFilter from '../components/filters/DateRangeFilter';
+import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { formatDateTime } from '../utils/dateTime';
 
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<UserAnalytics[]>([]);
@@ -19,6 +22,7 @@ const UsersPage: React.FC = () => {
   const [referrerAgentId, setReferrerAgentId] = useState('');
   const [agents, setAgents] = useState<AdminAgentBrief[]>([]);
   const [sortBy, setSortBy] = useState('');
+  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   // Ledger drill-down
   const [ledger, setLedger] = useState<UserLedger | null>(null);
@@ -39,6 +43,8 @@ const UsersPage: React.FC = () => {
         role: roleFilter !== 'all' ? roleFilter : undefined,
         sort: sortBy || undefined,
         referrerAgentId: referrerAgentId || undefined,
+        from: dateRange.from,
+        to: dateRange.to,
       });
       setUsers(data);
     } catch (err: any) {
@@ -46,7 +52,7 @@ const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter, sortBy, referrerAgentId]);
+  }, [search, roleFilter, sortBy, referrerAgentId, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     let ok = true;
@@ -233,7 +239,7 @@ const UsersPage: React.FC = () => {
       sortable: true,
       render: (row) => (
         <span className="text-xs text-gray-500">
-          {new Date(row.createdAt).toLocaleDateString()}
+          {formatDateTime(row.createdAt)}
         </span>
       ),
     },
@@ -280,6 +286,12 @@ const UsersPage: React.FC = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <DateRangeFilter
+          value={dateRange}
+          onPresetChange={setPreset}
+          onCustomChange={setCustom}
+          className="mr-2"
+        />
         <input
           type="text"
           placeholder="Search name / email / phone"

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { User } from '../services/userService';
+import { formatDateTime } from '../utils/dateTime';
 
 interface UserListProps {
   users: User[];
@@ -60,7 +61,7 @@ const UserList: React.FC<UserListProps> = ({ users, onPromote }) => {
             
             <div className="flex items-center justify-between text-sm text-gray-400">
               <span>
-                Joined: {new Date(user.createdAt).toLocaleDateString()}
+                Joined: {formatDateTime(user.createdAt)}
               </span>
               {onPromote && !isAlreadyCreator && user.role !== 'admin' && (
                 <button

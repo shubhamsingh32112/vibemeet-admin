@@ -8,6 +8,9 @@ import {
   type WalletPricingConfig,
   type WalletPricingPack,
 } from '../services/adminService';
+import DateRangeFilter from '../components/filters/DateRangeFilter';
+import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { formatDateTime } from '../utils/dateTime';
 
 const CoinsPage: React.FC = () => {
   const [data, setData] = useState<CoinEconomy | null>(null);
@@ -17,13 +20,14 @@ const CoinsPage: React.FC = () => {
   const [savingPricing, setSavingPricing] = useState(false);
   const [error, setError] = useState('');
   const [showExploratory, setShowExploratory] = useState(false);
+  const { dateRange, setPreset, setCustom } = useAdminDateRange('last30d');
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
       const [economy, pricing] = await Promise.all([
-        adminService.getCoinEconomy(),
+        adminService.getCoinEconomy({ from: dateRange.from, to: dateRange.to }),
         adminService.getWalletPricing(),
       ]);
       setData(economy);
@@ -98,7 +102,8 @@ const CoinsPage: React.FC = () => {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange.from, dateRange.to]);
 
   if (loading) return <LoadingSpinner label="Loading coin economy…" />;
   if (error)
@@ -115,7 +120,13 @@ const CoinsPage: React.FC = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-white">Coins & Transactions</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">Coins & Transactions</h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Range: {dateRange.from ? formatDateTime(dateRange.from) : '—'} →{' '}
+            {dateRange.to ? formatDateTime(dateRange.to) : '—'}
+          </p>
+        </div>
         <button
           onClick={load}
           className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
@@ -123,6 +134,13 @@ const CoinsPage: React.FC = () => {
           ↻ Refresh
         </button>
       </div>
+
+      <DateRangeFilter
+        value={dateRange}
+        onPresetChange={setPreset}
+        onCustomChange={setCustom}
+        className="mb-4"
+      />
 
       {/* ── Wallet Pricing Management ───────────────────────────────────── */}
       <div className="mb-6 rounded-lg border border-gray-800 bg-gray-900 p-4">
@@ -152,7 +170,7 @@ const CoinsPage: React.FC = () => {
         </div>
         {walletPricing && (
           <p className="mb-3 text-[11px] text-gray-500">
-            Last updated: {new Date(walletPricing.updatedAt).toLocaleString()}
+            Last updated: {formatDateTime(walletPricing.updatedAt)}
           </p>
         )}
         <div className="overflow-auto border border-gray-800 rounded-lg">
@@ -498,7 +516,7 @@ const CoinsPage: React.FC = () => {
                   {tx.description}
                 </td>
                 <td className="px-3 py-1.5 text-gray-500">
-                  {new Date(tx.createdAt).toLocaleString()}
+                  {formatDateTime(tx.createdAt)}
                 </td>
               </tr>
             ))}
@@ -531,7 +549,7 @@ const CoinsPage: React.FC = () => {
                     <td className="px-3 py-1.5 text-gray-400">{tx.source}</td>
                     <td className="px-3 py-1.5 text-gray-500 max-w-xs truncate">{tx.description}</td>
                     <td className="px-3 py-1.5 text-gray-500">
-                      {new Date(tx.createdAt).toLocaleString()}
+                      {formatDateTime(tx.createdAt)}
                     </td>
                   </tr>
                 ))}

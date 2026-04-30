@@ -3,6 +3,9 @@ import MetricCard from '../components/ui/MetricCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type OverviewData } from '../services/adminService';
 import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
+import DateRangeFilter from '../components/filters/DateRangeFilter';
+import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { formatDateTime } from '../utils/dateTime';
 
 /**
  * Admin overview: work queues + growth + live signals. Detail lives on dedicated pages.
@@ -13,6 +16,7 @@ const OverviewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { refreshGeneration, connected, lastError } = useAdminRealtime();
+  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   useEffect(() => {
     let cancelled = false;
@@ -24,7 +28,7 @@ const OverviewPage: React.FC = () => {
           setLoading(true);
           setError('');
         }
-        const overview = await adminService.getOverview();
+        const overview = await adminService.getOverview({ from: dateRange.from, to: dateRange.to });
         if (!cancelled) setData(overview);
       } catch (err: unknown) {
         const ax = err as { response?: { data?: { error?: string } }; message?: string };
@@ -40,7 +44,7 @@ const OverviewPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [refreshGeneration]);
+  }, [refreshGeneration, dateRange.from, dateRange.to]);
 
   if (loading && !data) return <LoadingSpinner label="Loading overview…" />;
   if (error && !data)
@@ -52,7 +56,7 @@ const OverviewPage: React.FC = () => {
             setError('');
             setLoading(true);
             adminService
-              .getOverview()
+              .getOverview({ from: dateRange.from, to: dateRange.to })
               .then(setData)
               .catch((err: unknown) => {
                 const ax = err as { response?: { data?: { error?: string } }; message?: string };
@@ -76,7 +80,7 @@ const OverviewPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-white">Operations overview</h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            Last updated: {new Date(data.generatedAt).toLocaleString()}
+            Last updated: {formatDateTime(data.generatedAt)}
             {connected ? (
               <span className="ml-2 text-emerald-500">· Live sync on</span>
             ) : (
@@ -94,7 +98,7 @@ const OverviewPage: React.FC = () => {
           onClick={() => {
             setLoading(true);
             adminService
-              .getOverview()
+              .getOverview({ from: dateRange.from, to: dateRange.to })
               .then(setData)
               .catch((err: unknown) => {
                 const ax = err as { response?: { data?: { error?: string } }; message?: string };
@@ -107,6 +111,13 @@ const OverviewPage: React.FC = () => {
           ↻ Refresh
         </button>
       </div>
+
+      <DateRangeFilter
+        value={dateRange}
+        onPresetChange={setPreset}
+        onCustomChange={setCustom}
+        className="mb-4"
+      />
 
       <SectionHeader title="Queues" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -146,7 +157,11 @@ const OverviewPage: React.FC = () => {
           value={users.creators}
           subtitle={`${users.onlineCreators} online now`}
         />
-        <MetricCard label="Signups (7d)" value={users.recentSignups7d} variant="info" />
+        <MetricCard
+          label={data.selectedRange ? 'Signups (range)' : 'Signups (7d)'}
+          value={data.selectedRange ? (data.rangeMetrics?.users.signups ?? 0) : users.recentSignups7d}
+          variant="info"
+        />
         <MetricCard
           label="Onboarded"
           value={users.onboarded}
@@ -158,8 +173,8 @@ const OverviewPage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MetricCard label="In circulation" value={coins.totalInCirculation} variant="warning" />
         <MetricCard
-          label="Net today"
-          value={coins.today.net}
+          label={data.selectedRange ? 'Net (range)' : 'Net today'}
+          value={data.selectedRange ? (data.rangeMetrics?.coins.net ?? 0) : coins.today.net}
           variant={coins.today.net >= 0 ? 'success' : 'danger'}
         />
         <MetricCard
@@ -177,9 +192,11 @@ const OverviewPage: React.FC = () => {
       <SectionHeader title="Calls (snapshot)" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MetricCard
-          label="Calls today"
-          value={calls.today.totalCalls}
-          subtitle={`${calls.today.totalCoinsSpent} coins`}
+          label={data.selectedRange ? 'Calls (range)' : 'Calls today'}
+          value={data.selectedRange ? (data.rangeMetrics?.calls.totalCalls ?? 0) : calls.today.totalCalls}
+          subtitle={`${
+            data.selectedRange ? (data.rangeMetrics?.calls.totalCoinsSpent ?? 0) : calls.today.totalCoinsSpent
+          } coins`}
           variant="info"
         />
         <MetricCard label="Calls (30d)" value={calls.last30d.totalCalls} />

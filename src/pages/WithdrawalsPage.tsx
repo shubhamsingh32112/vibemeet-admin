@@ -10,6 +10,9 @@ import {
   type WithdrawalSummary,
 } from '../services/adminService';
 import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
+import DateRangeFilter from '../components/filters/DateRangeFilter';
+import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { formatDateTime } from '../utils/dateTime';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -31,6 +34,7 @@ const WithdrawalsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState('');
+  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   // Action modal
   const [actionTarget, setActionTarget] = useState<AdminWithdrawal | null>(null);
@@ -46,6 +50,8 @@ const WithdrawalsPage: React.FC = () => {
         status: statusFilter || undefined,
         page,
         limit: 50,
+        from: dateRange.from,
+        to: dateRange.to,
       });
       setWithdrawals(data.withdrawals);
       setSummary(data.summary);
@@ -56,7 +62,7 @@ const WithdrawalsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, refreshGeneration]);
+  }, [page, statusFilter, refreshGeneration, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     load();
@@ -139,14 +145,14 @@ const WithdrawalsPage: React.FC = () => {
       header: 'Requested',
       sortable: true,
       render: (row) => (
-        <span className="text-xs tabular-nums">{new Date(row.requestedAt).toLocaleString()}</span>
+        <span className="text-xs tabular-nums">{formatDateTime(row.requestedAt)}</span>
       ),
     },
     {
       key: 'processedAt',
       header: 'Processed',
       render: (row) => row.processedAt ? (
-        <span className="text-xs tabular-nums">{new Date(row.processedAt).toLocaleString()}</span>
+        <span className="text-xs tabular-nums">{formatDateTime(row.processedAt)}</span>
       ) : (
         <span className="text-gray-600">—</span>
       ),
@@ -277,7 +283,18 @@ const WithdrawalsPage: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <DateRangeFilter
+          value={dateRange}
+          onPresetChange={(p) => {
+            setPreset(p);
+            setPage(1);
+          }}
+          onCustomChange={(from, to) => {
+            setCustom(from, to);
+            setPage(1);
+          }}
+        />
         <label className="text-xs text-gray-400">Status:</label>
         <select
           value={statusFilter}
