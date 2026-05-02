@@ -5,12 +5,29 @@ import StatusBadge from '../components/ui/StatusBadge';
 import {
   adminService,
   type CoinEconomy,
+  type LargeTransaction,
   type WalletPricingConfig,
   type WalletPricingPack,
 } from '../services/adminService';
 import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
+
+type TxBadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'online' | 'offline';
+
+/** Payment rows: successful purchase → credit; incomplete → tried. Other sources keep ledger type. */
+function largeTransactionTypeBadge(tx: LargeTransaction): { label: string; variant: TxBadgeVariant } {
+  const isGatewayPurchase = tx.source === 'payment_gateway' && tx.type === 'credit';
+  if (isGatewayPurchase) {
+    const settled = (tx.status ?? 'completed') === 'completed';
+    if (settled) return { label: 'credit', variant: 'success' };
+    return { label: 'tried', variant: 'warning' };
+  }
+  return {
+    label: tx.type,
+    variant: tx.type === 'credit' ? 'success' : 'danger',
+  };
+}
 
 const CoinsPage: React.FC = () => {
   const [data, setData] = useState<CoinEconomy | null>(null);
@@ -499,13 +516,12 @@ const CoinsPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
-            {data.recentLargeTransactions.map((tx) => (
+            {data.recentLargeTransactions.map((tx) => {
+              const typeBadge = largeTransactionTypeBadge(tx);
+              return (
               <tr key={tx.id} className="bg-gray-900 hover:bg-gray-800/60">
                 <td className="px-3 py-1.5">
-                  <StatusBadge
-                    variant={tx.type === 'credit' ? 'success' : 'danger'}
-                    label={tx.type}
-                  />
+                  <StatusBadge variant={typeBadge.variant} label={typeBadge.label} />
                 </td>
                 <td className="px-3 py-1.5 tabular-nums font-medium">{tx.coins}</td>
                 <td className="px-3 py-1.5 text-gray-400">{tx.source}</td>
@@ -519,7 +535,8 @@ const CoinsPage: React.FC = () => {
                   {formatDateTime(tx.createdAt)}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
