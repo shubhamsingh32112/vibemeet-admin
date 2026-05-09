@@ -213,6 +213,33 @@ const OverviewPage: React.FC = () => {
         />
       </div>
 
+      {data.creatorsOnlineToday != null && data.creatorsOnlineToday.length > 0 && (
+        <>
+          <SectionHeader title="Creator availability (current period)" />
+          {data.creatorsOnlineTodayNote ? (
+            <p className="text-[11px] text-gray-500 mb-2">{data.creatorsOnlineTodayNote}</p>
+          ) : null}
+          <div className="overflow-x-auto border border-gray-800 rounded-lg mb-6">
+            <table className="min-w-full text-xs text-left">
+              <thead className="bg-gray-900 text-gray-400">
+                <tr>
+                  <th className="px-3 py-2">Creator</th>
+                  <th className="px-3 py-2">Time online (available)</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-300">
+                {data.creatorsOnlineToday.map((row) => (
+                  <tr key={row.firebaseUid} className="border-t border-gray-800">
+                    <td className="px-3 py-2">{row.displayName}</td>
+                    <td className="px-3 py-2 font-mono">{formatOnlineSeconds(row.onlineSeconds)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       <p className="text-[11px] text-gray-600 mt-4">
         Chat metrics, full coin breakdown, and call analytics are on the Coins and Calls pages.
       </p>
@@ -225,5 +252,13 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     {title}
   </h2>
 );
+
+function formatOnlineSeconds(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${sec}s`;
+}
 
 export default OverviewPage;

@@ -40,6 +40,8 @@ export interface OverviewData {
     exhaustedQuotas: number;
     freeToPayConversion: number;
   };
+  creatorsOnlineToday?: Array<{ firebaseUid: string; displayName: string; onlineSeconds: number }>;
+  creatorsOnlineTodayNote?: string;
   withdrawals?: {
     pendingCount: number;
     totalWithdrawn30d: number;
