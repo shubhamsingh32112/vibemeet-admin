@@ -480,20 +480,29 @@ export const adminService = {
     return res.data.data.user;
   },
 
+  /**
+   * Issue a Cloudflare-Images direct-upload session for an admin-driven
+   * gallery upload. The admin uploads the bytes directly to Cloudflare,
+   * then calls `creatorGalleryCommit` with the returned `sessionId`.
+   */
   creatorGalleryUploadUrl: async (
-    creatorId: string,
-    contentType: string
-  ): Promise<{ uploadUrl: string; storagePath: string; imageId: string; expiresAt: string; contentType: string }> => {
-    const res = await api.post(`/admin/creators/${creatorId}/gallery/upload-url`, { contentType });
+    _creatorId: string,
+    contentType: string,
+    declaredSizeBytes: number,
+  ): Promise<{ uploadUrl: string; sessionId: string; imageId: string; expiresAt: string }> => {
+    const res = await api.post('/images/direct-upload', {
+      purpose: 'creator-gallery',
+      declaredSizeBytes,
+      declaredMimeType: contentType,
+    });
     return res.data.data;
   },
 
   creatorGalleryCommit: async (
     creatorId: string,
-    imageId: string,
-    storagePath: string
+    sessionId: string,
   ): Promise<GalleryImageDto[]> => {
-    const res = await api.post(`/admin/creators/${creatorId}/gallery/commit`, { imageId, storagePath });
+    const res = await api.post(`/admin/creators/${creatorId}/gallery/commit`, { sessionId });
     return res.data.data.galleryImages;
   },
 

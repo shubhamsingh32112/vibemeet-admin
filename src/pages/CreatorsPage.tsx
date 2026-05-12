@@ -10,11 +10,6 @@ import CreatorEditModal from '../components/CreatorEditModal';
 import { CREATOR_PRICE_TIERS } from '../constants/creatorPriceTiers';
 
 const CreatorsPage: React.FC = () => {
-  const maleDefaultPhotoUrl =
-    'https://firebasestorage.googleapis.com/v0/b/matchvibe-d55f9.firebasestorage.app/o/avatars%2Fpresets%2Fmale%2Fa2.png?alt=media&token=aeb7e524-83f2-492a-a80d-a107374a4fe9';
-  const femaleDefaultPhotoUrl =
-    'https://firebasestorage.googleapis.com/v0/b/matchvibe-d55f9.firebasestorage.app/o/avatars%2Fpresets%2Ffemale%2Ffa2.png?alt=media&token=9bbefab7-7734-47f2-bb5a-9d16790436a3';
-
   const [creators, setCreators] = useState<CreatorPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -135,15 +130,18 @@ const CreatorsPage: React.FC = () => {
     return 'Creator';
   };
 
+  // Cloudflare-Images: new creators inherit the user's existing avatar
+  // payload via the backend, which falls back to the default preset
+  // imageId on its own. Admin no longer needs to invent a URL here; an
+  // empty string tells the backend "use the default".
   const toCreatorPhoto = (user: User): string => {
     const avatar = user.avatar?.trim();
-    if (!avatar) return maleDefaultPhotoUrl;
+    if (!avatar) return '';
     const lowered = avatar.toLowerCase();
     if (lowered.startsWith('http://') || lowered.startsWith('https://') || lowered.startsWith('data:')) {
       return avatar;
     }
-    if (lowered.startsWith('fa')) return femaleDefaultPhotoUrl;
-    return maleDefaultPhotoUrl;
+    return '';
   };
 
   const buildPromotePayloadFromUser = (user: User, price: number): PromoteToCreatorDto => {

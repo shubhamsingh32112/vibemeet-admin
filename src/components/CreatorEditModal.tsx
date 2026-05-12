@@ -231,17 +231,23 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     try {
       const b64 = await compressImage(file, 1200, 1200, 0.82, 400);
       const blob = await dataUrlToBlob(b64);
-      const { uploadUrl, imageId, storagePath, contentType } =
-        await adminService.creatorGalleryUploadUrl(row.creatorId, GalleryContentType);
+      // Cloudflare-Images direct upload: issue a session, multipart-POST the
+      // blob to the returned uploadUrl, then commit by sessionId.
+      const { uploadUrl, sessionId } = await adminService.creatorGalleryUploadUrl(
+        row.creatorId,
+        GalleryContentType,
+        blob.size,
+      );
+      const formData = new FormData();
+      formData.append('file', blob, `gallery-${Date.now()}.jpg`);
       const put = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': contentType },
-        body: blob,
+        method: 'POST',
+        body: formData,
       });
       if (!put.ok) {
-        throw new Error(`Storage upload failed (${put.status})`);
+        throw new Error(`Cloudflare upload failed (${put.status})`);
       }
-      const imgs = await adminService.creatorGalleryCommit(row.creatorId, imageId, storagePath);
+      const imgs = await adminService.creatorGalleryCommit(row.creatorId, sessionId);
       setGalleryImages(imgs);
       onSaved();
     } catch (err: unknown) {

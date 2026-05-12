@@ -235,19 +235,26 @@ export const agentPortalService = {
     return res.data.data;
   },
 
-  creatorGalleryUploadUrl: async (creatorId: string, contentType: string) => {
-    const res = await agentApi.post(`/admin/creators/${creatorId}/gallery/upload-url`, { contentType });
+  creatorGalleryUploadUrl: async (
+    _creatorId: string,
+    contentType: string,
+    declaredSizeBytes: number,
+  ) => {
+    const res = await agentApi.post('/images/direct-upload', {
+      purpose: 'creator-gallery',
+      declaredSizeBytes,
+      declaredMimeType: contentType,
+    });
     return res.data.data as {
       uploadUrl: string;
-      storagePath: string;
+      sessionId: string;
       imageId: string;
       expiresAt: string;
-      contentType: string;
     };
   },
 
-  creatorGalleryCommit: async (creatorId: string, imageId: string, storagePath: string) => {
-    const res = await agentApi.post(`/admin/creators/${creatorId}/gallery/commit`, { imageId, storagePath });
+  creatorGalleryCommit: async (creatorId: string, sessionId: string) => {
+    const res = await agentApi.post(`/admin/creators/${creatorId}/gallery/commit`, { sessionId });
     return res.data.data.galleryImages as GalleryImageDto[];
   },
 
