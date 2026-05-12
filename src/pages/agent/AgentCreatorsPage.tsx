@@ -10,7 +10,6 @@ import {
 } from '../../services/agentPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
-import { CREATOR_PRICE_TIERS } from '../../constants/creatorPriceTiers';
 
 const PERIODS: { value: AgentCreatorsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -68,7 +67,6 @@ const AgentCreatorsPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
   const [formName, setFormName] = useState('');
   const [formAbout, setFormAbout] = useState('');
-  const [formPrice, setFormPrice] = useState(60);
   const [formPhoto, setFormPhoto] = useState('');
   const [formCats, setFormCats] = useState('');
   const [formAge, setFormAge] = useState<number | ''>('');
@@ -125,7 +123,6 @@ const AgentCreatorsPage: React.FC = () => {
     setSearchResults([]);
     setFormName('');
     setFormAbout('');
-    setFormPrice(60);
     setFormPhoto('');
     setFormCats('');
     setFormAge('');
@@ -180,7 +177,6 @@ const AgentCreatorsPage: React.FC = () => {
         name: formName.trim(),
         about: formAbout.trim(),
         photo: formPhoto.trim(),
-        price: Number(formPrice),
         categories: cats.length ? cats : undefined,
         ...(formAge !== '' ? { age: Number(formAge) } : {}),
       });
@@ -531,32 +527,19 @@ const AgentCreatorsPage: React.FC = () => {
                       className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-zinc-500">Price (coins/min)</label>
-                      <select
-                        value={formPrice}
-                        onChange={(e) => setFormPrice(Number(e.target.value))}
-                        className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                      >
-                        {CREATOR_PRICE_TIERS.map((t) => (
-                          <option key={t} value={t}>
-                            {t} coins/min
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-zinc-500">Age (18–100)</label>
-                      <input
-                        type="number"
-                        value={formAge}
-                        onChange={(e) =>
-                          setFormAge(e.target.value === '' ? '' : Number(e.target.value))
-                        }
-                        className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                      />
-                    </div>
+                  <p className="text-[11px] text-zinc-500 rounded-lg border border-admin-border border-dashed px-3 py-2">
+                    Per-minute price is set by the platform default after approval — Super Admin can adjust later.
+                  </p>
+                  <div>
+                    <label className="text-xs text-zinc-500">Age (18–100)</label>
+                    <input
+                      type="number"
+                      value={formAge}
+                      onChange={(e) =>
+                        setFormAge(e.target.value === '' ? '' : Number(e.target.value))
+                      }
+                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-zinc-500">Categories (comma, max 4)</label>

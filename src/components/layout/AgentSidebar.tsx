@@ -30,7 +30,7 @@ const AgentSidebar: React.FC<Props> = ({
       <div className="px-4 py-4 border-b border-admin-border flex items-start justify-between gap-2">
         <div>
           <h1 className="text-base font-bold text-white tracking-tight">Eazy Talks</h1>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Agent Portal</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">BD Portal</p>
         </div>
         {showClose && (
           <button

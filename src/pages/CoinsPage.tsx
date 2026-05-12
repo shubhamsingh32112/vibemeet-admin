@@ -37,19 +37,25 @@ const CoinsPage: React.FC = () => {
   const [savingPricing, setSavingPricing] = useState(false);
   const [error, setError] = useState('');
   const [showExploratory, setShowExploratory] = useState(false);
+  const [revBdDraft, setRevBdDraft] = useState(500);
+  const [revAgencyDraft, setRevAgencyDraft] = useState(1500);
+  const [savingRev, setSavingRev] = useState(false);
   const { dateRange, setPreset, setCustom } = useAdminDateRange('last30d');
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
-      const [economy, pricing] = await Promise.all([
+      const [economy, pricing, revCfg] = await Promise.all([
         adminService.getCoinEconomy({ from: dateRange.from, to: dateRange.to }),
         adminService.getWalletPricing(),
+        adminService.getPlatformRevenue(),
       ]);
       setData(economy);
       setWalletPricing(pricing);
       setPricingDraft(pricing.packages);
+      setRevBdDraft(revCfg.bdBps);
+      setRevAgencyDraft(revCfg.agencyBps);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
@@ -114,6 +120,23 @@ const CoinsPage: React.FC = () => {
       setError(err.response?.data?.error || err.message || 'Failed to save wallet pricing');
     } finally {
       setSavingPricing(false);
+    }
+  };
+
+  const savePlatformRevenue = async () => {
+    try {
+      setSavingRev(true);
+      setError('');
+      const updated = await adminService.updatePlatformRevenue({
+        bdBps: Math.floor(Number(revBdDraft)),
+        agencyBps: Math.floor(Number(revAgencyDraft)),
+      });
+      setRevBdDraft(updated.bdBps);
+      setRevAgencyDraft(updated.agencyBps);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to save revenue splits');
+    } finally {
+      setSavingRev(false);
     }
   };
 
@@ -291,6 +314,54 @@ const CoinsPage: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* ── Staff revenue (settlement) ───────────────────────────────────── */}
+      <div className="mb-6 rounded-lg border border-gray-800 bg-gray-900 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-300">Staff revenue splits</h2>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Basis points of host-earned coins per settled call (10000 = 100%). BD and agency accrue to{' '}
+              <code className="text-gray-400">staffCoinsBalance</code>.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={savePlatformRevenue}
+            disabled={savingRev}
+            className="px-3 py-1.5 text-xs bg-emerald-700 border border-emerald-600 rounded text-white disabled:opacity-60"
+          >
+            {savingRev ? 'Saving…' : 'Save splits'}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-4 items-end">
+          <div>
+            <label className="text-[11px] text-gray-500 block mb-1">BD (bps)</label>
+            <input
+              type="number"
+              min={0}
+              max={10000}
+              value={revBdDraft}
+              onChange={(e) => setRevBdDraft(Number(e.target.value))}
+              className="w-28 rounded border border-gray-700 bg-gray-950 px-2 py-1.5 text-sm text-gray-200"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-gray-500 block mb-1">Agency (bps)</label>
+            <input
+              type="number"
+              min={0}
+              max={10000}
+              value={revAgencyDraft}
+              onChange={(e) => setRevAgencyDraft(Number(e.target.value))}
+              className="w-28 rounded border border-gray-700 bg-gray-950 px-2 py-1.5 text-sm text-gray-200"
+            />
+          </div>
+          <p className="text-[11px] text-gray-500 pb-1">
+            Default reference: 500 (5%) BD, 1500 (15%) agency — adjust to match your settlement policy.
+          </p>
         </div>
       </div>
 

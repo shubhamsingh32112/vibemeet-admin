@@ -53,7 +53,7 @@ export const AgentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setUser(null);
   };
 
-  const isAgent = user?.role === 'agent';
+  const isAgent = user?.role === 'agent' || user?.role === 'bd';
 
   return (
     <AgentAuthContext.Provider value={{ user, loading, login, logout, isAgent }}>

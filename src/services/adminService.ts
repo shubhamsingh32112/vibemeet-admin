@@ -746,4 +746,17 @@ export const adminService = {
     const res = await api.patch(`/admin/support/${id}/status`, { status, adminNotes });
     return res.data.data;
   },
+
+  getPlatformRevenue: async (): Promise<{ bdBps: number; agencyBps: number }> => {
+    const res = await api.get('/admin/platform-revenue');
+    return res.data.data;
+  },
+
+  updatePlatformRevenue: async (body: {
+    bdBps: number;
+    agencyBps: number;
+  }): Promise<{ bdBps: number; agencyBps: number }> => {
+    const res = await api.put('/admin/platform-revenue', body);
+    return res.data.data;
+  },
 };

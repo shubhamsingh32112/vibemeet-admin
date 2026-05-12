@@ -9,7 +9,6 @@ import {
 } from '../../services/agentPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
-import { CREATOR_PRICE_TIERS } from '../../constants/creatorPriceTiers';
 
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   const res = await fetch(dataUrl);
@@ -29,6 +28,15 @@ function rowToSearchUser(row: AgentReferredUserRow): AgentSearchUserRow {
   };
 }
 
+function hostStatusLabel(r: AgentReferredUserRow): { text: string; className: string } {
+  if (r.hasCreator) return { text: 'Host (creator)', className: 'text-emerald-400' };
+  const st = r.hostOnboardingStatus ?? 'none';
+  if (st === 'pending_bd_approval') return { text: 'Pending BD approval', className: 'text-amber-400' };
+  if (st === 'approved') return { text: 'Approved — ready to promote', className: 'text-sky-400' };
+  if (st === 'rejected') return { text: 'Rejected', className: 'text-red-400' };
+  return { text: 'Legacy / outside funnel', className: 'text-zinc-400' };
+}
+
 const AgentReferredUsersPage: React.FC = () => {
   const [rows, setRows] = useState<AgentReferredUserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,12 +54,12 @@ const AgentReferredUsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
   const [formName, setFormName] = useState('');
   const [formAbout, setFormAbout] = useState('');
-  const [formPrice, setFormPrice] = useState(60);
   const [formPhoto, setFormPhoto] = useState('');
   const [formCats, setFormCats] = useState('');
   const [formAge, setFormAge] = useState<number | ''>('');
   const [creating, setCreating] = useState(false);
   const [createErr, setCreateErr] = useState('');
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,13 +80,30 @@ const AgentReferredUsersPage: React.FC = () => {
     load();
   }, [load]);
 
+  const submitApprove = async (row: AgentReferredUserRow) => {
+    setApprovingId(row.id);
+    setErr('');
+    try {
+      await agentPortalService.approveReferredUser(row.id);
+      await load();
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        (e instanceof Error ? e.message : 'Approve failed');
+      setErr(msg);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
   const openPromote = (row: AgentReferredUserRow) => {
     if (row.hasCreator) return;
+    const st = row.hostOnboardingStatus ?? 'none';
+    if (st === 'pending_bd_approval' || st === 'rejected') return;
     const u = rowToSearchUser(row);
     setSelectedUser(u);
     setFormName(row.username || row.email?.split('@')[0] || 'Creator');
     setFormAbout('');
-    setFormPrice(60);
     setFormPhoto('');
     setFormCats('');
     setFormAge('');
@@ -162,7 +187,6 @@ const AgentReferredUsersPage: React.FC = () => {
         name: formName.trim(),
         about: formAbout.trim(),
         photo: formPhoto.trim(),
-        price: Number(formPrice),
         categories: cats.length ? cats : undefined,
         ...(formAge !== '' ? { age: Number(formAge) } : {}),
       });
@@ -192,7 +216,8 @@ const AgentReferredUsersPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Referred users</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          People who signed up with your referral code. Promote them to creator when ready.
+          People who signed up with your referral code. Approve host onboarding when required, then promote to
+          creator (60 coins/min from this flow).
         </p>
       </div>
 
@@ -221,11 +246,7 @@ const AgentReferredUsersPage: React.FC = () => {
                   {new Date(r.createdAt).toLocaleString()}
                 </td>
                 <td className="px-3 py-3">
-                  {r.hasCreator ? (
-                    <span className="text-emerald-400">Creator</span>
-                  ) : (
-                    <span className="text-amber-400">User — not promoted</span>
-                  )}
+                  <span className={hostStatusLabel(r).className}>{hostStatusLabel(r).text}</span>
                 </td>
                 <td className="px-3 py-3">
                   {r.hasCreator && r.creatorId ? (
@@ -236,21 +257,65 @@ const AgentReferredUsersPage: React.FC = () => {
                       View creator
                     </Link>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openPromote(r)}
-                        className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                      >
-                        Promote to creator
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openReject(r)}
-                        className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                      >
-                        Reject
-                      </button>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {(r.hostOnboardingStatus ?? 'none') === 'pending_bd_approval' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => submitApprove(r)}
+                            disabled={approvingId === r.id}
+                            className="text-sm bg-sky-600/90 text-white font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
+                          >
+                            {approvingId === r.id ? 'Approving…' : 'Approve'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openReject(r)}
+                            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {(r.hostOnboardingStatus ?? 'none') === 'approved' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => openPromote(r)}
+                            className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+                          >
+                            Promote to creator
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openReject(r)}
+                            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {(r.hostOnboardingStatus ?? 'none') === 'none' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => openPromote(r)}
+                            className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+                          >
+                            Promote to creator
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openReject(r)}
+                            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {(r.hostOnboardingStatus ?? 'none') === 'rejected' && (
+                        <span className="text-xs text-zinc-500">No actions</span>
+                      )}
                     </div>
                   )}
                 </td>
@@ -269,6 +334,7 @@ const AgentReferredUsersPage: React.FC = () => {
             <p className="text-white font-medium">{r.username || r.email || r.id}</p>
             <p className="text-xs text-zinc-500 font-mono">Code: {r.referralCodeUsed || '—'}</p>
             <p className="text-xs text-zinc-400">{new Date(r.createdAt).toLocaleString()}</p>
+            <p className={`text-xs ${hostStatusLabel(r).className}`}>{hostStatusLabel(r).text}</p>
             {r.hasCreator && r.creatorId ? (
               <Link
                 to={`/agent/creators/${r.creatorId}`}
@@ -278,20 +344,64 @@ const AgentReferredUsersPage: React.FC = () => {
               </Link>
             ) : (
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => openPromote(r)}
-                  className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                >
-                  Promote to creator
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openReject(r)}
-                  className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                >
-                  Reject
-                </button>
+                {(r.hostOnboardingStatus ?? 'none') === 'pending_bd_approval' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => submitApprove(r)}
+                      disabled={approvingId === r.id}
+                      className="text-sm bg-sky-600/90 text-white font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
+                    >
+                      {approvingId === r.id ? 'Approving…' : 'Approve'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openReject(r)}
+                      className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {(r.hostOnboardingStatus ?? 'none') === 'approved' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openPromote(r)}
+                      className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+                    >
+                      Promote to creator
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openReject(r)}
+                      className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {(r.hostOnboardingStatus ?? 'none') === 'none' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openPromote(r)}
+                      className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+                    >
+                      Promote to creator
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openReject(r)}
+                      className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {(r.hostOnboardingStatus ?? 'none') === 'rejected' && (
+                  <span className="text-xs text-zinc-500">No actions</span>
+                )}
               </div>
             )}
           </div>
@@ -387,32 +497,19 @@ const AgentReferredUsersPage: React.FC = () => {
                   className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-zinc-500">Price (coins/min)</label>
-                  <select
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                  >
-                    {CREATOR_PRICE_TIERS.map((t) => (
-                      <option key={t} value={t}>
-                        {t} coins/min
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-zinc-500">Age (18–100)</label>
-                  <input
-                    type="number"
-                    value={formAge}
-                    onChange={(e) =>
-                      setFormAge(e.target.value === '' ? '' : Number(e.target.value))
-                    }
-                    className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                  />
-                </div>
+              <p className="text-[11px] text-zinc-500 rounded-lg border border-admin-border border-dashed px-3 py-2">
+                Pricing uses the platform default for new hosts — Super Admin can change it later.
+              </p>
+              <div>
+                <label className="text-xs text-zinc-500">Age (18–100)</label>
+                <input
+                  type="number"
+                  value={formAge}
+                  onChange={(e) =>
+                    setFormAge(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+                />
               </div>
               <div>
                 <label className="text-xs text-zinc-500">Categories (comma, max 4)</label>

@@ -8,7 +8,7 @@ import {
 } from '../../services/agentPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
-import { CREATOR_PRICE_TIERS, normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
+import { normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
 
 const GalleryContentType = 'image/jpeg' as const;
 
@@ -38,7 +38,6 @@ const AgentCreatorEditPage: React.FC = () => {
   const [name, setName] = useState('');
   const [about, setAbout] = useState('');
   const [photo, setPhoto] = useState('');
-  const [price, setPrice] = useState(0);
   const [age, setAge] = useState<number | ''>('');
   const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState('');
@@ -58,7 +57,6 @@ const AgentCreatorEditPage: React.FC = () => {
       setName(d.creator.name);
       setAbout(d.creator.about);
       setPhoto(d.creator.photo);
-      setPrice(normalizeCreatorPriceTier(d.creator.price));
       setAge(d.creator.age ?? '');
       setUsername(d.user?.username || '');
       setAvatar(d.user?.avatar || '');
@@ -104,7 +102,6 @@ const AgentCreatorEditPage: React.FC = () => {
         about: about.trim(),
         photo: photo.trim(),
         categories: cats,
-        price: Number(price),
         age: age === '' ? undefined : Number(age),
       });
       const avatarVal = syncAvatarWithPhoto ? photo.trim() : avatar.trim();
@@ -292,30 +289,21 @@ const AgentCreatorEditPage: React.FC = () => {
             className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-zinc-400">Price (coins/min)</label>
-            <select
-              value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-            >
-              {CREATOR_PRICE_TIERS.map((t) => (
-                <option key={t} value={t}>
-                  {t} coins/min
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400">Age (18–100)</label>
-            <input
-              type="number"
-              value={age}
-              onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
-              className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-            />
-          </div>
+        <p className="text-xs text-zinc-500 rounded-lg border border-admin-border border-dashed px-3 py-2">
+          Price:{' '}
+          <span className="text-zinc-300 font-medium">
+            {normalizeCreatorPriceTier(data.creator.price)} coins/min
+          </span>{' '}
+          — only Super Admin can change pricing.
+        </p>
+        <div>
+          <label className="text-xs text-zinc-400">Age (18–100)</label>
+          <input
+            type="number"
+            value={age}
+            onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
+            className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+          />
         </div>
 
         <div className="border-t border-admin-border pt-4">

@@ -22,6 +22,8 @@ export interface AgentReferredUserRow {
   referralCodeUsed: string | null;
   hasCreator: boolean;
   creatorId: string | null;
+  /** BD onboarding funnel (UI defaults missing values to `none`). */
+  hostOnboardingStatus?: 'none' | 'pending_bd_approval' | 'approved' | 'rejected';
 }
 
 export interface AgentCreatorRow {
@@ -143,6 +145,10 @@ export const agentPortalService = {
     await agentApi.post(`/agent/referred-users/${userId}/reject`, reason ? { reason } : undefined);
   },
 
+  approveReferredUser: async (userId: string) => {
+    await agentApi.post(`/agent/referred-users/${userId}/approve`);
+  },
+
   getCreators: async (params?: {
     page?: number;
     limit?: number;
@@ -175,7 +181,6 @@ export const agentPortalService = {
     name: string;
     about: string;
     photo: string;
-    price: number;
     categories?: string[];
     age?: number;
     location?: string;
