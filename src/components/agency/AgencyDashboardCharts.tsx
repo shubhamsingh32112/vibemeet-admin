@@ -59,7 +59,10 @@ const AgencyDashboardCharts: React.FC<Props> = ({ d }) => {
                   fontSize: 12,
                 }}
                 labelStyle={{ color: '#a1a1aa' }}
-                formatter={(v: number) => [`${v.toLocaleString('en-IN')} coins`, 'Credits']}
+                formatter={(value) => [
+                  `${Number(value ?? 0).toLocaleString('en-IN')} coins`,
+                  'Credits',
+                ]}
               />
               <Area
                 type="monotone"

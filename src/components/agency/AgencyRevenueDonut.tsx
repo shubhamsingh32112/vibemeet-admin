@@ -49,7 +49,10 @@ const AgencyRevenueDonut: React.FC<Props> = ({ d }) => {
                 borderRadius: 10,
                 fontSize: 11,
               }}
-              formatter={(v: number, n: string) => [`${v.toLocaleString('en-IN')} (weight)`, n]}
+              formatter={(value, name) => [
+                `${Number(value ?? 0).toLocaleString('en-IN')} (weight)`,
+                String(name ?? ''),
+              ]}
             />
           </PieChart>
         </ResponsiveContainer>
