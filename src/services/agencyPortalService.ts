@@ -27,12 +27,47 @@ export type AgencyDashboardData = {
     displayName: string | null;
     referralCode: string | null;
     agentDisabled: boolean;
+    avatarUrl: string | null;
     hostCount: number;
     onlineHostCount: number;
     callsLast7d: number;
     bdEarningsCoinsLast7d: number;
     agencyRevenueFromBdLast7d: number;
   }>;
+  topBdsLeaderboard: Array<{
+    rank: number;
+    id: string;
+    displayLabel: string;
+    avatarUrl: string | null;
+    hostCount: number;
+    revenueGeneratedCoins: number;
+    commission5PctCoins: number;
+    activeHosts: number;
+  }>;
+  topHostsLeaderboard: Array<{
+    rank: number;
+    hostName: string;
+    avatarUrl: string | null;
+    bdName: string;
+    minutes: number;
+    calls: number;
+    earningsCoins: number;
+    incentiveCoins: number;
+  }>;
+  revenueSeries14d: Array<{ date: string; coins: number }>;
+  activitySeries7d: Array<{ date: string; calls: number; minutes: number }>;
+  recentActivity: Array<{
+    id: string;
+    type: 'withdrawal';
+    message: string;
+    at: string;
+  }>;
+  payoutSummary: {
+    pendingCoins: number;
+    processingCoins: number;
+    paidCoins: number;
+    nextPayoutNote: string;
+  };
 };
 
 export const agencyPortalService = {
@@ -44,6 +79,7 @@ export const agencyPortalService = {
       displayName?: string | null;
       bdCount: number;
       hostCount: number;
+      mustChangePassword?: boolean;
     };
   },
 
@@ -76,6 +112,16 @@ export const agencyPortalService = {
       referralCode: string | null;
       generatedPassword: string;
     };
+  },
+
+  changePassword: async (body: { currentPassword: string; newPassword: string }) => {
+    const res = await agencyApi.post('/agency/change-password', body);
+    return res.data.data as { mustChangePassword: boolean };
+  },
+
+  updateProfile: async (body: { displayName: string }) => {
+    const res = await agencyApi.patch('/agency/profile', body);
+    return res.data.data as { displayName: string };
   },
 
   requestStaffWithdrawal: async (body: {

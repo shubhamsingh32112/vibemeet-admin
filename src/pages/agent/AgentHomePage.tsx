@@ -1,35 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import MetricCard from '../../components/ui/MetricCard';
+import React, { useCallback, useEffect, useState } from 'react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { agentPortalService } from '../../services/agentPortalService';
+import AgentKpiStrip from '../../components/agent/AgentKpiStrip';
+import AgentQuickLinks from '../../components/agent/AgentQuickLinks';
+import AgentReferralCard from '../../components/agent/AgentReferralCard';
+import { agentPortalService, type AgentSummary } from '../../services/agentPortalService';
 
 const AgentHomePage: React.FC = () => {
-  const [s, setS] = useState<Awaited<ReturnType<typeof agentPortalService.getSummary>> | null>(null);
+  const [s, setS] = useState<AgentSummary | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let ok = true;
-    const fetchSummary = async () => {
-      try {
-        const data = await agentPortalService.getSummary();
-        if (ok) setS(data);
-      } catch {
-        if (ok) setErr('Failed to load summary');
-      } finally {
-        if (ok) setLoading(false);
-      }
-    };
-    fetchSummary();
-    const id = window.setInterval(fetchSummary, 45_000);
-    return () => {
-      ok = false;
-      window.clearInterval(id);
-    };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const data = await agentPortalService.getSummary();
+      setS(data);
+    } catch {
+      setErr('Failed to load dashboard');
+      setS(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    void load();
+    const id = window.setInterval(() => void load(), 45_000);
+    return () => window.clearInterval(id);
+  }, [load]);
+
+  if (loading && !s) {
     return (
       <div className="flex justify-center py-24">
         <LoadingSpinner />
@@ -37,37 +38,39 @@ const AgentHomePage: React.FC = () => {
     );
   }
 
-  const total = s?.totalCreators ?? s?.activeCreators ?? 0;
-  const online = s?.onlineCreators ?? 0;
+  if (!s) {
+    return (
+      <div className="space-y-4">
+        {err ? <p className="text-red-400 text-sm">{err}</p> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-sm text-zinc-500 mt-1">Your recruitment pipeline and payouts queue.</p>
-      </div>
-      {err && <p className="text-red-400 text-sm">{err}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link to="/agent/referred" className="block">
-          <MetricCard
-            label="Awaiting promotion"
-            value={s?.referredUsersAwaitingPromotion ?? s?.pendingApplications ?? 0}
-            subtitle="Referred users — tap to review"
-          />
-        </Link>
-        <Link to="/agent/withdrawals" className="block">
-          <MetricCard label="Pending withdrawals" value={s?.pendingWithdrawals ?? 0} subtitle="Needs action" />
-        </Link>
-        <Link to="/agent/creators" className="block">
-          <MetricCard label="Total creators" value={total} subtitle="Under you" />
-        </Link>
-        <div className="block">
-          <MetricCard
-            label="Creators online"
-            value={total > 0 ? `${online} / ${total}` : '0'}
-            subtitle="Live availability (app open)"
-          />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">MatchVibe</p>
+          <h2 className="text-xl font-bold tracking-tight text-white md:text-2xl">Overview</h2>
+          <p className="mt-1 max-w-2xl text-xs text-zinc-500">
+            Your recruitment pipeline, host roster, and withdrawal queue at a glance.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-300 hover:border-violet-500/40 hover:text-white"
+        >
+          Refresh
+        </button>
+      </div>
+      {err ? <p className="text-red-400 text-sm">{err}</p> : null}
+
+      <AgentKpiStrip s={s} />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AgentReferralCard />
+        <AgentQuickLinks />
       </div>
     </div>
   );

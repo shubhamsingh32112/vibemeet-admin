@@ -363,6 +363,12 @@ export interface GlobalAppUpdate {
 
 export interface AdminWithdrawal {
   id: string;
+  kind?: 'staff' | 'creator';
+  staffUserId?: string | null;
+  staffRole?: string | null;
+  staffEmail?: string | null;
+  staffDisplayName?: string | null;
+  staffCurrentBalance?: number | null;
   creatorUserId: string;
   creatorName: string;
   creatorEmail: string | null;
@@ -412,7 +418,7 @@ export interface AdminSupportTicket {
   email: string | null;
   phone: string | null;
   userRole: string | null;
-  role: 'user' | 'creator';
+  role: 'user' | 'creator' | 'agency' | 'bd';
   category: string;
   subject: string;
   message: string;
@@ -420,7 +426,7 @@ export interface AdminSupportTicket {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignedAdminId: string | null;
   adminNotes: string | null;
-  source?: 'chat' | 'post_call' | 'other';
+  source?: 'chat' | 'post_call' | 'other' | 'staff_portal';
   relatedCallId?: string | null;
   reportedCreatorUserId?: string | null;
   reportedCreatorFirebaseUid?: string | null;
@@ -432,6 +438,7 @@ export interface AdminSupportTicket {
 export interface SupportSummary {
   openUserTickets: number;
   openCreatorTickets: number;
+  openStaffTickets?: number;
   highPriorityOpen: number;
   unassigned: number;
   agingOver24h: number;
@@ -673,6 +680,8 @@ export const adminService = {
     limit?: number;
     /** true = only agent-assigned; false = unassigned / no agent id */
     hasAssignedAgent?: boolean;
+    /** staff = agency/BD wallet; creator = host payouts; all = default */
+    type?: 'staff' | 'creator' | 'all';
     from?: string;
     to?: string;
   }): Promise<WithdrawalsResponse> => {
@@ -682,6 +691,7 @@ export const adminService = {
     if (params?.limit) searchParams.append('limit', String(params.limit));
     if (params?.hasAssignedAgent === true) searchParams.append('hasAssignedAgent', 'true');
     if (params?.hasAssignedAgent === false) searchParams.append('hasAssignedAgent', 'false');
+    if (params?.type && params.type !== 'all') searchParams.append('type', params.type);
     if (params?.from) searchParams.append('from', params.from);
     if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/withdrawals?${searchParams.toString()}`);
@@ -719,6 +729,7 @@ export const adminService = {
     priority?: string;
     source?: string;
     creatorReportsOnly?: boolean;
+    staffPortalOnly?: boolean;
     page?: number;
     limit?: number;
     from?: string;
@@ -730,6 +741,7 @@ export const adminService = {
     if (params?.priority) searchParams.append('priority', params.priority);
     if (params?.source) searchParams.append('source', params.source);
     if (params?.creatorReportsOnly) searchParams.append('creatorReports', 'true');
+    if (params?.staffPortalOnly) searchParams.append('staffPortal', 'true');
     if (params?.page) searchParams.append('page', String(params.page));
     if (params?.limit) searchParams.append('limit', String(params.limit));
     if (params?.from) searchParams.append('from', params.from);

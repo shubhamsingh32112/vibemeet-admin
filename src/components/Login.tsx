@@ -28,7 +28,7 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-white">Admin Login</h2>
-          <p className="text-gray-400 mt-2 text-sm">Eazy Talks Admin Dashboard</p>
+          <p className="text-gray-400 mt-2 text-sm">MatchVibe Super Admin</p>
         </div>
         
         {error && (

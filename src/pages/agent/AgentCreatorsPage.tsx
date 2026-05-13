@@ -8,8 +8,6 @@ import {
   type AgentCreatorsPeriod,
   type AgentSearchUserRow,
 } from '../../services/agentPortalService';
-import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
-import { compressImage } from '../../utils/imageCompression';
 
 const PERIODS: { value: AgentCreatorsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -44,11 +42,6 @@ function periodColumnLabel(p: AgentCreatorsPeriod): string {
   }
 }
 
-async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
-  const res = await fetch(dataUrl);
-  return res.blob();
-}
-
 const AgentCreatorsPage: React.FC = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState<AgentCreatorRow[]>([]);
@@ -65,11 +58,6 @@ const AgentCreatorsPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<AgentSearchUserRow[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
-  const [formName, setFormName] = useState('');
-  const [formAbout, setFormAbout] = useState('');
-  const [formPhoto, setFormPhoto] = useState('');
-  const [formCats, setFormCats] = useState('');
-  const [formAge, setFormAge] = useState<number | ''>('');
   const [creating, setCreating] = useState(false);
   const [createErr, setCreateErr] = useState('');
 
@@ -121,29 +109,7 @@ const AgentCreatorsPage: React.FC = () => {
     setSelectedUser(null);
     setSearchQ('');
     setSearchResults([]);
-    setFormName('');
-    setFormAbout('');
-    setFormPhoto('');
-    setFormCats('');
-    setFormAge('');
     setCreateErr('');
-  };
-
-  const handleMainPhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !selectedUser) return;
-    try {
-      const b64 = await compressImage(file, 1024, 1024, 0.82, 350);
-      const blob = await dataUrlToBlob(b64);
-      const jpeg = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-      const tempId = `temp-add-${selectedUser.id}`;
-      const url = await uploadCreatorProfileImage(jpeg, tempId);
-      setFormPhoto(url);
-    } catch (ex: unknown) {
-      const m = ex instanceof Error ? ex.message : 'Upload failed';
-      setCreateErr(m);
-    }
   };
 
   const submitCreate = async () => {
@@ -151,41 +117,19 @@ const AgentCreatorsPage: React.FC = () => {
       setCreateErr('Select a user');
       return;
     }
-    if (!formName.trim() || formName.trim().length < 2) {
-      setCreateErr('Name at least 2 characters');
-      return;
-    }
-    if (formAbout.trim().length < 10) {
-      setCreateErr('About at least 10 characters');
-      return;
-    }
-    if (!formPhoto.trim()) {
-      setCreateErr('Upload a main photo');
-      return;
-    }
-    const cats = formCats
-      .split(',')
-      .map((x) => x.trim())
-      .filter(Boolean)
-      .slice(0, 4);
 
     setCreating(true);
     setCreateErr('');
     try {
       const { creator } = await agentPortalService.createAgentCreator({
         userId: selectedUser.id,
-        name: formName.trim(),
-        about: formAbout.trim(),
-        photo: formPhoto.trim(),
-        categories: cats.length ? cats : undefined,
-        ...(formAge !== '' ? { age: Number(formAge) } : {}),
       });
       setAddOpen(false);
       navigate(`/agent/creators/${creator.id}/edit`);
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (e instanceof Error ? e.message : 'Create failed');
+        (e instanceof Error ? e.message : 'Promote failed');
       setCreateErr(msg);
     } finally {
       setCreating(false);
@@ -235,7 +179,7 @@ const AgentCreatorsPage: React.FC = () => {
           onClick={openAdd}
           className="rounded-xl bg-admin-accent text-admin-base font-semibold px-4 py-2.5 text-sm w-fit"
         >
-          + Add creator
+          + Promote to host
         </button>
       </div>
 
@@ -456,7 +400,7 @@ const AgentCreatorsPage: React.FC = () => {
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
           <div className="bg-admin-surface border border-admin-border rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex justify-between items-center px-4 py-3 border-b border-admin-border">
-              <h2 className="text-lg font-semibold text-white">Add creator</h2>
+              <h2 className="text-lg font-semibold text-white">Promote to host</h2>
               <button
                 type="button"
                 onClick={() => setAddOpen(false)}
@@ -469,7 +413,9 @@ const AgentCreatorsPage: React.FC = () => {
             <div className="p-4 space-y-4">
               {createErr && <p className="text-red-400 text-sm">{createErr}</p>}
               <div>
-                <label className="text-xs text-zinc-500">Find user (no creator profile yet)</label>
+                <label className="text-xs text-zinc-500">
+                  Find referred user (must be BD-approved for onboarding)
+                </label>
                 <div className="flex gap-2 mt-1">
                   <input
                     value={searchQ}
@@ -493,7 +439,6 @@ const AgentCreatorsPage: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setSelectedUser(u);
-                          setFormName(u.username || u.email?.split('@')[0] || 'Creator');
                         }}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
                           selectedUser?.id === u.id
@@ -509,64 +454,10 @@ const AgentCreatorsPage: React.FC = () => {
               </div>
 
               {selectedUser && (
-                <>
-                  <div>
-                    <label className="text-xs text-zinc-500">Display name</label>
-                    <input
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-zinc-500">About (min 10 chars)</label>
-                    <textarea
-                      value={formAbout}
-                      onChange={(e) => setFormAbout(e.target.value)}
-                      rows={3}
-                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                    />
-                  </div>
-                  <p className="text-[11px] text-zinc-500 rounded-lg border border-admin-border border-dashed px-3 py-2">
-                    Per-minute price is set by the platform default after approval — Super Admin can adjust later.
-                  </p>
-                  <div>
-                    <label className="text-xs text-zinc-500">Age (18–100)</label>
-                    <input
-                      type="number"
-                      value={formAge}
-                      onChange={(e) =>
-                        setFormAge(e.target.value === '' ? '' : Number(e.target.value))
-                      }
-                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-zinc-500">Categories (comma, max 4)</label>
-                    <input
-                      value={formCats}
-                      onChange={(e) => setFormCats(e.target.value)}
-                      className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-zinc-500">Main photo</label>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <label className="inline-flex items-center gap-2 text-sm text-emerald-300 cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="sr-only"
-                          onChange={handleMainPhotoFile}
-                        />
-                        <span className="px-3 py-2 rounded-xl border border-admin-border">Upload</span>
-                      </label>
-                      {formPhoto ? (
-                        <img src={formPhoto} alt="" className="h-14 w-14 rounded-xl object-cover border border-admin-border" />
-                      ) : null}
-                    </div>
-                  </div>
-                </>
+                <p className="text-xs text-zinc-400 rounded-lg border border-admin-border border-dashed px-3 py-2">
+                  A starter host profile will be created. They complete display name, about, photo, and categories in
+                  the app. Per-minute price uses the platform default until changed.
+                </p>
               )}
             </div>
             <div className="flex justify-end gap-2 px-4 py-3 border-t border-admin-border">
@@ -583,7 +474,7 @@ const AgentCreatorsPage: React.FC = () => {
                 onClick={submitCreate}
                 className="px-4 py-2 rounded-xl bg-admin-accent text-admin-base font-semibold disabled:opacity-50"
               >
-                {creating ? 'Creating…' : 'Create'}
+                {creating ? 'Promoting…' : 'Promote to host'}
               </button>
             </div>
           </div>

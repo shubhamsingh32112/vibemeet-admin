@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
@@ -8,6 +8,8 @@ export interface AgencyUser {
   email: string;
   role: string;
   displayName?: string | null;
+  /** True when account still uses the auto-generated first password. */
+  mustChangePassword?: boolean;
 }
 
 interface AgencyAuthContextType {
@@ -16,6 +18,7 @@ interface AgencyAuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAgency: boolean;
+  updateUserFields: (patch: Partial<AgencyUser>) => void;
 }
 
 const AgencyAuthContext = createContext<AgencyAuthContextType | undefined>(undefined);
@@ -38,6 +41,15 @@ export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setLoading(false);
   }, []);
 
+  const updateUserFields = useCallback((patch: Partial<AgencyUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      localStorage.setItem('agencyUser', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const login = async (email: string, password: string) => {
     const res = await axios.post(`${API_BASE_URL}/auth/agency-login`, { email, password });
     const { token, user: u } = res.data.data;
@@ -55,7 +67,7 @@ export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const isAgency = user?.role === 'agency';
 
   return (
-    <AgencyAuthContext.Provider value={{ user, loading, login, logout, isAgency }}>
+    <AgencyAuthContext.Provider value={{ user, loading, login, logout, isAgency, updateUserFields }}>
       {children}
     </AgencyAuthContext.Provider>
   );

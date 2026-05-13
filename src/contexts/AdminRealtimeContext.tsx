@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
 import { getSocketBaseUrl } from '../config/socketUrl';
 
@@ -33,6 +34,7 @@ const ADMIN_EVENTS = [
 export const AdminRealtimeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const queryClient = useQueryClient();
   const [refreshGeneration, setRefreshGeneration] = useState(0);
   const [connected, setConnected] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -40,7 +42,8 @@ export const AdminRealtimeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const bump = useCallback(() => {
     setRefreshGeneration((g) => g + 1);
-  }, []);
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  }, [queryClient]);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
