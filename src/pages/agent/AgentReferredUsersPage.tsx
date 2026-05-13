@@ -2,31 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import {
-  agentPortalService,
-  type AgentReferredUserRow,
-  type AgentSearchUserRow,
-} from '../../services/agentPortalService';
-import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
-import { compressImage } from '../../utils/imageCompression';
-
-async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
-  const res = await fetch(dataUrl);
-  return res.blob();
-}
-
-function rowToSearchUser(row: AgentReferredUserRow): AgentSearchUserRow {
-  return {
-    id: row.id,
-    username: row.username,
-    email: row.email,
-    phone: row.phone,
-    role: row.role,
-    avatar: row.avatar,
-    createdAt: typeof row.createdAt === 'string' ? row.createdAt : new Date(row.createdAt).toISOString(),
-    isCreator: row.hasCreator,
-  };
-}
+import { agentPortalService, type AgentReferredUserRow } from '../../services/agentPortalService';
 
 function hostStatusLabel(r: AgentReferredUserRow): { text: string; className: string } {
   if (r.hasCreator) return { text: 'Host (creator)', className: 'text-emerald-400' };
@@ -50,15 +26,11 @@ const AgentReferredUsersPage: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectTarget, setRejectTarget] = useState<AgentReferredUserRow | null>(null);
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
-  const [formName, setFormName] = useState('');
-  const [formAbout, setFormAbout] = useState('');
-  const [formPhoto, setFormPhoto] = useState('');
-  const [formCats, setFormCats] = useState('');
-  const [formAge, setFormAge] = useState<number | ''>('');
-  const [creating, setCreating] = useState(false);
-  const [createErr, setCreateErr] = useState('');
+  const [promoteOpen, setPromoteOpen] = useState(false);
+  const [promoteTarget, setPromoteTarget] = useState<AgentReferredUserRow | null>(null);
+  const [promoting, setPromoting] = useState(false);
+  const [promoteErr, setPromoteErr] = useState('');
+
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -100,15 +72,9 @@ const AgentReferredUsersPage: React.FC = () => {
     if (row.hasCreator) return;
     const st = row.hostOnboardingStatus ?? 'none';
     if (st === 'pending_bd_approval' || st === 'rejected') return;
-    const u = rowToSearchUser(row);
-    setSelectedUser(u);
-    setFormName(row.username || row.email?.split('@')[0] || 'Creator');
-    setFormAbout('');
-    setFormPhoto('');
-    setFormCats('');
-    setFormAge('');
-    setCreateErr('');
-    setAddOpen(true);
+    setPromoteTarget(row);
+    setPromoteErr('');
+    setPromoteOpen(true);
   };
 
   const openReject = (row: AgentReferredUserRow) => {
@@ -142,64 +108,22 @@ const AgentReferredUsersPage: React.FC = () => {
     }
   };
 
-  const handleMainPhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !selectedUser) return;
+  const submitPromote = async () => {
+    if (!promoteTarget) return;
+    setPromoting(true);
+    setPromoteErr('');
     try {
-      const b64 = await compressImage(file, 1024, 1024, 0.82, 350);
-      const blob = await dataUrlToBlob(b64);
-      const jpeg = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-      const tempId = `temp-add-${selectedUser.id}`;
-      const url = await uploadCreatorProfileImage(jpeg, tempId);
-      setFormPhoto(url);
-    } catch (ex: unknown) {
-      const m = ex instanceof Error ? ex.message : 'Upload failed';
-      setCreateErr(m);
-    }
-  };
-
-  const submitCreate = async () => {
-    if (!selectedUser) return;
-    if (!formName.trim() || formName.trim().length < 2) {
-      setCreateErr('Name at least 2 characters');
-      return;
-    }
-    if (formAbout.trim().length < 10) {
-      setCreateErr('About at least 10 characters');
-      return;
-    }
-    if (!formPhoto.trim()) {
-      setCreateErr('Upload a main photo');
-      return;
-    }
-    const cats = formCats
-      .split(',')
-      .map((x) => x.trim())
-      .filter(Boolean)
-      .slice(0, 4);
-
-    setCreating(true);
-    setCreateErr('');
-    try {
-      await agentPortalService.createAgentCreator({
-        userId: selectedUser.id,
-        name: formName.trim(),
-        about: formAbout.trim(),
-        photo: formPhoto.trim(),
-        categories: cats.length ? cats : undefined,
-        ...(formAge !== '' ? { age: Number(formAge) } : {}),
-      });
-      setAddOpen(false);
-      setSelectedUser(null);
-      load();
+      await agentPortalService.createAgentCreator({ userId: promoteTarget.id });
+      setPromoteOpen(false);
+      setPromoteTarget(null);
+      await load();
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (e instanceof Error ? e.message : 'Create failed');
-      setCreateErr(msg);
+        (e instanceof Error ? e.message : 'Promote failed');
+      setPromoteErr(msg);
     } finally {
-      setCreating(false);
+      setPromoting(false);
     }
   };
 
@@ -216,8 +140,9 @@ const AgentReferredUsersPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Referred users</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          People who signed up with your referral code. Approve host onboarding when required, then promote to
-          creator (60 coins/min from this flow).
+          People who signed up with your referral code. Approve host onboarding when required, then use{' '}
+          <strong className="text-zinc-400">Promote to host</strong> — they complete their profile in the app (default
+          per-minute rate applies until adjusted).
         </p>
       </div>
 
@@ -242,9 +167,7 @@ const AgentReferredUsersPage: React.FC = () => {
                   <p className="text-xs text-zinc-500">{r.email || r.phone || '—'}</p>
                 </td>
                 <td className="px-3 py-3 font-mono text-emerald-400/90">{r.referralCodeUsed || '—'}</td>
-                <td className="px-3 py-3 text-zinc-400">
-                  {new Date(r.createdAt).toLocaleString()}
-                </td>
+                <td className="px-3 py-3 text-zinc-400">{new Date(r.createdAt).toLocaleString()}</td>
                 <td className="px-3 py-3">
                   <span className={hostStatusLabel(r).className}>{hostStatusLabel(r).text}</span>
                 </td>
@@ -284,7 +207,7 @@ const AgentReferredUsersPage: React.FC = () => {
                             onClick={() => openPromote(r)}
                             className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
                           >
-                            Promote to creator
+                            Promote to host
                           </button>
                           <button
                             type="button"
@@ -302,7 +225,7 @@ const AgentReferredUsersPage: React.FC = () => {
                             onClick={() => openPromote(r)}
                             className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
                           >
-                            Promote to creator
+                            Promote to host
                           </button>
                           <button
                             type="button"
@@ -370,7 +293,7 @@ const AgentReferredUsersPage: React.FC = () => {
                       onClick={() => openPromote(r)}
                       className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
                     >
-                      Promote to creator
+                      Promote to host
                     </button>
                     <button
                       type="button"
@@ -388,7 +311,7 @@ const AgentReferredUsersPage: React.FC = () => {
                       onClick={() => openPromote(r)}
                       className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
                     >
-                      Promote to creator
+                      Promote to host
                     </button>
                     <button
                       type="button"
@@ -437,6 +360,28 @@ const AgentReferredUsersPage: React.FC = () => {
         </div>
       </ConfirmDialog>
 
+      <ConfirmDialog
+        open={promoteOpen && !!promoteTarget}
+        title="Promote to host?"
+        message={
+          promoteTarget
+            ? `This will create a starter host profile for ${promoteTarget.username || promoteTarget.email || promoteTarget.phone || 'this user'}. They set their display name, about, photo, and other details in the app.`
+            : ''
+        }
+        confirmLabel={promoting ? 'Promoting…' : 'Promote to host'}
+        confirmVariant="primary"
+        confirmDisabled={promoting}
+        onCancel={() => {
+          if (promoting) return;
+          setPromoteOpen(false);
+          setPromoteTarget(null);
+          setPromoteErr('');
+        }}
+        onConfirm={submitPromote}
+      >
+        {promoteErr ? <p className="text-red-400 text-sm mt-2">{promoteErr}</p> : null}
+      </ConfirmDialog>
+
       {totalPages > 1 && (
         <div className="flex items-center gap-2">
           <button
@@ -458,107 +403,6 @@ const AgentReferredUsersPage: React.FC = () => {
           >
             Next
           </button>
-        </div>
-      )}
-
-      {addOpen && selectedUser && (
-        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
-          <div className="bg-admin-surface border border-admin-border rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
-            <div className="flex justify-between items-center px-4 py-3 border-b border-admin-border">
-              <h2 className="text-lg font-semibold text-white">Promote to creator</h2>
-              <button
-                type="button"
-                onClick={() => setAddOpen(false)}
-                className="text-zinc-400 hover:text-white min-h-10 min-w-10"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              {createErr && <p className="text-red-400 text-sm">{createErr}</p>}
-              <p className="text-xs text-zinc-500">
-                User: {selectedUser.username || selectedUser.email || selectedUser.id}
-              </p>
-              <div>
-                <label className="text-xs text-zinc-500">Display name</label>
-                <input
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-500">About (min 10 chars)</label>
-                <textarea
-                  value={formAbout}
-                  onChange={(e) => setFormAbout(e.target.value)}
-                  rows={3}
-                  className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                />
-              </div>
-              <p className="text-[11px] text-zinc-500 rounded-lg border border-admin-border border-dashed px-3 py-2">
-                Pricing uses the platform default for new hosts — Super Admin can change it later.
-              </p>
-              <div>
-                <label className="text-xs text-zinc-500">Age (18–100)</label>
-                <input
-                  type="number"
-                  value={formAge}
-                  onChange={(e) =>
-                    setFormAge(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                  className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-500">Categories (comma, max 4)</label>
-                <input
-                  value={formCats}
-                  onChange={(e) => setFormCats(e.target.value)}
-                  className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-500">Main photo</label>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <label className="inline-flex items-center gap-2 text-sm text-emerald-300 cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={handleMainPhotoFile}
-                    />
-                    <span className="px-3 py-2 rounded-xl border border-admin-border">Upload</span>
-                  </label>
-                  {formPhoto ? (
-                    <img
-                      src={formPhoto}
-                      alt=""
-                      className="h-14 w-14 rounded-xl object-cover border border-admin-border"
-                    />
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-admin-border">
-              <button
-                type="button"
-                onClick={() => setAddOpen(false)}
-                className="px-4 py-2 rounded-xl border border-admin-border text-zinc-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={creating}
-                onClick={submitCreate}
-                className="px-4 py-2 rounded-xl bg-admin-accent text-admin-base font-semibold disabled:opacity-50"
-              >
-                {creating ? 'Creating…' : 'Create'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

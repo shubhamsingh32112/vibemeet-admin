@@ -1,12 +1,28 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  UserCircle,
+  GraduationCap,
+  Wallet,
+  Headphones,
+} from 'lucide-react';
 import { useAgentAuth } from '../../contexts/AgentAuthContext';
 
-const items = [
-  { path: '/agent', label: 'Dashboard', icon: '📊', end: true },
-  { path: '/agent/referred', label: 'Referred users', icon: '👥' },
-  { path: '/agent/creators', label: 'Creators', icon: '🎓' },
-  { path: '/agent/withdrawals', label: 'Withdrawals', icon: '💸' },
+const items: Array<{
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+  end?: boolean;
+}> = [
+  { path: '/agent', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" />, end: true },
+  { path: '/agent/referred', label: 'Referred users', icon: <Users className="h-4 w-4" /> },
+  { path: '/agent/creators', label: 'Creators', icon: <GraduationCap className="h-4 w-4" /> },
+  { path: '/agent/wallet', label: 'Wallet', icon: <Wallet className="h-4 w-4" /> },
+  { path: '/agent/withdrawals', label: 'Host withdrawals', icon: <Wallet className="h-4 w-4" /> },
+  { path: '/agent/profile', label: 'Profile', icon: <UserCircle className="h-4 w-4" /> },
+  { path: '/agent/support', label: 'Support', icon: <Headphones className="h-4 w-4" /> },
 ];
 
 type Props = {
@@ -23,27 +39,34 @@ const AgentSidebar: React.FC<Props> = ({
   onClose,
 }) => {
   const { logout, user } = useAgentAuth();
+  const bdLabel = user?.displayName?.trim() || user?.email || 'BD';
+
   return (
     <aside
-      className={`w-56 min-h-screen bg-admin-surface border-r border-admin-border flex flex-col ${className}`}
+      className={`flex w-60 min-h-screen flex-col border-r border-white/[0.06] bg-[#0c0c14]/95 ${className}`}
     >
-      <div className="px-4 py-4 border-b border-admin-border flex items-start justify-between gap-2">
-        <div>
-          <h1 className="text-base font-bold text-white tracking-tight">Eazy Talks</h1>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">BD Portal</p>
+      <div className="flex items-start justify-between gap-2 border-b border-white/[0.06] px-4 py-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-lg">
+            💜
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-bold tracking-tight text-white">MatchVibe</h1>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">BD</p>
+          </div>
         </div>
         {showClose && (
           <button
             type="button"
             onClick={onClose}
-            className="min-h-10 min-w-10 shrink-0 rounded-xl border border-admin-border text-zinc-400 hover:text-white text-sm"
+            className="min-h-10 min-w-10 shrink-0 rounded-xl border border-white/10 text-zinc-400 hover:text-white text-sm"
             aria-label="Close menu"
           >
             ✕
           </button>
         )}
       </div>
-      <nav className="flex-1 py-3 overflow-y-auto">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto py-3">
         {items.map((item) => (
           <NavLink
             key={item.path}
@@ -51,30 +74,50 @@ const AgentSidebar: React.FC<Props> = ({
             end={item.end}
             onClick={() => onNavigate?.()}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-4 py-3 min-h-[44px] text-sm transition-colors ${
+              `mx-2 flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors ${
                 isActive
-                  ? 'text-white bg-admin-elevated border-r-2 border-admin-accent'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-admin-elevated/60'
+                  ? 'bg-violet-600/20 font-medium text-white ring-1 ring-violet-500/35'
+                  : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100'
               }`
             }
           >
-            <span className="text-base" aria-hidden>
+            <span
+              className={
+                item.path === '/agent' ||
+                  item.path === '/agent/profile' ||
+                  item.path === '/agent/support'
+                  ? 'text-violet-300'
+                  : 'text-zinc-500'
+              }
+            >
               {item.icon}
             </span>
             <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-admin-border px-4 py-3 space-y-1">
-        <p className="text-[10px] text-zinc-500">Referral code</p>
-        <p className="text-xs font-mono text-emerald-400">{user?.referralCode || '—'}</p>
-        <p className="text-xs text-zinc-500 truncate pt-2">{user?.email}</p>
+      <div className="border-t border-white/[0.06] p-3 space-y-2">
+        <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 px-3 py-2.5 space-y-1">
+          <p className="truncate text-xs font-medium text-white">{bdLabel}</p>
+          <p className="truncate text-[10px] text-zinc-500">{user?.email}</p>
+          {user?.referralCode ? (
+            <p className="truncate font-mono text-[10px] text-emerald-400/90">{user.referralCode}</p>
+          ) : null}
+        </div>
+        <Link
+          to="/agent/support"
+          onClick={() => onNavigate?.()}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/25 hover:bg-violet-500"
+        >
+          <Headphones className="h-4 w-4" />
+          Support
+        </Link>
         <button
           type="button"
           onClick={logout}
-          className="w-full text-left text-xs text-red-400 hover:text-red-300 transition min-h-[44px] py-2"
+          className="w-full rounded-xl py-2 text-left text-xs text-red-400/90 transition hover:bg-red-500/10 min-h-[44px] px-2"
         >
-          ← Sign Out
+          ← Sign out
         </button>
       </div>
     </aside>

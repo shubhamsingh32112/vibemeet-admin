@@ -9,6 +9,16 @@ export interface AgentSummary {
   activeCreators: number;
   totalCreators: number;
   onlineCreators: number;
+  mustChangePassword?: boolean;
+  hostRevenueCoins?: {
+    today: number;
+    last7d: number;
+  };
+  bdEarningsCoins?: {
+    today: number;
+    last7d: number;
+    totalBalance: number;
+  };
 }
 
 export interface AgentReferredUserRow {
@@ -130,7 +140,17 @@ export interface AgentWithdrawalRow {
 export const agentPortalService = {
   getSummary: async (): Promise<AgentSummary> => {
     const res = await agentApi.get('/agent/summary');
-    return res.data.data;
+    return res.data.data as AgentSummary;
+  },
+
+  changePassword: async (body: { currentPassword: string; newPassword: string }) => {
+    const res = await agentApi.post('/agent/change-password', body);
+    return res.data.data as { mustChangePassword: boolean };
+  },
+
+  updateProfile: async (body: { displayName: string }) => {
+    const res = await agentApi.patch('/agent/profile', body);
+    return res.data.data as { displayName: string };
   },
 
   getReferredUsers: async (params?: { page?: number; limit?: number }) => {
@@ -176,15 +196,19 @@ export const agentPortalService = {
     return res.data.data.users as AgentSearchUserRow[];
   },
 
-  createAgentCreator: async (body: {
-    userId: string;
-    name: string;
-    about: string;
-    photo: string;
-    categories?: string[];
-    age?: number;
-    location?: string;
-  }) => {
+  createAgentCreator: async (
+    body:
+      | { userId: string }
+      | {
+          userId: string;
+          name: string;
+          about: string;
+          photo: string;
+          categories?: string[];
+          age?: number;
+          location?: string;
+        },
+  ) => {
     const res = await agentApi.post('/agent/creators', body);
     return res.data.data as { creator: { id: string; userId: string; name: string } };
   },

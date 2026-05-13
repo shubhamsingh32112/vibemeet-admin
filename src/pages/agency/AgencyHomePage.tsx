@@ -4,6 +4,54 @@ import {
   agencyPortalService,
   type AgencyDashboardData,
 } from '../../services/agencyPortalService';
+import AgencyKpiStrip from '../../components/agency/AgencyKpiStrip';
+import AgencyDashboardCharts from '../../components/agency/AgencyDashboardCharts';
+import AgencyRevenueDonut from '../../components/agency/AgencyRevenueDonut';
+import AgencyLeaderboardTables from '../../components/agency/AgencyLeaderboardTables';
+import AgencyRecentActivity from '../../components/agency/AgencyRecentActivity';
+import AgencyPayoutCard from '../../components/agency/AgencyPayoutCard';
+
+function enrichDashboard(raw: AgencyDashboardData): AgencyDashboardData {
+  const topHosts = raw.topHostsLeaderboard ?? [];
+  let topBds = raw.topBdsLeaderboard ?? [];
+  if (topBds.length === 0 && raw.bdAnalytics?.length) {
+    const sorted = [...raw.bdAnalytics].sort(
+      (a, b) =>
+        b.bdEarningsCoinsLast7d - a.bdEarningsCoinsLast7d ||
+        b.hostCount - a.hostCount ||
+        b.agencyRevenueFromBdLast7d - a.agencyRevenueFromBdLast7d,
+    );
+    topBds = sorted.slice(0, 5).map((row, i) => ({
+      rank: i + 1,
+      id: row.id,
+      displayLabel: row.displayName || row.email,
+      avatarUrl: row.avatarUrl ?? null,
+      hostCount: row.hostCount,
+      revenueGeneratedCoins: row.bdEarningsCoinsLast7d,
+      commission5PctCoins: Math.round(row.bdEarningsCoinsLast7d * 0.05),
+      activeHosts: row.onlineHostCount,
+    }));
+  }
+
+  return {
+    ...raw,
+    bdAnalytics: (raw.bdAnalytics ?? []).map((b) => ({
+      ...b,
+      avatarUrl: b.avatarUrl ?? null,
+    })),
+    topBdsLeaderboard: topBds,
+    topHostsLeaderboard: topHosts,
+    revenueSeries14d: raw.revenueSeries14d ?? [],
+    activitySeries7d: raw.activitySeries7d ?? [],
+    recentActivity: raw.recentActivity ?? [],
+    payoutSummary: raw.payoutSummary ?? {
+      pendingCoins: 0,
+      processingCoins: 0,
+      paidCoins: 0,
+      nextPayoutNote: 'Payout schedule is coordinated with platform finance.',
+    },
+  };
+}
 
 const AgencyHomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -15,7 +63,7 @@ const AgencyHomePage: React.FC = () => {
     setErr('');
     try {
       const data = await agencyPortalService.getDashboard();
-      setD(data);
+      setD(enrichDashboard(data));
     } catch {
       setErr('Failed to load dashboard');
       setD(null);
@@ -45,168 +93,44 @@ const AgencyHomePage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Agency dashboard</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Revenue from immutable ledger (call settlements). Balances update as calls settle.
+          <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">MatchVibe</p>
+          <h2 className="text-xl font-bold tracking-tight text-white md:text-2xl">Overview</h2>
+          <p className="mt-1 max-w-2xl text-xs text-zinc-500">
+            Revenue reflects call settlement credits to your agency wallet. Charts use UTC days.
           </p>
         </div>
         <button
           type="button"
           onClick={() => load()}
-          className="text-xs px-3 py-1.5 rounded-lg border border-admin-border text-zinc-400 hover:text-white"
+          className="rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-300 hover:border-violet-500/40 hover:text-white"
         >
           Refresh
         </button>
       </div>
       {err && <p className="text-red-400 text-sm">{err}</p>}
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Metric label="BD total" value={d.bdTotal} />
-        <Metric label="BD active" value={d.bdActive} accent="text-emerald-400" />
-        <Metric label="BD inactive" value={d.bdInactive} accent="text-amber-400" />
-        <Metric label="Wallet balance (coins)" value={d.staffCoinsBalance} accent="text-sky-400" />
-        <Metric label="Hosts" value={d.totalHosts} />
-        <Metric label="Hosts online" value={d.onlineHosts} />
-        <Metric label="Pending withdrawals" value={d.withdrawals.pendingCount} />
-        <Metric label="Completed withdrawals" value={d.withdrawals.completedCount} />
-      </div>
+      <AgencyKpiStrip d={d} />
 
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Agency revenue (coins)</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-            <p className="text-xs text-zinc-500">Today (UTC)</p>
-            <p className="text-2xl font-bold text-white mt-1">{d.revenueCoins.today.toLocaleString()}</p>
-          </div>
-          <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-            <p className="text-xs text-zinc-500">Last 7 days</p>
-            <p className="text-2xl font-bold text-white mt-1">{d.revenueCoins.last7d.toLocaleString()}</p>
-          </div>
-          <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-            <p className="text-xs text-zinc-500">Last 30 days</p>
-            <p className="text-2xl font-bold text-white mt-1">{d.revenueCoins.last30d.toLocaleString()}</p>
-          </div>
+      <AgencyDashboardCharts d={d} />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <AgencyRevenueDonut d={d} />
+        </div>
+        <div className="lg:col-span-2">
+          <AgencyLeaderboardTables d={d} />
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">BD analytics (last 7 days)</h2>
-        <div className="overflow-x-auto rounded-xl border border-admin-border">
-          <table className="w-full text-sm text-left min-w-[720px]">
-            <thead className="bg-admin-elevated text-zinc-400">
-              <tr>
-                <th className="px-3 py-2">BD</th>
-                <th className="px-3 py-2">Code</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2 text-right">Hosts</th>
-                <th className="px-3 py-2 text-right">Online</th>
-                <th className="px-3 py-2 text-right">Calls 7d</th>
-                <th className="px-3 py-2 text-right">BD earn 7d</th>
-                <th className="px-3 py-2 text-right">Agency share 7d</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.bdAnalytics.map((row) => (
-                <tr key={row.id} className="border-t border-admin-border">
-                  <td className="px-3 py-2 text-zinc-200">
-                    <span className="block truncate max-w-[180px]">{row.email}</span>
-                    {row.displayName ? (
-                      <span className="text-xs text-zinc-500">{row.displayName}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-emerald-400/90">
-                    {row.referralCode || '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={
-                        row.agentDisabled ? 'text-red-400 text-xs' : 'text-emerald-400 text-xs'
-                      }
-                    >
-                      {row.agentDisabled ? 'Disabled' : 'Active'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.hostCount}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.onlineHostCount}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.callsLast7d}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-zinc-200">
-                    {row.bdEarningsCoinsLast7d.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-sky-300">
-                    {row.agencyRevenueFromBdLast7d.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-              {d.bdAnalytics.length === 0 && (
-                <tr>
-                  <td className="px-3 py-6 text-zinc-500 text-center" colSpan={8}>
-                    No BD accounts yet — create one under BD accounts.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Withdrawal history (agency)</h2>
-        <div className="overflow-x-auto rounded-xl border border-admin-border">
-          <table className="w-full text-sm">
-            <thead className="bg-admin-elevated text-zinc-400 text-left">
-              <tr>
-                <th className="px-3 py-2">Amount</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Requested</th>
-                <th className="px-3 py-2">Processed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.withdrawals.recent.map((w) => (
-                <tr key={w.id} className="border-t border-admin-border">
-                  <td className="px-3 py-2 text-white tabular-nums">{w.amount.toLocaleString()} coins</td>
-                  <td className="px-3 py-2 text-xs uppercase text-zinc-400">{w.status}</td>
-                  <td className="px-3 py-2 text-zinc-500 text-xs">
-                    {new Date(w.requestedAt || w.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 text-zinc-500 text-xs">
-                    {w.processedAt ? new Date(w.processedAt).toLocaleString() : '—'}
-                  </td>
-                </tr>
-              ))}
-              {d.withdrawals.recent.length === 0 && (
-                <tr>
-                  <td className="px-3 py-6 text-zinc-500 text-center" colSpan={4}>
-                    No withdrawal requests yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AgencyRecentActivity d={d} />
+        <AgencyPayoutCard d={d} />
       </div>
     </div>
   );
 };
-
-function Metric({
-  label,
-  value,
-  accent = 'text-white',
-}: {
-  label: string;
-  value: number;
-  accent?: string;
-}) {
-  return (
-    <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-      <p className="text-[10px] text-zinc-500 uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold mt-1 tabular-nums ${accent}`}>{value.toLocaleString()}</p>
-    </div>
-  );
-}
 
 export default AgencyHomePage;

@@ -36,7 +36,7 @@ const priorityVariant = (p: string) => {
 
 const SupportPage: React.FC = () => {
   const { refreshGeneration } = useAdminRealtime();
-  type QuickTab = 'all' | 'creator_reports';
+  type QuickTab = 'all' | 'creator_reports' | 'staff_portal';
   const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
   const [summary, setSummary] = useState<SupportSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +72,7 @@ const SupportPage: React.FC = () => {
         priority: priorityFilter || undefined,
         source: sourceFilter || undefined,
         creatorReportsOnly: quickTab === 'creator_reports',
+        staffPortalOnly: quickTab === 'staff_portal',
         page,
         limit: 50,
         from: dateRange.from,
@@ -118,12 +119,23 @@ const SupportPage: React.FC = () => {
       key: 'role',
       header: 'Type',
       sortable: true,
-      render: (row) => (
-        <StatusBadge
-          variant={row.role === 'creator' ? 'info' : 'neutral'}
-          label={row.role === 'creator' ? 'Creator' : 'User'}
-        />
-      ),
+      render: (row) => {
+        const label =
+          row.role === 'creator'
+            ? 'Creator'
+            : row.role === 'agency'
+              ? 'Agency'
+              : row.role === 'bd'
+                ? 'BD'
+                : 'User';
+        const variant =
+          row.role === 'creator'
+            ? 'info'
+            : row.role === 'agency' || row.role === 'bd'
+              ? 'warning'
+              : 'neutral';
+        return <StatusBadge variant={variant} label={label} />;
+      },
     },
     {
       key: 'username',
@@ -243,7 +255,7 @@ const SupportPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-white">🛟 Support Tickets</h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            Manage user and creator support requests
+            Manage user, creator, agency, and BD support requests
           </p>
         </div>
         <button
@@ -277,11 +289,21 @@ const SupportPage: React.FC = () => {
         >
           Creator Reports
         </button>
+        <button
+          onClick={() => { setQuickTab('staff_portal'); setPage(1); }}
+          className={`px-3 py-1.5 text-xs rounded border transition ${
+            quickTab === 'staff_portal'
+              ? 'bg-violet-900/40 border-violet-700 text-violet-200'
+              : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          Agency & BD
+        </button>
       </div>
 
       {/* Summary Metrics */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
           <MetricCard
             label="User Tickets"
             value={summary.openUserTickets}
@@ -293,6 +315,12 @@ const SupportPage: React.FC = () => {
             value={summary.openCreatorTickets}
             subtitle="open"
             variant="info"
+          />
+          <MetricCard
+            label="Agency & BD"
+            value={summary.openStaffTickets ?? 0}
+            subtitle="open"
+            variant={(summary.openStaffTickets ?? 0) > 0 ? 'warning' : 'default'}
           />
           <MetricCard
             label="High Priority"
@@ -335,6 +363,8 @@ const SupportPage: React.FC = () => {
             <option value="">All</option>
             <option value="user">User</option>
             <option value="creator">Creator</option>
+            <option value="agency">Agency</option>
+            <option value="bd">BD</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -375,6 +405,7 @@ const SupportPage: React.FC = () => {
             <option value="">All</option>
             <option value="chat">Chat</option>
             <option value="post_call">Post-call</option>
+            <option value="staff_portal">Staff portal</option>
             <option value="other">Other</option>
           </select>
         </div>

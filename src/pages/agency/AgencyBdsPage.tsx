@@ -19,6 +19,12 @@ const AgencyBdsPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [creating, setCreating] = useState(false);
+  /** Shown once after successful create (same pattern as super admin → new agency). */
+  const [createdSnapshot, setCreatedSnapshot] = useState<{
+    email: string;
+    generatedPassword: string;
+    referralCode: string | null;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,13 +48,16 @@ const AgencyBdsPage: React.FC = () => {
     e.preventDefault();
     setCreating(true);
     setErr('');
+    setCreatedSnapshot(null);
     try {
       const data = await agencyPortalService.createBd(email, displayName || undefined);
       setEmail('');
       setDisplayName('');
-      alert(
-        `BD created.\nEmail: ${data.email}\nPassword (save now): ${data.generatedPassword}\nReferral: ${data.referralCode ?? '—'}`
-      );
+      setCreatedSnapshot({
+        email: data.email,
+        generatedPassword: data.generatedPassword,
+        referralCode: data.referralCode ?? null,
+      });
       await load();
     } catch (ex: unknown) {
       const msg =
@@ -84,6 +93,23 @@ const AgencyBdsPage: React.FC = () => {
       >
         <h2 className="text-lg font-semibold text-white">New BD</h2>
         {err && <p className="text-red-400 text-sm">{err}</p>}
+        {createdSnapshot ? (
+          <div className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200 space-y-2">
+            <p className="font-semibold text-emerald-100">Login details (copy now — shown once)</p>
+            <p className="text-xs">
+              <span className="text-zinc-400">Email</span>{' '}
+              <span className="font-mono break-all text-emerald-100">{createdSnapshot.email}</span>
+            </p>
+            <p className="text-xs">
+              <span className="block text-zinc-400 mb-0.5">One-time password</span>
+              <span className="font-mono break-all">{createdSnapshot.generatedPassword}</span>
+            </p>
+            <p className="text-xs">
+              <span className="text-zinc-400">Referral code</span>{' '}
+              <span className="font-mono text-emerald-100">{createdSnapshot.referralCode ?? '—'}</span>
+            </p>
+          </div>
+        ) : null}
         <input
           type="email"
           placeholder="Email"
@@ -98,6 +124,9 @@ const AgencyBdsPage: React.FC = () => {
           onChange={(e) => setDisplayName(e.target.value)}
           className="w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
         />
+        <p className="text-[11px] text-zinc-500">
+          A random secure password is generated on create and shown once above.
+        </p>
         <button
           type="submit"
           disabled={creating}

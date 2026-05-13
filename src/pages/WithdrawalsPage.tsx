@@ -34,6 +34,7 @@ const WithdrawalsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'staff' | 'creator'>('all');
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   // Action modal
@@ -48,6 +49,7 @@ const WithdrawalsPage: React.FC = () => {
       setError('');
       const data = await adminService.getWithdrawals({
         status: statusFilter || undefined,
+        type: typeFilter,
         page,
         limit: 50,
         from: dateRange.from,
@@ -62,7 +64,7 @@ const WithdrawalsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, refreshGeneration, dateRange.from, dateRange.to]);
+  }, [page, statusFilter, typeFilter, refreshGeneration, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     load();
@@ -85,7 +87,11 @@ const WithdrawalsPage: React.FC = () => {
     try {
       if (actionType === 'approve') {
         await adminService.approveWithdrawal(actionTarget.id, actionNotes || undefined);
-        alert(`Withdrawal approved. ${actionTarget.amount} coins deducted from creator.`);
+        alert(
+          actionTarget.kind === 'staff'
+            ? `Withdrawal approved. ${actionTarget.amount} coins deducted from staff wallet.`
+            : `Withdrawal approved. ${actionTarget.amount} coins deducted from creator.`,
+        );
       } else if (actionType === 'reject') {
         await adminService.rejectWithdrawal(actionTarget.id, actionNotes);
         alert('Withdrawal rejected.');
@@ -106,13 +112,26 @@ const WithdrawalsPage: React.FC = () => {
 
   const columns: Column<AdminWithdrawal>[] = [
     {
+      key: 'kind',
+      header: 'Type',
+      render: (row) => (
+        <span className="text-xs font-medium uppercase text-violet-300">
+          {row.kind === 'staff' ? (row.staffRole === 'agency' ? 'Agency' : 'BD') : 'Host'}
+        </span>
+      ),
+    },
+    {
       key: 'creatorName',
-      header: 'Creator',
+      header: 'Requester',
       sortable: true,
       render: (row) => (
         <div>
           <p className="text-white font-medium text-sm">{row.creatorName}</p>
-          <p className="text-gray-500 text-xs">{row.creatorEmail || row.creatorPhone || '—'}</p>
+          <p className="text-gray-500 text-xs">
+            {row.kind === 'staff'
+              ? row.staffEmail || row.staffDisplayName || '—'
+              : row.creatorEmail || row.creatorPhone || '—'}
+          </p>
         </div>
       ),
     },
@@ -244,7 +263,7 @@ const WithdrawalsPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-white">💸 Withdrawals</h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            Manage creator withdrawal requests
+            Creator, agency, and BD withdrawal requests
           </p>
         </div>
         <button
@@ -295,6 +314,19 @@ const WithdrawalsPage: React.FC = () => {
             setPage(1);
           }}
         />
+        <label className="text-xs text-gray-400">Type:</label>
+        <select
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value as 'all' | 'staff' | 'creator');
+            setPage(1);
+          }}
+          className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="all">All</option>
+          <option value="staff">Agency & BD</option>
+          <option value="creator">Hosts</option>
+        </select>
         <label className="text-xs text-gray-400">Status:</label>
         <select
           value={statusFilter}
@@ -316,7 +348,7 @@ const WithdrawalsPage: React.FC = () => {
         keyField="id"
         emptyMessage="No withdrawals found"
         searchPlaceholder="Search by name, email…"
-        searchFields={['creatorName', 'creatorEmail', 'creatorPhone']}
+        searchFields={['creatorName', 'creatorEmail', 'creatorPhone', 'staffEmail', 'staffDisplayName']}
         compact
       />
 
