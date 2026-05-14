@@ -5,9 +5,8 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type CreatorPerformance } from '../services/adminService';
 import { creatorService } from '../services/creatorService';
-import { userService, type PromoteToCreatorDto, type User } from '../services/userService';
+import { userService, type User } from '../services/userService';
 import CreatorEditModal from '../components/CreatorEditModal';
-import { CREATOR_PRICE_TIERS } from '../constants/creatorPriceTiers';
 
 const CreatorsPage: React.FC = () => {
   const [creators, setCreators] = useState<CreatorPerformance[]>([]);
@@ -26,15 +25,8 @@ const CreatorsPage: React.FC = () => {
   const [searching, setSearching] = useState(false);
   const [userSearchError, setUserSearchError] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showPromoteForm, setShowPromoteForm] = useState(false);
+  const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
   const [promoting, setPromoting] = useState(false);
-  const [promoteForm, setPromoteForm] = useState<PromoteToCreatorDto>({
-    name: '',
-    about: '',
-    photo: '',
-    categories: [],
-    price: 60,
-  });
 
   const load = useCallback(async () => {
     try {
@@ -102,70 +94,21 @@ const CreatorsPage: React.FC = () => {
     loadPromotableUsers();
   }, [showUserSearch, selectedUser, loadPromotableUsers]);
 
-  const handlePromote = async (data: PromoteToCreatorDto) => {
+  const handlePromote = async () => {
     if (!selectedUser) return;
-    await userService.promoteToCreator(selectedUser.id, data);
+    await userService.promoteToCreator(selectedUser.id);
     setSelectedUser(null);
     setShowUserSearch(false);
-    setShowPromoteForm(false);
+    setShowPromoteConfirm(false);
     setSearchResults([]);
     setSearchQuery('');
-    setPromoteForm({
-      name: '',
-      about: '',
-      photo: '',
-      categories: [],
-      price: 60,
-    });
     load();
-  };
-
-  const toCreatorName = (user: User): string => {
-    const username = user.username?.trim();
-    if (username) return username;
-    const emailPrefix = user.email?.split('@')[0]?.trim();
-    if (emailPrefix) return emailPrefix;
-    const phone = user.phone?.trim();
-    if (phone) return phone;
-    return 'Creator';
-  };
-
-  // Cloudflare-Images: new creators inherit the user's existing avatar
-  // payload via the backend, which falls back to the default preset
-  // imageId on its own. Admin no longer needs to invent a URL here; an
-  // empty string tells the backend "use the default".
-  const toCreatorPhoto = (user: User): string => {
-    const avatar = user.avatar?.trim();
-    if (!avatar) return '';
-    const lowered = avatar.toLowerCase();
-    if (lowered.startsWith('http://') || lowered.startsWith('https://') || lowered.startsWith('data:')) {
-      return avatar;
-    }
-    return '';
-  };
-
-  const buildPromotePayloadFromUser = (user: User, price: number): PromoteToCreatorDto => {
-    const name = toCreatorName(user);
-    return {
-      name,
-      about: `Hi, I am ${name}.`,
-      photo: toCreatorPhoto(user),
-      categories: [],
-      price,
-    };
   };
 
   const handleSelectUserForPromotion = (user: User) => {
     setSelectedUser(user);
     setShowUserSearch(false);
-    setShowPromoteForm(true);
-    setPromoteForm({
-      name: '',
-      about: '',
-      photo: '',
-      categories: [],
-      price: 60,
-    });
+    setShowPromoteConfirm(true);
   };
 
   const columns: Column<CreatorPerformance>[] = [
@@ -368,10 +311,12 @@ const CreatorsPage: React.FC = () => {
               setShowUserSearch(true);
               setSearchQuery('');
               setUserSearchError('');
+              setSelectedUser(null);
+              setShowPromoteConfirm(false);
             }}
             className="px-3 py-1.5 text-xs bg-emerald-900/30 border border-emerald-700 rounded text-emerald-300 hover:text-emerald-100 transition"
           >
-            + Promote User
+            + Promote to host
           </button>
           <button
             onClick={load}
@@ -500,7 +445,35 @@ const CreatorsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Promote User Form ───────────────────── */}
+      <ConfirmDialog
+        open={showPromoteConfirm && !!selectedUser}
+        title="Promote to host?"
+        message={
+          selectedUser
+            ? `Create a starter host profile for ${selectedUser.username || selectedUser.email || selectedUser.phone || 'this user'}. They complete display name, about, photo, and categories in the app. Default per-minute pricing applies.`
+            : ''
+        }
+        confirmLabel={promoting ? 'Promoting…' : 'Promote to host'}
+        confirmVariant="primary"
+        confirmDisabled={promoting}
+        onCancel={() => {
+          if (promoting) return;
+          setShowPromoteConfirm(false);
+          setSelectedUser(null);
+        }}
+        onConfirm={async () => {
+          try {
+            setPromoting(true);
+            await handlePromote();
+          } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } }; message?: string };
+            alert(e.response?.data?.error || e.message || 'Failed to promote user');
+          } finally {
+            setPromoting(false);
+          }
+        }}
+      />
+
       {editingRow && (
         <CreatorEditModal
           row={editingRow}
@@ -509,68 +482,6 @@ const CreatorsPage: React.FC = () => {
         />
       )}
 
-      {showPromoteForm && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-auto">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg mx-4 my-8 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Promote {selectedUser.username || selectedUser.email || 'User'} to Creator
-            </h3>
-            <div className="space-y-3">
-              <p className="text-xs text-gray-400">
-                Name, about, photo and categories will be auto-filled from user profile.
-              </p>
-              <label className="block text-xs text-gray-400 mb-1">Price (coins/min)</label>
-              <select
-                value={promoteForm.price}
-                onChange={(e) =>
-                  setPromoteForm((prev) => ({
-                    ...prev,
-                    price: Number(e.target.value),
-                  }))
-                }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {CREATOR_PRICE_TIERS.map((t) => (
-                  <option key={t} value={t}>
-                    {t} coins/min
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={() => {
-                  setShowPromoteForm(false);
-                  setSelectedUser(null);
-                }}
-                className="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={promoting}
-                onClick={async () => {
-                  if (!CREATOR_PRICE_TIERS.includes(promoteForm.price as (typeof CREATOR_PRICE_TIERS)[number])) {
-                    alert('Select a valid price tier');
-                    return;
-                  }
-                  try {
-                    setPromoting(true);
-                    await handlePromote(buildPromotePayloadFromUser(selectedUser, promoteForm.price));
-                  } catch (err: any) {
-                    alert(err.response?.data?.error || err.message || 'Failed to promote user');
-                  } finally {
-                    setPromoting(false);
-                  }
-                }}
-                className="px-3 py-2 text-sm bg-emerald-700 hover:bg-emerald-600 text-white rounded transition disabled:opacity-50"
-              >
-                {promoting ? 'Promoting…' : 'Promote'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

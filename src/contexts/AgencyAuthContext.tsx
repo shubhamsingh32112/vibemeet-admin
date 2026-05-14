@@ -19,6 +19,7 @@ interface AgencyAuthContextType {
   logout: () => void;
   isAgency: boolean;
   updateUser: (patch: Partial<AgencyUser>) => void;
+  updateUserFields: (patch: Partial<AgencyUser>) => void;
 }
 
 const AgencyAuthContext = createContext<AgencyAuthContextType | undefined>(undefined);
@@ -102,7 +103,9 @@ export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const isAgency = user?.role === 'agency';
 
   return (
-    <AgencyAuthContext.Provider value={{ user, loading, login, logout, isAgency, updateUser }}>
+    <AgencyAuthContext.Provider
+      value={{ user, loading, login, logout, isAgency, updateUser, updateUserFields: updateUser }}
+    >
       {children}
     </AgencyAuthContext.Provider>
   );

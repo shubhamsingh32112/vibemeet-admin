@@ -18,6 +18,7 @@ export interface AgencySummary {
     today: number;
     last7d: number;
   };
+  mustChangePassword?: boolean;
 }
 
 export interface AgencyReferredUserRow {

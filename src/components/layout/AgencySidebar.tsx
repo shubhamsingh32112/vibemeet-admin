@@ -7,6 +7,9 @@ const items = [
   { path: '/agency/referred', label: 'Referred users', icon: '👥' },
   { path: '/agency/creators', label: 'Creators', icon: '🎓' },
   { path: '/agency/withdrawals', label: 'Withdrawals', icon: '💸' },
+  { path: '/agency/wallet', label: 'Wallet', icon: '💰' },
+  { path: '/agency/profile', label: 'Profile', icon: '👤' },
+  { path: '/agency/support', label: 'Support', icon: '🎧' },
 ];
 
 type Props = {

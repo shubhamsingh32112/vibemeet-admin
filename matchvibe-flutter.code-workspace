@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../matchvibe-flutter"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../vibemeet-backend"
+		}
+	]
+}
