@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import {
-  agentPortalService,
-  type AgentReferredUserRow,
-  type AgentSearchUserRow,
-} from '../../services/agentPortalService';
+  agencyPortalService,
+  type AgencyReferredUserRow,
+  type AgencySearchUserRow,
+} from '../../services/agencyPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
 
@@ -15,7 +15,7 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
-function rowToSearchUser(row: AgentReferredUserRow): AgentSearchUserRow {
+function rowToSearchUser(row: AgencyReferredUserRow): AgencySearchUserRow {
   return {
     id: row.id,
     username: row.username,
@@ -28,7 +28,7 @@ function rowToSearchUser(row: AgentReferredUserRow): AgentSearchUserRow {
   };
 }
 
-function hostStatusLabel(r: AgentReferredUserRow): { text: string; className: string } {
+function hostStatusLabel(r: AgencyReferredUserRow): { text: string; className: string } {
   if (r.hasCreator) return { text: 'Host (creator)', className: 'text-emerald-400' };
   const st = r.hostOnboardingStatus ?? 'none';
   if (st === 'pending_bd_approval') return { text: 'Pending BD approval', className: 'text-amber-400' };
@@ -37,8 +37,8 @@ function hostStatusLabel(r: AgentReferredUserRow): { text: string; className: st
   return { text: 'Legacy / outside funnel', className: 'text-zinc-400' };
 }
 
-const AgentReferredUsersPage: React.FC = () => {
-  const [rows, setRows] = useState<AgentReferredUserRow[]>([]);
+const AgencyReferredUsersPage: React.FC = () => {
+  const [rows, setRows] = useState<AgencyReferredUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [page, setPage] = useState(1);
@@ -48,10 +48,10 @@ const AgentReferredUsersPage: React.FC = () => {
   const [rejecting, setRejecting] = useState(false);
   const [rejectErr, setRejectErr] = useState('');
   const [rejectReason, setRejectReason] = useState('');
-  const [rejectTarget, setRejectTarget] = useState<AgentReferredUserRow | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<AgencyReferredUserRow | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AgencySearchUserRow | null>(null);
   const [formName, setFormName] = useState('');
   const [formAbout, setFormAbout] = useState('');
   const [formPhoto, setFormPhoto] = useState('');
@@ -65,7 +65,7 @@ const AgentReferredUsersPage: React.FC = () => {
     setLoading(true);
     setErr('');
     try {
-      const data = await agentPortalService.getReferredUsers({ page, limit: 30 });
+      const data = await agencyPortalService.getReferredUsers({ page, limit: 30 });
       setRows(data.users);
       setTotalPages(data.pagination.totalPages);
     } catch {
@@ -80,11 +80,11 @@ const AgentReferredUsersPage: React.FC = () => {
     load();
   }, [load]);
 
-  const submitApprove = async (row: AgentReferredUserRow) => {
+  const submitApprove = async (row: AgencyReferredUserRow) => {
     setApprovingId(row.id);
     setErr('');
     try {
-      await agentPortalService.approveReferredUser(row.id);
+      await agencyPortalService.approveReferredUser(row.id);
       await load();
     } catch (e: unknown) {
       const msg =
@@ -96,7 +96,7 @@ const AgentReferredUsersPage: React.FC = () => {
     }
   };
 
-  const openPromote = (row: AgentReferredUserRow) => {
+  const openPromote = (row: AgencyReferredUserRow) => {
     if (row.hasCreator) return;
     const st = row.hostOnboardingStatus ?? 'none';
     if (st === 'pending_bd_approval' || st === 'rejected') return;
@@ -111,7 +111,7 @@ const AgentReferredUsersPage: React.FC = () => {
     setAddOpen(true);
   };
 
-  const openReject = (row: AgentReferredUserRow) => {
+  const openReject = (row: AgencyReferredUserRow) => {
     if (row.hasCreator) return;
     setRejectTarget(row);
     setRejectErr('');
@@ -124,7 +124,7 @@ const AgentReferredUsersPage: React.FC = () => {
     setRejecting(true);
     setRejectErr('');
     try {
-      await agentPortalService.rejectReferredUser(
+      await agencyPortalService.rejectReferredUser(
         rejectTarget.id,
         rejectReason.trim() ? rejectReason.trim() : undefined,
       );
@@ -182,7 +182,7 @@ const AgentReferredUsersPage: React.FC = () => {
     setCreating(true);
     setCreateErr('');
     try {
-      await agentPortalService.createAgentCreator({
+      await agencyPortalService.createAgencyCreator({
         userId: selectedUser.id,
         name: formName.trim(),
         about: formAbout.trim(),
@@ -251,7 +251,7 @@ const AgentReferredUsersPage: React.FC = () => {
                 <td className="px-3 py-3">
                   {r.hasCreator && r.creatorId ? (
                     <Link
-                      to={`/agent/creators/${r.creatorId}`}
+                      to={`/agency/creators/${r.creatorId}`}
                       className="text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5 inline-block"
                     >
                       View creator
@@ -337,7 +337,7 @@ const AgentReferredUsersPage: React.FC = () => {
             <p className={`text-xs ${hostStatusLabel(r).className}`}>{hostStatusLabel(r).text}</p>
             {r.hasCreator && r.creatorId ? (
               <Link
-                to={`/agent/creators/${r.creatorId}`}
+                to={`/agency/creators/${r.creatorId}`}
                 className="inline-block text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5"
               >
                 View creator
@@ -565,4 +565,4 @@ const AgentReferredUsersPage: React.FC = () => {
   );
 };
 
-export default AgentReferredUsersPage;
+export default AgencyReferredUsersPage;

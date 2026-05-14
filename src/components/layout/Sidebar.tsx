@@ -34,7 +34,7 @@ const navItems = [
     icon: '💸',
   },
   {
-    path: '/agents',
+    path: '/bds',
     label: 'BD',
     icon: '🤝',
   },

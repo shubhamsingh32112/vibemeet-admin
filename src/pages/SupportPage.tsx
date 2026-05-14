@@ -9,7 +9,7 @@ import {
   type AdminSupportTicket,
   type SupportSummary,
 } from '../services/adminService';
-import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
+import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
 import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
@@ -35,8 +35,8 @@ const priorityVariant = (p: string) => {
 };
 
 const SupportPage: React.FC = () => {
-  const { refreshGeneration } = useAdminRealtime();
   type QuickTab = 'all' | 'creator_reports';
+  const { markFresh } = useStaffRealtime();
   const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
   const [summary, setSummary] = useState<SupportSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,12 +81,13 @@ const SupportPage: React.FC = () => {
       setSummary(data.summary);
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total);
+      markFresh(['support']);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
-  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab, refreshGeneration, dateRange.from, dateRange.to]);
+  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab, dateRange.from, dateRange.to, markFresh]);
 
   useEffect(() => {
     load();

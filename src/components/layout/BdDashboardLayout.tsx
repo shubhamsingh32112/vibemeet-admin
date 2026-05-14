@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { StaffRealtimeProvider } from '../../contexts/StaffRealtimeContext';
-import { BD_VISIBLE_SECTIONS } from '../../types/dashboardStale';
-import AgencySidebar from './AgencySidebar';
+import { AGENCY_VISIBLE_SECTIONS } from '../../types/dashboardStale';
+import BdSidebar from './BdSidebar';
 
-const AgencyDashboardLayout: React.FC = () => {
+const BdDashboardLayout: React.FC = () => {
   const [open, setOpen] = useState(false);
   return (
-    <StaffRealtimeProvider portal="agency" visibleSections={BD_VISIBLE_SECTIONS}>
+    <StaffRealtimeProvider portal="bd" visibleSections={AGENCY_VISIBLE_SECTIONS}>
       <div className="flex min-h-screen bg-admin-base text-zinc-200">
         <header className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-3 h-14 bg-admin-base/95 border-b border-admin-border backdrop-blur-md">
           <button
@@ -19,12 +19,12 @@ const AgencyDashboardLayout: React.FC = () => {
             ☰
           </button>
           <div>
-            <p className="text-sm font-semibold text-white leading-tight">Agency</p>
+            <p className="text-sm font-semibold text-white leading-tight">BD</p>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Portal</p>
           </div>
         </header>
         <div className="hidden md:block shrink-0">
-          <AgencySidebar />
+          <BdSidebar />
         </div>
         {open && (
           <>
@@ -35,7 +35,7 @@ const AgencyDashboardLayout: React.FC = () => {
               onClick={() => setOpen(false)}
             />
             <div className="fixed left-0 top-0 bottom-0 z-[51] w-[min(18rem,88vw)] md:hidden shadow-2xl">
-              <AgencySidebar
+              <BdSidebar
                 className="min-h-full w-full border-r-0"
                 onNavigate={() => setOpen(false)}
                 showClose
@@ -54,4 +54,4 @@ const AgencyDashboardLayout: React.FC = () => {
   );
 };
 
-export default AgencyDashboardLayout;
+export default BdDashboardLayout;

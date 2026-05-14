@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import MetricCard from '../components/ui/MetricCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type OverviewData } from '../services/adminService';
-import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
+import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
 import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
+import GlobalStaleBanner from '../components/dashboard/GlobalStaleBanner';
+import RefreshButton from '../components/dashboard/RefreshButton';
+import StaleSectionBadge from '../components/dashboard/StaleSectionBadge';
+import { anySectionStale } from '../types/dashboardStale';
 
 /**
  * Admin overview: work queues + growth + live signals. Detail lives on dedicated pages.
@@ -15,36 +19,29 @@ const OverviewPage: React.FC = () => {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { refreshGeneration, connected, lastError } = useAdminRealtime();
+  const { stale, connected, lastError, pendingHint, markFresh } = useStaffRealtime();
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const overview = await adminService.getOverview({ from: dateRange.from, to: dateRange.to });
+      setData(overview);
+      markFresh(['overview', 'realtime']);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { error?: string } }; message?: string };
+      setError(ax.response?.data?.error || ax.message || 'Failed to load overview');
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange.from, dateRange.to, markFresh]);
+
   useEffect(() => {
-    let cancelled = false;
-    const silent = refreshGeneration > 0;
+    load();
+  }, [load]);
 
-    const run = async () => {
-      try {
-        if (!silent) {
-          setLoading(true);
-          setError('');
-        }
-        const overview = await adminService.getOverview({ from: dateRange.from, to: dateRange.to });
-        if (!cancelled) setData(overview);
-      } catch (err: unknown) {
-        const ax = err as { response?: { data?: { error?: string } }; message?: string };
-        if (!cancelled && !silent) {
-          setError(ax.response?.data?.error || ax.message || 'Failed to load overview');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshGeneration, dateRange.from, dateRange.to]);
+  const overviewStale = anySectionStale(stale, ['overview', 'realtime']);
 
   if (loading && !data) return <LoadingSpinner label="Loading overview…" />;
   if (error && !data)
@@ -76,9 +73,15 @@ const OverviewPage: React.FC = () => {
 
   return (
     <div>
+      {pendingHint && overviewStale && (
+        <GlobalStaleBanner message={pendingHint} onRefreshAll={load} loading={loading} />
+      )}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-bold text-white">Operations overview</h1>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            Operations overview
+            <StaleSectionBadge stale={overviewStale} />
+          </h1>
           <p className="text-xs text-gray-500 mt-0.5">
             Last updated: {formatDateTime(data.generatedAt)}
             {connected ? (
@@ -93,23 +96,7 @@ const OverviewPage: React.FC = () => {
             ) : null}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setLoading(true);
-            adminService
-              .getOverview({ from: dateRange.from, to: dateRange.to })
-              .then(setData)
-              .catch((err: unknown) => {
-                const ax = err as { response?: { data?: { error?: string } }; message?: string };
-                setError(ax.response?.data?.error || ax.message || 'Failed to load overview');
-              })
-              .finally(() => setLoading(false));
-          }}
-          className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition"
-        >
-          ↻ Refresh
-        </button>
+        <RefreshButton onRefresh={load} stale={overviewStale} loading={loading} />
       </div>
 
       <DateRangeFilter

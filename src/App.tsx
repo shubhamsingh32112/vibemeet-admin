@@ -7,11 +7,11 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AgentAuthProvider, useAgentAuth } from './contexts/AgentAuthContext';
+import { BdAuthProvider, useBdAuth } from './contexts/BdAuthContext';
 import { AgencyAuthProvider, useAgencyAuth } from './contexts/AgencyAuthContext';
 import Login from './components/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
-import AgentDashboardLayout from './components/layout/AgentDashboardLayout';
+import BdDashboardLayout from './components/layout/BdDashboardLayout';
 import AgencyDashboardLayout from './components/layout/AgencyDashboardLayout';
 import OverviewPage from './pages/OverviewPage';
 import CreatorsPage from './pages/CreatorsPage';
@@ -21,26 +21,19 @@ import CallsPage from './pages/CallsPage';
 import WithdrawalsPage from './pages/WithdrawalsPage';
 import SupportPage from './pages/SupportPage';
 import SystemPage from './pages/SystemPage';
-import AgentsManagePage from './pages/AgentsManagePage';
 import AgenciesManagePage from './pages/AgenciesManagePage';
-import AgentLoginPage from './pages/agent/AgentLoginPage';
-import AgentHomePage from './pages/agent/AgentHomePage';
-import AgentReferredUsersPage from './pages/agent/AgentReferredUsersPage';
-import AgentCreatorsPage from './pages/agent/AgentCreatorsPage';
-import AgentCreatorViewPage from './pages/agent/AgentCreatorViewPage';
-import AgentCreatorEditPage from './pages/agent/AgentCreatorEditPage';
-import AgentWithdrawalsPage from './pages/agent/AgentWithdrawalsPage';
+import BdsManagePage from './pages/BdsManagePage';
+import BdLoginPage from './pages/bd/BdLoginPage';
+import BdHomePage from './pages/bd/BdHomePage';
+import BdAgenciesPage from './pages/bd/BdAgenciesPage';
 import AgencyLoginPage from './pages/agency/AgencyLoginPage';
 import AgencyHomePage from './pages/agency/AgencyHomePage';
-import AgencyBdsPage from './pages/agency/AgencyBdsPage';
-
-/** True for `/agent` app routes (not admin `/agents` management). */
-function isAgentPortalPath(pathname: string): boolean {
-  if (pathname === '/agent' || pathname.startsWith('/agent/')) {
-    return pathname !== '/agent/login';
-  }
-  return false;
-}
+import AgencyReferredUsersPage from './pages/agency/AgencyReferredUsersPage';
+import AgencyCreatorsPage from './pages/agency/AgencyCreatorsPage';
+import AgencyCreatorViewPage from './pages/agency/AgencyCreatorViewPage';
+import AgencyCreatorEditPage from './pages/agency/AgencyCreatorEditPage';
+import AgencyWithdrawalsPage from './pages/agency/AgencyWithdrawalsPage';
+import AgencyChangePasswordPage from './pages/agency/AgencyChangePasswordPage';
 
 /** True for `/agency` app routes (not admin `/agencies` management). */
 function isAgencyPortalPath(pathname: string): boolean {
@@ -50,15 +43,23 @@ function isAgencyPortalPath(pathname: string): boolean {
   return false;
 }
 
+/** True for `/bd` app routes (not admin `/bds` management). */
+function isBdPortalPath(pathname: string): boolean {
+  if (pathname === '/bd' || pathname.startsWith('/bd/')) {
+    return pathname !== '/bd/login';
+  }
+  return false;
+}
+
 function loginRedirectForPath(pathname: string): string {
+  if (isBdPortalPath(pathname)) return '/bd/login';
   if (isAgencyPortalPath(pathname)) return '/agency/login';
-  if (isAgentPortalPath(pathname)) return '/agent/login';
   return '/login';
 }
 
-const BdRouteAliasRedirect: React.FC = () => {
+const AgentRouteAliasRedirect: React.FC = () => {
   const loc = useLocation();
-  const to = `${loc.pathname.replace(/^\/bd/, '/agent')}${loc.search}`;
+  const to = `${loc.pathname.replace(/^\/agent/, '/agency')}${loc.search}`;
   return <Navigate to={to} replace />;
 };
 
@@ -93,34 +94,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const AgentProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAgent, loading } = useAgentAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
-        <div className="text-gray-400 text-sm">Loading…</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/agent/login" replace />;
-  }
-
-  if (!isAgent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
-        <p className="text-red-400 text-center">BD portal access required.</p>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-};
-
 const AgencyProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAgency, loading } = useAgencyAuth();
+  const { pathname } = useLocation();
 
   if (loading) {
     return (
@@ -137,21 +113,50 @@ const AgencyProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childre
   if (!isAgency) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
-        <p className="text-red-400 text-center">Agency access required.</p>
+        <p className="text-red-400 text-center">Agency portal access required.</p>
+      </div>
+    );
+  }
+
+  if (user.mustChangePassword && pathname !== '/agency/change-password') {
+    return <Navigate to="/agency/change-password" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const BdProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isBd, loading } = useBdAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="text-gray-400 text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/bd/login" replace />;
+  }
+
+  if (!isBd) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
+        <p className="text-red-400 text-center">BD access required.</p>
       </div>
     );
   }
 
   return <>{children}</>;
 };
-
 const UnknownRouteRedirect: React.FC = () => {
   const { pathname } = useLocation();
-  if (pathname.startsWith('/agency')) {
-    return <Navigate to="/agency/login" replace />;
+  if (pathname.startsWith('/bd')) {
+    return <Navigate to="/bd/login" replace />;
   }
-  if (isAgentPortalPath(pathname) || pathname.startsWith('/bd')) {
-    return <Navigate to="/agent/login" replace />;
+  if (isAgencyPortalPath(pathname) || pathname.startsWith('/agent')) {
+    return <Navigate to="/agency/login" replace />;
   }
   return <Navigate to="/" replace />;
 };
@@ -159,22 +164,22 @@ const UnknownRouteRedirect: React.FC = () => {
 const AppRoutes: React.FC = () => {
   const { pathname } = useLocation();
   const { user: adminUser, loading: adminLoading } = useAuth();
-  const { user: agentUser, loading: agentLoading } = useAgentAuth();
   const { user: agencyUser, loading: agencyLoading } = useAgencyAuth();
-
-  const onAgentApp =
-    pathname === '/agent/login' ||
-    pathname === '/agent' ||
-    pathname.startsWith('/agent/') ||
-    pathname === '/bd/login' ||
-    pathname.startsWith('/bd/');
+  const { user: bdUser, loading: bdLoading } = useBdAuth();
 
   const onAgencyApp =
     pathname === '/agency/login' ||
     pathname === '/agency' ||
-    pathname.startsWith('/agency/');
+    pathname.startsWith('/agency/') ||
+    pathname === '/agent/login' ||
+    pathname.startsWith('/agent/');
 
-  const blockingLoading = onAgentApp ? agentLoading : onAgencyApp ? agencyLoading : adminLoading;
+  const onBdApp =
+    pathname === '/bd/login' ||
+    pathname === '/bd' ||
+    pathname.startsWith('/bd/');
+
+  const blockingLoading = onBdApp ? bdLoading : onAgencyApp ? agencyLoading : adminLoading;
 
   if (blockingLoading) {
     return (
@@ -186,21 +191,43 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/bd/login" element={<Navigate to="/agent/login" replace />} />
-      <Route path="/bd/*" element={<BdRouteAliasRedirect />} />
+      <Route path="/agent/login" element={<Navigate to="/agency/login" replace />} />
+      {/* One-release bookmark support for old middle-tier /agent URLs — remove next release */}
+      <Route path="/agent/*" element={<AgentRouteAliasRedirect />} />
 
       <Route
         path="/login"
         element={adminUser ? <Navigate to="/" replace /> : <Login />}
       />
       <Route
-        path="/agent/login"
-        element={agentUser ? <Navigate to="/agent" replace /> : <AgentLoginPage />}
+        path="/bd/login"
+        element={bdUser ? <Navigate to="/bd" replace /> : <BdLoginPage />}
       />
       <Route
         path="/agency/login"
-        element={agencyUser ? <Navigate to="/agency" replace /> : <AgencyLoginPage />}
+        element={
+          agencyUser ? (
+            <Navigate
+              to={agencyUser.mustChangePassword ? '/agency/change-password' : '/agency'}
+              replace
+            />
+          ) : (
+            <AgencyLoginPage />
+          )
+        }
       />
+
+      <Route
+        path="/bd"
+        element={
+          <BdProtectedRoute>
+            <BdDashboardLayout />
+          </BdProtectedRoute>
+        }
+      >
+        <Route index element={<BdHomePage />} />
+        <Route path="agencies" element={<BdAgenciesPage />} />
+      </Route>
 
       <Route
         path="/agency"
@@ -211,23 +238,12 @@ const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<AgencyHomePage />} />
-        <Route path="bds" element={<AgencyBdsPage />} />
-      </Route>
-
-      <Route
-        path="/agent"
-        element={
-          <AgentProtectedRoute>
-            <AgentDashboardLayout />
-          </AgentProtectedRoute>
-        }
-      >
-        <Route index element={<AgentHomePage />} />
-        <Route path="referred" element={<AgentReferredUsersPage />} />
-        <Route path="creators" element={<AgentCreatorsPage />} />
-        <Route path="creators/:creatorId/edit" element={<AgentCreatorEditPage />} />
-        <Route path="creators/:creatorId" element={<AgentCreatorViewPage />} />
-        <Route path="withdrawals" element={<AgentWithdrawalsPage />} />
+        <Route path="referred" element={<AgencyReferredUsersPage />} />
+        <Route path="creators" element={<AgencyCreatorsPage />} />
+        <Route path="creators/:creatorId/edit" element={<AgencyCreatorEditPage />} />
+        <Route path="creators/:creatorId" element={<AgencyCreatorViewPage />} />
+        <Route path="withdrawals" element={<AgencyWithdrawalsPage />} />
+        <Route path="change-password" element={<AgencyChangePasswordPage />} />
       </Route>
 
       <Route
@@ -246,7 +262,7 @@ const AppRoutes: React.FC = () => {
         <Route path="withdrawals" element={<WithdrawalsPage />} />
         <Route path="support" element={<SupportPage />} />
         <Route path="system" element={<SystemPage />} />
-        <Route path="agents" element={<AgentsManagePage />} />
+        <Route path="bds" element={<BdsManagePage />} />
         <Route path="agencies" element={<AgenciesManagePage />} />
       </Route>
       <Route path="*" element={<UnknownRouteRedirect />} />
@@ -260,13 +276,13 @@ function App() {
   return (
     <Router basename={basename}>
       <AuthProvider>
-        <AgentAuthProvider>
+        <BdAuthProvider>
           <AgencyAuthProvider>
             <div className="dark">
               <AppRoutes />
             </div>
           </AgencyAuthProvider>
-        </AgentAuthProvider>
+        </BdAuthProvider>
       </AuthProvider>
     </Router>
   );

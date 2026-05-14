@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import {
-  agentPortalService,
-  type AgentCreatorDetailData,
+  agencyPortalService,
+  type AgencyCreatorDetailData,
   type GalleryImageDto,
-} from '../../services/agentPortalService';
+} from '../../services/agencyPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
 import { normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
@@ -29,11 +29,11 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
-const AgentCreatorEditPage: React.FC = () => {
+const AgencyCreatorEditPage: React.FC = () => {
   const { creatorId } = useParams<{ creatorId: string }>();
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [data, setData] = useState<AgentCreatorDetailData | null>(null);
+  const [data, setData] = useState<AgencyCreatorDetailData | null>(null);
 
   const [name, setName] = useState('');
   const [about, setAbout] = useState('');
@@ -52,7 +52,7 @@ const AgentCreatorEditPage: React.FC = () => {
     setLoading(true);
     setErr('');
     try {
-      const d = await agentPortalService.getCreatorDetail(creatorId, 'today');
+      const d = await agencyPortalService.getCreatorDetail(creatorId, 'today');
       setData(d);
       setName(d.creator.name);
       setAbout(d.creator.about);
@@ -97,7 +97,7 @@ const AgentCreatorEditPage: React.FC = () => {
     setSaving(true);
     setErr('');
     try {
-      await agentPortalService.updateCreatorProfile(creatorId, {
+      await agencyPortalService.updateCreatorProfile(creatorId, {
         name: name.trim(),
         about: about.trim(),
         photo: photo.trim(),
@@ -105,7 +105,7 @@ const AgentCreatorEditPage: React.FC = () => {
         age: age === '' ? undefined : Number(age),
       });
       const avatarVal = syncAvatarWithPhoto ? photo.trim() : avatar.trim();
-      await agentPortalService.patchCreatorUser(creatorId, {
+      await agencyPortalService.patchCreatorUser(creatorId, {
         username: username.trim(),
         avatar: avatarVal || undefined,
         categories: cats,
@@ -165,7 +165,7 @@ const AgentCreatorEditPage: React.FC = () => {
       const b64 = await compressImage(file, 1200, 1200, 0.82, 400);
       const blob = await dataUrlToBlob(b64);
       // Cloudflare-Images direct upload (see CreatorEditModal for shape).
-      const { uploadUrl, sessionId } = await agentPortalService.creatorGalleryUploadUrl(
+      const { uploadUrl, sessionId } = await agencyPortalService.creatorGalleryUploadUrl(
         creatorId,
         GalleryContentType,
         blob.size,
@@ -177,7 +177,7 @@ const AgentCreatorEditPage: React.FC = () => {
         body: formData,
       });
       if (!put.ok) throw new Error(`Cloudflare upload failed (${put.status})`);
-      const imgs = await agentPortalService.creatorGalleryCommit(creatorId, sessionId);
+      const imgs = await agencyPortalService.creatorGalleryCommit(creatorId, sessionId);
       setGalleryImages(imgs.sort((a, b) => a.position - b.position));
     } catch (ex: unknown) {
       setErr(ex instanceof Error ? ex.message : 'Gallery upload failed');
@@ -190,7 +190,7 @@ const AgentCreatorEditPage: React.FC = () => {
     if (!creatorId || !confirm('Remove this gallery image?')) return;
     setGalleryBusy(true);
     try {
-      const imgs = await agentPortalService.creatorGalleryDelete(creatorId, imageId);
+      const imgs = await agencyPortalService.creatorGalleryDelete(creatorId, imageId);
       setGalleryImages(imgs.sort((a, b) => a.position - b.position));
     } catch (e: unknown) {
       const msg =
@@ -212,7 +212,7 @@ const AgentCreatorEditPage: React.FC = () => {
     ids[next] = t;
     setGalleryBusy(true);
     try {
-      const imgs = await agentPortalService.creatorGalleryReorder(creatorId, ids);
+      const imgs = await agencyPortalService.creatorGalleryReorder(creatorId, ids);
       setGalleryImages(imgs.sort((a, b) => a.position - b.position));
     } catch (e: unknown) {
       const msg =
@@ -237,10 +237,10 @@ const AgentCreatorEditPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-2xl pb-12">
       <div className="flex flex-wrap items-center gap-3">
-        <Link to={`/agent/creators/${creatorId}`} className="text-sm text-zinc-500 hover:text-white">
+        <Link to={`/agency/creators/${creatorId}`} className="text-sm text-zinc-500 hover:text-white">
           ← View profile
         </Link>
-        <Link to="/agent/creators" className="text-sm text-zinc-500 hover:text-white">
+        <Link to="/agency/creators" className="text-sm text-zinc-500 hover:text-white">
           All creators
         </Link>
       </div>
@@ -425,4 +425,4 @@ const AgentCreatorEditPage: React.FC = () => {
   );
 };
 
-export default AgentCreatorEditPage;
+export default AgencyCreatorEditPage;

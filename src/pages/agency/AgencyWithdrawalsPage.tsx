@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { agentPortalService, type AgentWithdrawalRow } from '../../services/agentPortalService';
+import { agencyPortalService, type AgencyWithdrawalRow } from '../../services/agencyPortalService';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -19,21 +19,21 @@ const statusVariant = (s: string) => {
   }
 };
 
-const payoutDetails = (w: AgentWithdrawalRow): string => {
+const payoutDetails = (w: AgencyWithdrawalRow): string => {
   if (w.upi) return `UPI: ${w.upi}`;
   if (w.accountNumber && w.ifsc) return `A/C: ${w.accountNumber} | IFSC: ${w.ifsc}`;
   return 'Payout details missing';
 };
 
-const AgentWithdrawalsPage: React.FC = () => {
-  const [rows, setRows] = useState<AgentWithdrawalRow[]>([]);
+const AgencyWithdrawalsPage: React.FC = () => {
+  const [rows, setRows] = useState<AgencyWithdrawalRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [action, setAction] = useState<{
-    w: AgentWithdrawalRow;
+    w: AgencyWithdrawalRow;
     type: 'approve' | 'reject' | 'mark-paid';
   } | null>(null);
   const [notes, setNotes] = useState('');
@@ -43,7 +43,7 @@ const AgentWithdrawalsPage: React.FC = () => {
     setLoading(true);
     setErr('');
     try {
-      const data = await agentPortalService.getWithdrawals({
+      const data = await agencyPortalService.getWithdrawals({
         status: statusFilter || undefined,
         page,
         limit: 50,
@@ -70,11 +70,11 @@ const AgentWithdrawalsPage: React.FC = () => {
     setBusy(true);
     try {
       if (action.type === 'approve') {
-        await agentPortalService.approveWithdrawal(action.w.id, notes || undefined);
+        await agencyPortalService.approveWithdrawal(action.w.id, notes || undefined);
       } else if (action.type === 'reject') {
-        await agentPortalService.rejectWithdrawal(action.w.id, notes.trim());
+        await agencyPortalService.rejectWithdrawal(action.w.id, notes.trim());
       } else {
-        await agentPortalService.markWithdrawalPaid(action.w.id, notes || undefined);
+        await agencyPortalService.markWithdrawalPaid(action.w.id, notes || undefined);
       }
       setAction(null);
       setNotes('');
@@ -279,4 +279,4 @@ const AgentWithdrawalsPage: React.FC = () => {
   );
 };
 
-export default AgentWithdrawalsPage;
+export default AgencyWithdrawalsPage;

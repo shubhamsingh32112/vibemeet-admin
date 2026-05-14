@@ -8,6 +8,8 @@ export interface AgencyUser {
   email: string;
   role: string;
   displayName?: string | null;
+  referralCode?: string | null;
+  mustChangePassword?: boolean;
 }
 
 interface AgencyAuthContextType {
@@ -16,33 +18,69 @@ interface AgencyAuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAgency: boolean;
+  updateUser: (patch: Partial<AgencyUser>) => void;
 }
 
 const AgencyAuthContext = createContext<AgencyAuthContextType | undefined>(undefined);
+
+function persistAgencyUser(u: AgencyUser | null) {
+  if (u) {
+    localStorage.setItem('agencyUser', JSON.stringify(u));
+  } else {
+    localStorage.removeItem('agencyUser');
+  }
+}
 
 export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AgencyUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('agencyToken');
-    const saved = localStorage.getItem('agencyUser');
-    if (token && saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem('agencyToken');
-        localStorage.removeItem('agencyUser');
+    let cancelled = false;
+
+    const init = async () => {
+      const token = localStorage.getItem('agencyToken');
+      const saved = localStorage.getItem('agencyUser');
+      let parsed: AgencyUser | null = null;
+      if (token && saved) {
+        try {
+          parsed = JSON.parse(saved) as AgencyUser;
+        } catch {
+          localStorage.removeItem('agencyToken');
+          localStorage.removeItem('agencyUser');
+        }
       }
-    }
-    setLoading(false);
+
+      if (token && parsed) {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/agency/summary`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const mustChangePassword = res.data?.data?.mustChangePassword === true;
+          parsed = { ...parsed, mustChangePassword };
+          persistAgencyUser(parsed);
+        } catch {
+          /* keep cached user; protected routes may 401 */
+        }
+      }
+
+      if (!cancelled) {
+        setUser(parsed);
+        setLoading(false);
+      }
+    };
+
+    init();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     const res = await axios.post(`${API_BASE_URL}/auth/agency-login`, { email, password });
     const { token, user: u } = res.data.data;
     localStorage.setItem('agencyToken', token);
-    localStorage.setItem('agencyUser', JSON.stringify(u));
+    persistAgencyUser(u);
     setUser(u);
   };
 
@@ -52,10 +90,19 @@ export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setUser(null);
   };
 
+  const updateUser = (patch: Partial<AgencyUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      persistAgencyUser(next);
+      return next;
+    });
+  };
+
   const isAgency = user?.role === 'agency';
 
   return (
-    <AgencyAuthContext.Provider value={{ user, loading, login, logout, isAgency }}>
+    <AgencyAuthContext.Provider value={{ user, loading, login, logout, isAgency, updateUser }}>
       {children}
     </AgencyAuthContext.Provider>
   );

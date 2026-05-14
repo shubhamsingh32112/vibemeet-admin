@@ -27,7 +27,6 @@ const SystemPage: React.FC = () => {
   const [data, setData] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [autoRefresh, setAutoRefresh] = useState(false);
   const [currentUpdate, setCurrentUpdate] = useState<GlobalAppUpdate | null>(null);
   const [updateLoading, setUpdateLoading] = useState(true);
   const [updateError, setUpdateError] = useState('');
@@ -72,12 +71,6 @@ const SystemPage: React.FC = () => {
   useEffect(() => {
     loadCurrentUpdate();
   }, [loadCurrentUpdate]);
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
-  }, [autoRefresh, load]);
 
   if (loading && !data) return <LoadingSpinner label="Checking system health…" />;
   if (error && !data)
@@ -149,15 +142,6 @@ const SystemPage: React.FC = () => {
           />
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-gray-400">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded bg-gray-800 border-gray-600 text-blue-500"
-            />
-            Auto-refresh (15s)
-          </label>
           <button
             onClick={load}
             disabled={loading}

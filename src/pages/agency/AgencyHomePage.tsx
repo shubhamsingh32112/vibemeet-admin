@@ -1,34 +1,41 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import MetricCard from '../../components/ui/MetricCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import {
-  agencyPortalService,
-  type AgencyDashboardData,
-} from '../../services/agencyPortalService';
+import RefreshButton from '../../components/dashboard/RefreshButton';
+import GlobalStaleBanner from '../../components/dashboard/GlobalStaleBanner';
+import StaleSectionBadge from '../../components/dashboard/StaleSectionBadge';
+import { useStaffRealtime } from '../../contexts/StaffRealtimeContext';
+import { anySectionStale } from '../../types/dashboardStale';
+import { agencyPortalService } from '../../services/agencyPortalService';
 
 const AgencyHomePage: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+  const [s, setS] = useState<Awaited<ReturnType<typeof agencyPortalService.getSummary>> | null>(null);
   const [err, setErr] = useState('');
-  const [d, setD] = useState<AgencyDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { stale, pendingHint, markFresh } = useStaffRealtime();
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setErr('');
     try {
-      const data = await agencyPortalService.getDashboard();
-      setD(data);
+      setLoading(true);
+      const data = await agencyPortalService.getSummary();
+      setS(data);
+      setErr('');
+      markFresh(['overview', 'creators', 'revenue', 'withdrawals']);
     } catch {
-      setErr('Failed to load dashboard');
-      setD(null);
+      setErr('Failed to load summary');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [markFresh]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  if (loading) {
+  const pageStale = anySectionStale(stale, ['overview', 'creators', 'revenue', 'withdrawals']);
+
+  if (loading && !s) {
     return (
       <div className="flex justify-center py-24">
         <LoadingSpinner />
@@ -36,177 +43,45 @@ const AgencyHomePage: React.FC = () => {
     );
   }
 
-  if (!d) {
-    return (
-      <div className="space-y-4">
-        {err && <p className="text-red-400 text-sm">{err}</p>}
-      </div>
-    );
-  }
+  const total = s?.totalCreators ?? s?.activeCreators ?? 0;
+  const online = s?.onlineCreators ?? 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {pendingHint && pageStale && (
+        <GlobalStaleBanner message={pendingHint} onRefreshAll={load} loading={loading} />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Agency dashboard</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Revenue from immutable ledger (call settlements). Balances update as calls settle.
-          </p>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            Dashboard
+            <StaleSectionBadge stale={pageStale} />
+          </h1>
+          <p className="text-sm text-zinc-500 mt-1">Your recruitment pipeline and payouts queue.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => load()}
-          className="text-xs px-3 py-1.5 rounded-lg border border-admin-border text-zinc-400 hover:text-white"
-        >
-          Refresh
-        </button>
+        <RefreshButton onRefresh={load} stale={pageStale} loading={loading} />
       </div>
       {err && <p className="text-red-400 text-sm">{err}</p>}
-
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Metric label="BD total" value={d.bdTotal} />
-        <Metric label="BD active" value={d.bdActive} accent="text-emerald-400" />
-        <Metric label="BD inactive" value={d.bdInactive} accent="text-amber-400" />
-        <Metric label="Wallet balance (coins)" value={d.staffCoinsBalance} accent="text-sky-400" />
-        <Metric label="Hosts" value={d.totalHosts} />
-        <Metric label="Hosts online" value={d.onlineHosts} />
-        <Metric label="Pending withdrawals" value={d.withdrawals.pendingCount} />
-        <Metric label="Completed withdrawals" value={d.withdrawals.completedCount} />
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Agency revenue (coins)</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-            <p className="text-xs text-zinc-500">Today (UTC)</p>
-            <p className="text-2xl font-bold text-white mt-1">{d.revenueCoins.today.toLocaleString()}</p>
-          </div>
-          <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-            <p className="text-xs text-zinc-500">Last 7 days</p>
-            <p className="text-2xl font-bold text-white mt-1">{d.revenueCoins.last7d.toLocaleString()}</p>
-          </div>
-          <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-            <p className="text-xs text-zinc-500">Last 30 days</p>
-            <p className="text-2xl font-bold text-white mt-1">{d.revenueCoins.last30d.toLocaleString()}</p>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">BD analytics (last 7 days)</h2>
-        <div className="overflow-x-auto rounded-xl border border-admin-border">
-          <table className="w-full text-sm text-left min-w-[720px]">
-            <thead className="bg-admin-elevated text-zinc-400">
-              <tr>
-                <th className="px-3 py-2">BD</th>
-                <th className="px-3 py-2">Code</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2 text-right">Hosts</th>
-                <th className="px-3 py-2 text-right">Online</th>
-                <th className="px-3 py-2 text-right">Calls 7d</th>
-                <th className="px-3 py-2 text-right">BD earn 7d</th>
-                <th className="px-3 py-2 text-right">Agency share 7d</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.bdAnalytics.map((row) => (
-                <tr key={row.id} className="border-t border-admin-border">
-                  <td className="px-3 py-2 text-zinc-200">
-                    <span className="block truncate max-w-[180px]">{row.email}</span>
-                    {row.displayName ? (
-                      <span className="text-xs text-zinc-500">{row.displayName}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-emerald-400/90">
-                    {row.referralCode || '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={
-                        row.agentDisabled ? 'text-red-400 text-xs' : 'text-emerald-400 text-xs'
-                      }
-                    >
-                      {row.agentDisabled ? 'Disabled' : 'Active'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.hostCount}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.onlineHostCount}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{row.callsLast7d}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-zinc-200">
-                    {row.bdEarningsCoinsLast7d.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-sky-300">
-                    {row.agencyRevenueFromBdLast7d.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-              {d.bdAnalytics.length === 0 && (
-                <tr>
-                  <td className="px-3 py-6 text-zinc-500 text-center" colSpan={8}>
-                    No BD accounts yet — create one under BD accounts.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Withdrawal history (agency)</h2>
-        <div className="overflow-x-auto rounded-xl border border-admin-border">
-          <table className="w-full text-sm">
-            <thead className="bg-admin-elevated text-zinc-400 text-left">
-              <tr>
-                <th className="px-3 py-2">Amount</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Requested</th>
-                <th className="px-3 py-2">Processed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.withdrawals.recent.map((w) => (
-                <tr key={w.id} className="border-t border-admin-border">
-                  <td className="px-3 py-2 text-white tabular-nums">{w.amount.toLocaleString()} coins</td>
-                  <td className="px-3 py-2 text-xs uppercase text-zinc-400">{w.status}</td>
-                  <td className="px-3 py-2 text-zinc-500 text-xs">
-                    {new Date(w.requestedAt || w.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 text-zinc-500 text-xs">
-                    {w.processedAt ? new Date(w.processedAt).toLocaleString() : '—'}
-                  </td>
-                </tr>
-              ))}
-              {d.withdrawals.recent.length === 0 && (
-                <tr>
-                  <td className="px-3 py-6 text-zinc-500 text-center" colSpan={4}>
-                    No withdrawal requests yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link to="/agency/referred" className="block">
+          <MetricCard
+            label="Awaiting promotion"
+            value={s?.referredUsersAwaitingPromotion ?? s?.pendingApplications ?? 0}
+            subtitle="Referred users — tap to review"
+          />
+        </Link>
+        <Link to="/agency/withdrawals" className="block">
+          <MetricCard label="Pending withdrawals" value={s?.pendingWithdrawals ?? 0} subtitle="Needs action" />
+        </Link>
+        <MetricCard label="Creators" value={total} subtitle={`${online} online`} />
+        <MetricCard
+          label="Agency earnings (7d)"
+          value={s?.agencyEarningsCoins?.last7d ?? 0}
+          subtitle={`Today: ${s?.agencyEarningsCoins?.today ?? 0}`}
+        />
       </div>
     </div>
   );
 };
-
-function Metric({
-  label,
-  value,
-  accent = 'text-white',
-}: {
-  label: string;
-  value: number;
-  accent?: string;
-}) {
-  return (
-    <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
-      <p className="text-[10px] text-zinc-500 uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold mt-1 tabular-nums ${accent}`}>{value.toLocaleString()}</p>
-    </div>
-  );
-}
 
 export default AgencyHomePage;

@@ -36,10 +36,10 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const [galleryBusy, setGalleryBusy] = useState(false);
 
-  const [agentsLoading, setAgentsLoading] = useState(false);
-  const [agentsError, setAgentsError] = useState('');
-  const [agents, setAgents] = useState<{ id: string; label: string }[]>([]);
-  const [targetAgentId, setTargetAgentId] = useState<string>(row.assignedAgentId || '');
+  const [agenciesLoading, setAgenciesLoading] = useState(false);
+  const [agenciesError, setAgenciesError] = useState('');
+  const [agencies, setAgencies] = useState<{ id: string; label: string }[]>([]);
+  const [targetAgencyId, setTargetAgencyId] = useState<string>(row.assignedAgencyId || '');
   const [transferReason, setTransferReason] = useState('');
 
   const [name, setName] = useState(row.name);
@@ -57,20 +57,20 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     setLoadError('');
     setLoading(true);
     try {
-      setAgentsError('');
-      setAgentsLoading(true);
-      const agentRows = await adminService.listAgentsBrief().catch((e: unknown) => {
+      setAgenciesError('');
+      setAgenciesLoading(true);
+      const agencyRows = await adminService.listAgenciesBrief().catch((e: unknown) => {
         const err = e as { response?: { data?: { error?: string } }; message?: string };
-        setAgentsError(err.response?.data?.error || err.message || 'Failed to load agents');
+        setAgenciesError(err.response?.data?.error || err.message || 'Failed to load agencies');
         return [];
       });
-      setAgents(
-        (agentRows || []).map((a) => ({
+      setAgencies(
+        (agencyRows || []).map((a) => ({
           id: a.id,
           label: a.displayName || a.email || a.id,
         }))
       );
-      setAgentsLoading(false);
+      setAgenciesLoading(false);
 
       const c = await creatorService.getById(row.creatorId);
       setName(c.name);
@@ -89,7 +89,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       setLoadError(err.response?.data?.error || err.message || 'Failed to load creator');
     } finally {
       setLoading(false);
-      setAgentsLoading(false);
+      setAgenciesLoading(false);
     }
   }, [row.creatorId, row.username, row.avatar]);
 
@@ -97,13 +97,13 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     load();
   }, [load]);
 
-  const handleTransferAgent = async () => {
-    if (!targetAgentId) {
-      alert('Select a target agent');
+  const handleTransferAgency = async () => {
+    if (!targetAgencyId) {
+      alert('Select a target agency');
       return;
     }
-    if (targetAgentId === row.assignedAgentId) {
-      alert('Creator is already assigned to this agent');
+    if (targetAgencyId === row.assignedAgencyId) {
+      alert('Creator is already assigned to this agency');
       return;
     }
     const reason = transferReason.trim();
@@ -113,8 +113,8 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     }
     if (
       !confirm(
-        `Transfer this creator to the selected agent?\n\nCurrent: ${row.assignedAgentLabel || row.assignedAgentId || 'Unassigned'}\nTarget: ${
-          agents.find((a) => a.id === targetAgentId)?.label || targetAgentId
+        `Transfer this creator to the selected agency?\n\nCurrent: ${row.assignedAgencyLabel || row.assignedAgencyId || 'Unassigned'}\nTarget: ${
+          agencies.find((a) => a.id === targetAgencyId)?.label || targetAgencyId
         }\n\nThis will retroactively change referral attribution.`
       )
     ) {
@@ -122,8 +122,8 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     }
     setSaving(true);
     try {
-      await adminService.transferCreatorToAgent(row.creatorId, {
-        targetAgentId,
+      await adminService.transferCreatorToAgency(row.creatorId, {
+        targetAgencyId,
         reason,
       });
       onSaved();
@@ -455,25 +455,25 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
 
               <section className="space-y-3 border-t border-zinc-800 pt-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-400">
-                  Agent assignment
+                  Agency assignment
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  Current: {row.assignedAgentLabel || row.assignedAgentId || 'Unassigned'}
+                  Current: {row.assignedAgencyLabel || row.assignedAgencyId || 'Unassigned'}
                 </p>
 
-                {agentsError ? (
-                  <p className="text-xs text-red-400">{agentsError}</p>
+                {agenciesError ? (
+                  <p className="text-xs text-red-400">{agenciesError}</p>
                 ) : null}
 
-                <label className="block text-xs text-zinc-500">Transfer to agent</label>
+                <label className="block text-xs text-zinc-500">Transfer to agency</label>
                 <select
-                  value={targetAgentId}
-                  onChange={(e) => setTargetAgentId(e.target.value)}
-                  disabled={agentsLoading || saving || loading}
+                  value={targetAgencyId}
+                  onChange={(e) => setTargetAgencyId(e.target.value)}
+                  disabled={agenciesLoading || saving || loading}
                   className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm disabled:opacity-50"
                 >
                   <option value="">Unassigned</option>
-                  {agents.map((a) => (
+                  {agencies.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.label}
                     </option>
@@ -484,7 +484,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                 <input
                   value={transferReason}
                   onChange={(e) => setTransferReason(e.target.value)}
-                  placeholder="e.g. moved to new agent team"
+                  placeholder="e.g. moved to new agency team"
                   disabled={saving || loading}
                   className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm"
                 />
@@ -496,14 +496,14 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                       saving ||
                       loading ||
                       !!loadError ||
-                      agentsLoading ||
-                      !targetAgentId ||
-                      targetAgentId === (row.assignedAgentId || '')
+                      agenciesLoading ||
+                      !targetAgencyId ||
+                      targetAgencyId === (row.assignedAgencyId || '')
                     }
-                    onClick={handleTransferAgent}
+                    onClick={handleTransferAgency}
                     className="min-h-[44px] px-4 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-200 font-medium disabled:opacity-50"
                   >
-                    Transfer agent
+                    Transfer agency
                   </button>
                 </div>
               </section>

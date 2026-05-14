@@ -1,12 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAgentAuth } from '../../contexts/AgentAuthContext';
+import { useBdAuth } from '../../contexts/BdAuthContext';
 
 const items = [
-  { path: '/agent', label: 'Dashboard', icon: '📊', end: true },
-  { path: '/agent/referred', label: 'Referred users', icon: '👥' },
-  { path: '/agent/creators', label: 'Creators', icon: '🎓' },
-  { path: '/agent/withdrawals', label: 'Withdrawals', icon: '💸' },
+  { path: '/bd', label: 'Dashboard', icon: '📊', end: true },
+  { path: '/bd/agencies', label: 'Agency accounts', icon: '🏢' },
 ];
 
 type Props = {
@@ -16,13 +14,13 @@ type Props = {
   onClose?: () => void;
 };
 
-const AgentSidebar: React.FC<Props> = ({
+const BdSidebar: React.FC<Props> = ({
   className = '',
   onNavigate,
   showClose,
   onClose,
 }) => {
-  const { logout, user } = useAgentAuth();
+  const { logout, user } = useBdAuth();
   return (
     <aside
       className={`w-56 min-h-screen bg-admin-surface border-r border-admin-border flex flex-col ${className}`}
@@ -66,9 +64,7 @@ const AgentSidebar: React.FC<Props> = ({
         ))}
       </nav>
       <div className="border-t border-admin-border px-4 py-3 space-y-1">
-        <p className="text-[10px] text-zinc-500">Referral code</p>
-        <p className="text-xs font-mono text-emerald-400">{user?.referralCode || '—'}</p>
-        <p className="text-xs text-zinc-500 truncate pt-2">{user?.email}</p>
+        <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
         <button
           type="button"
           onClick={logout}
@@ -81,4 +77,4 @@ const AgentSidebar: React.FC<Props> = ({
   );
 };
 
-export default AgentSidebar;
+export default BdSidebar;

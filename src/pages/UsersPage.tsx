@@ -5,7 +5,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   adminService,
-  type AdminAgentBrief,
+  type AdminAgencyBrief,
   type UserAnalytics,
   type UserLedger,
 } from '../services/adminService';
@@ -19,8 +19,8 @@ const UsersPage: React.FC = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-  const [referrerAgentId, setReferrerAgentId] = useState('');
-  const [agents, setAgents] = useState<AdminAgentBrief[]>([]);
+  const [referrerAgencyId, setReferrerAgencyId] = useState('');
+  const [agencies, setAgencies] = useState<AdminAgencyBrief[]>([]);
   const [sortBy, setSortBy] = useState('');
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
@@ -42,7 +42,7 @@ const UsersPage: React.FC = () => {
         query: search || undefined,
         role: roleFilter !== 'all' ? roleFilter : undefined,
         sort: sortBy || undefined,
-        referrerAgentId: referrerAgentId || undefined,
+        referrerAgencyId: referrerAgencyId || undefined,
         from: dateRange.from,
         to: dateRange.to,
       });
@@ -52,16 +52,16 @@ const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter, sortBy, referrerAgentId, dateRange.from, dateRange.to]);
+  }, [search, roleFilter, sortBy, referrerAgencyId, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     let ok = true;
     (async () => {
       try {
-        const list = await adminService.listAgentsBrief();
-        if (ok) setAgents(list);
+        const list = await adminService.listAgenciesBrief();
+        if (ok) setAgencies(list);
       } catch {
-        if (ok) setAgents([]);
+        if (ok) setAgencies([]);
       }
     })();
     return () => {
@@ -170,7 +170,7 @@ const UsersPage: React.FC = () => {
           {row.referrerLabel && (
             <p className="text-gray-500 mt-0.5 truncate max-w-[180px]" title={row.referrerLabel}>
               via {row.referrerLabel}
-              {row.referrerIsAgent ? ' (agent)' : ''}
+              {row.referrerIsAgency ? ' (agency)' : ''}
             </p>
           )}
         </div>
@@ -311,13 +311,13 @@ const UsersPage: React.FC = () => {
           <option value="admin">Admins</option>
         </select>
         <select
-          value={referrerAgentId}
-          onChange={(e) => setReferrerAgentId(e.target.value)}
+          value={referrerAgencyId}
+          onChange={(e) => setReferrerAgencyId(e.target.value)}
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none max-w-[220px]"
-          title="Show only users referred by this agent"
+          title="Show only users referred by this agency"
         >
           <option value="">All referrers</option>
-          {agents.map((a) => (
+          {agencies.map((a) => (
             <option key={a.id} value={a.id}>
               {a.displayName || a.email || a.id.slice(-6)}
             </option>

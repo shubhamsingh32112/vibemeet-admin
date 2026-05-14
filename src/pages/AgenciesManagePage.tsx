@@ -6,8 +6,11 @@ interface AgencyRow {
   id: string;
   email: string;
   displayName: string | null;
+  referralCode: string | null;
   agencyDisabled: boolean;
-  bdCount: number;
+  pendingApplications: number;
+  activeCreators: number;
+  pendingWithdrawals: number;
   createdAt: string;
 }
 
@@ -16,9 +19,9 @@ const AgenciesManagePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [creating, setCreating] = useState(false);
-  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,15 +44,10 @@ const AgenciesManagePage: React.FC = () => {
     e.preventDefault();
     setCreating(true);
     setErr('');
-    setGeneratedPassword(null);
     try {
-      const res = await api.post('/admin/agencies', {
-        email,
-        displayName: displayName.trim() ? displayName.trim() : undefined,
-      });
-      const pwd = res.data?.data?.generatedPassword as string | undefined;
-      if (pwd) setGeneratedPassword(pwd);
+      await api.post('/admin/agencies', { email, password, displayName: displayName || undefined });
       setEmail('');
+      setPassword('');
       setDisplayName('');
       await load();
     } catch (ex: unknown) {
@@ -85,7 +83,8 @@ const AgenciesManagePage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Agencies</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          Create agency portal accounts. BD staff are hired under each agency from the agency dashboard.
+          Create agency (middle-tier) accounts with referral codes and portal access. Managed under BDs
+          when applicable.
         </p>
       </div>
 
@@ -93,14 +92,8 @@ const AgenciesManagePage: React.FC = () => {
         onSubmit={create}
         className="rounded-xl border border-admin-border bg-admin-surface p-4 max-w-xl space-y-3"
       >
-        <h2 className="text-lg font-semibold text-white">New agency</h2>
+        <h2 className="text-lg font-semibold text-white">New agency account</h2>
         {err && <p className="text-red-400 text-sm">{err}</p>}
-        {generatedPassword && (
-          <div className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
-            <p className="font-semibold text-emerald-100">One-time password (copy now)</p>
-            <p className="font-mono text-xs mt-1 break-all">{generatedPassword}</p>
-          </div>
-        )}
         <input
           type="email"
           placeholder="Email"
@@ -110,14 +103,20 @@ const AgenciesManagePage: React.FC = () => {
           required
         />
         <input
+          type="password"
+          placeholder="Password (min 8)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+          required
+          minLength={8}
+        />
+        <input
           placeholder="Display name (optional)"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           className="w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
         />
-        <p className="text-[11px] text-zinc-500">
-          A random secure password is generated on create and shown once above.
-        </p>
         <button
           type="submit"
           disabled={creating}
@@ -132,24 +131,23 @@ const AgenciesManagePage: React.FC = () => {
           <thead className="bg-admin-elevated text-zinc-400">
             <tr>
               <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">BD accounts</th>
-              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Code</th>
+              <th className="px-4 py-3" title="Referred users not yet creators">
+                Await promote
+              </th>
+              <th className="px-4 py-3">Creators</th>
+              <th className="px-4 py-3">WD pend.</th>
               <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody>
             {agencies.map((a) => (
               <tr key={a.id} className="border-t border-admin-border">
-                <td className="px-4 py-3 text-zinc-200">
-                  <span className="block">{a.email}</span>
-                  {a.displayName ? (
-                    <span className="text-xs text-zinc-500">{a.displayName}</span>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3">{a.bdCount}</td>
-                <td className="px-4 py-3 text-zinc-500 text-xs">
-                  {new Date(a.createdAt).toLocaleString()}
-                </td>
+                <td className="px-4 py-3 text-zinc-200">{a.email}</td>
+                <td className="px-4 py-3 font-mono text-xs text-emerald-400">{a.referralCode}</td>
+                <td className="px-4 py-3">{a.pendingApplications}</td>
+                <td className="px-4 py-3">{a.activeCreators}</td>
+                <td className="px-4 py-3">{a.pendingWithdrawals}</td>
                 <td className="px-4 py-3">
                   <button
                     type="button"

@@ -9,7 +9,7 @@ import {
   type AdminWithdrawal,
   type WithdrawalSummary,
 } from '../services/adminService';
-import { useAdminRealtime } from '../contexts/AdminRealtimeContext';
+import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
 import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
@@ -25,7 +25,7 @@ const statusVariant = (s: string) => {
 };
 
 const WithdrawalsPage: React.FC = () => {
-  const { refreshGeneration } = useAdminRealtime();
+  const { markFresh } = useStaffRealtime();
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
   const [summary, setSummary] = useState<WithdrawalSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,12 +57,13 @@ const WithdrawalsPage: React.FC = () => {
       setSummary(data.summary);
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total);
+      markFresh(['withdrawals']);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, refreshGeneration, dateRange.from, dateRange.to]);
+  }, [page, statusFilter, dateRange.from, dateRange.to, markFresh]);
 
   useEffect(() => {
     load();

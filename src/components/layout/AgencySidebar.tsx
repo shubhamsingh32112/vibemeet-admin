@@ -4,7 +4,9 @@ import { useAgencyAuth } from '../../contexts/AgencyAuthContext';
 
 const items = [
   { path: '/agency', label: 'Dashboard', icon: '📊', end: true },
-  { path: '/agency/bds', label: 'BD accounts', icon: '🤝' },
+  { path: '/agency/referred', label: 'Referred users', icon: '👥' },
+  { path: '/agency/creators', label: 'Creators', icon: '🎓' },
+  { path: '/agency/withdrawals', label: 'Withdrawals', icon: '💸' },
 ];
 
 type Props = {
@@ -64,7 +66,9 @@ const AgencySidebar: React.FC<Props> = ({
         ))}
       </nav>
       <div className="border-t border-admin-border px-4 py-3 space-y-1">
-        <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+        <p className="text-[10px] text-zinc-500">Referral code</p>
+        <p className="text-xs font-mono text-emerald-400">{user?.referralCode || '—'}</p>
+        <p className="text-xs text-zinc-500 truncate pt-2">{user?.email}</p>
         <button
           type="button"
           onClick={logout}

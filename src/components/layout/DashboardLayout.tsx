@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { AdminRealtimeProvider } from '../../contexts/AdminRealtimeContext';
+import { StaffRealtimeProvider } from '../../contexts/StaffRealtimeContext';
+import { ADMIN_VISIBLE_SECTIONS } from '../../types/dashboardStale';
 import Sidebar from './Sidebar';
 
 const DashboardLayout: React.FC = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <AdminRealtimeProvider>
+    <StaffRealtimeProvider portal="admin" visibleSections={ADMIN_VISIBLE_SECTIONS}>
     <div className="flex min-h-screen bg-admin-base text-zinc-200">
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-3 h-14 bg-admin-base/95 border-b border-admin-border backdrop-blur-md supports-[backdrop-filter]:bg-admin-base/80">
         <button
@@ -53,7 +54,7 @@ const DashboardLayout: React.FC = () => {
         </div>
       </main>
     </div>
-    </AdminRealtimeProvider>
+    </StaffRealtimeProvider>
   );
 };
 

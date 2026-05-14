@@ -2,22 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import {
-  agentPortalService,
-  type AgentCreatorDetailData,
-  type AgentCreatorsPeriod,
-} from '../../services/agentPortalService';
+  agencyPortalService,
+  type AgencyCreatorDetailData,
+  type AgencyCreatorsPeriod,
+} from '../../services/agencyPortalService';
 
-const PERIODS: { value: AgentCreatorsPeriod; label: string }[] = [
+const PERIODS: { value: AgencyCreatorsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
   { value: 'all', label: 'All time' },
 ];
 
-const AgentCreatorViewPage: React.FC = () => {
+const AgencyCreatorViewPage: React.FC = () => {
   const { creatorId } = useParams<{ creatorId: string }>();
-  const [period, setPeriod] = useState<AgentCreatorsPeriod>('today');
-  const [data, setData] = useState<AgentCreatorDetailData | null>(null);
+  const [period, setPeriod] = useState<AgencyCreatorsPeriod>('today');
+  const [data, setData] = useState<AgencyCreatorDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -28,7 +28,7 @@ const AgentCreatorViewPage: React.FC = () => {
       setLoading(true);
       setErr('');
       try {
-        const d = await agentPortalService.getCreatorDetail(creatorId, period);
+        const d = await agencyPortalService.getCreatorDetail(creatorId, period);
         if (ok) setData(d);
       } catch {
         if (ok) setErr('Failed to load creator');
@@ -53,7 +53,7 @@ const AgentCreatorViewPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center py-24 gap-4">
         <p className="text-red-400">{err || 'Creator not found'}</p>
-        <Link to="/agent/creators" className="text-sm text-emerald-400 hover:underline">
+        <Link to="/agency/creators" className="text-sm text-emerald-400 hover:underline">
           ← Back to creators
         </Link>
       </div>
@@ -66,11 +66,11 @@ const AgentCreatorViewPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex flex-wrap items-center gap-3 justify-between">
-        <Link to="/agent/creators" className="text-sm text-zinc-500 hover:text-white">
+        <Link to="/agency/creators" className="text-sm text-zinc-500 hover:text-white">
           ← Creators
         </Link>
         <Link
-          to={`/agent/creators/${creatorId}/edit`}
+          to={`/agency/creators/${creatorId}/edit`}
           className="text-sm rounded-xl bg-admin-accent text-admin-base font-semibold px-4 py-2"
         >
           Edit profile
@@ -81,7 +81,7 @@ const AgentCreatorViewPage: React.FC = () => {
         <span className="text-xs text-zinc-500">Metrics period:</span>
         <select
           value={period}
-          onChange={(e) => setPeriod(e.target.value as AgentCreatorsPeriod)}
+          onChange={(e) => setPeriod(e.target.value as AgencyCreatorsPeriod)}
           className="rounded-lg bg-admin-base border border-admin-border text-white text-sm px-2 py-1.5"
         >
           {PERIODS.map((p) => (
@@ -210,7 +210,7 @@ const AgentCreatorViewPage: React.FC = () => {
           <p className="text-zinc-300 mt-1">
             {pendingWithdrawal.amount} coins · requested {new Date(pendingWithdrawal.requestedAt).toLocaleString()}
           </p>
-          <Link to="/agent/withdrawals" className="text-emerald-400 text-sm mt-2 inline-block hover:underline">
+          <Link to="/agency/withdrawals" className="text-emerald-400 text-sm mt-2 inline-block hover:underline">
             Go to withdrawals →
           </Link>
         </div>
@@ -219,4 +219,4 @@ const AgentCreatorViewPage: React.FC = () => {
   );
 };
 
-export default AgentCreatorViewPage;
+export default AgencyCreatorViewPage;

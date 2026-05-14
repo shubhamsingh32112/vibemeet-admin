@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAgentAuth } from '../../contexts/AgentAuthContext';
+import { useBdAuth } from '../../contexts/BdAuthContext';
 
-const AgentLoginPage: React.FC = () => {
-  const { login } = useAgentAuth();
+const BdLoginPage: React.FC = () => {
+  const { login } = useBdAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,7 @@ const AgentLoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/agent', { replace: true });
+      navigate('/bd', { replace: true });
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -32,7 +32,7 @@ const AgentLoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-admin-base px-4">
       <div className="w-full max-w-md rounded-2xl border border-admin-border bg-admin-surface p-6 shadow-xl">
         <h1 className="text-xl font-bold text-white mb-1">BD sign in</h1>
-        <p className="text-sm text-zinc-500 mb-6">BD / recruiter portal — not for super-admin.</p>
+        <p className="text-sm text-zinc-500 mb-6">Manage agency accounts under your BD organization.</p>
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="block text-xs text-zinc-400 mb-1">Email</label>
@@ -70,4 +70,4 @@ const AgentLoginPage: React.FC = () => {
   );
 };
 
-export default AgentLoginPage;
+export default BdLoginPage;

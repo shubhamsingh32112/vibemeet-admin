@@ -96,8 +96,8 @@ export interface CreatorPerformance {
   categories: string[];
   price: number;
   isOnline: boolean;
-  assignedAgentId: string | null;
-  assignedAgentLabel: string | null;
+  assignedAgencyId: string | null;
+  assignedAgencyLabel: string | null;
   email: string | null;
   phone: string | null;
   coins: number;
@@ -142,10 +142,10 @@ export interface UserAnalytics {
   referredByUserId?: string | null;
   referralCodeUsed?: string | null;
   referrerLabel?: string | null;
-  referrerIsAgent?: boolean;
+  referrerIsAgency?: boolean;
 }
 
-export interface AdminAgentBrief {
+export interface AdminAgencyBrief {
   id: string;
   email: string | null;
   displayName: string | null;
@@ -382,7 +382,7 @@ export interface AdminWithdrawal {
   upi: string | null;
   accountNumber: string | null;
   ifsc: string | null;
-  assignedAgentId?: string | null;
+  assignedAgencyId?: string | null;
 }
 
 export interface WithdrawalSummary {
@@ -521,7 +521,7 @@ export const adminService = {
     query?: string;
     role?: string;
     sort?: string;
-    referrerAgentId?: string;
+    referrerAgencyId?: string;
     from?: string;
     to?: string;
   }): Promise<UserAnalytics[]> => {
@@ -529,26 +529,26 @@ export const adminService = {
     if (params?.query) searchParams.append('query', params.query);
     if (params?.role) searchParams.append('role', params.role);
     if (params?.sort) searchParams.append('sort', params.sort);
-    if (params?.referrerAgentId) searchParams.append('referrerAgentId', params.referrerAgentId);
+    if (params?.referrerAgencyId) searchParams.append('referrerAgencyId', params.referrerAgencyId);
     if (params?.from) searchParams.append('from', params.from);
     if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/users/analytics?${searchParams.toString()}`);
     return res.data.data.users;
   },
 
-  listAgentsBrief: async (): Promise<AdminAgentBrief[]> => {
-    const res = await api.get('/admin/agents/brief');
-    return res.data.data.agents as AdminAgentBrief[];
+  listAgenciesBrief: async (): Promise<AdminAgencyBrief[]> => {
+    const res = await api.get('/admin/agencies/brief');
+    return res.data.data.agencies as AdminAgencyBrief[];
   },
 
-  transferCreatorToAgent: async (
+  transferCreatorToAgency: async (
     creatorId: string,
-    body: { targetAgentId: string; reason: string }
+    body: { targetAgencyId: string; reason: string }
   ): Promise<{
     creatorId: string;
     creatorUserId: string;
-    oldAssignedAgentId: string | null;
-    newAssignedAgentId: string;
+    oldAssignedAgencyId: string | null;
+    newAssignedAgencyId: string;
     oldReferredByUserId: string | null;
     newReferredByUserId: string;
     oldReferralCodeUsed: string | null;
@@ -557,7 +557,7 @@ export const adminService = {
     pendingWithdrawalsReassigned: number;
   }> => {
     const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const res = await api.post(`/admin/creators/${creatorId}/transfer-agent`, body, {
+    const res = await api.post(`/admin/creators/${creatorId}/transfer-agency`, body, {
       headers: { 'x-idempotency-key': idempotencyKey },
     });
     return res.data.data;

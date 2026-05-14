@@ -3,15 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import {
-  agentPortalService,
-  type AgentCreatorRow,
-  type AgentCreatorsPeriod,
-  type AgentSearchUserRow,
-} from '../../services/agentPortalService';
+  agencyPortalService,
+  type AgencyCreatorRow,
+  type AgencyCreatorsPeriod,
+  type AgencySearchUserRow,
+} from '../../services/agencyPortalService';
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
 
-const PERIODS: { value: AgentCreatorsPeriod; label: string }[] = [
+const PERIODS: { value: AgencyCreatorsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
@@ -31,7 +31,7 @@ const SORTS: { value: string; label: string }[] = [
   { value: 'updatedAt', label: 'Updated' },
 ];
 
-function periodColumnLabel(p: AgentCreatorsPeriod): string {
+function periodColumnLabel(p: AgencyCreatorsPeriod): string {
   switch (p) {
     case 'today':
       return 'Today';
@@ -49,22 +49,22 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
-const AgentCreatorsPage: React.FC = () => {
+const AgencyCreatorsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [rows, setRows] = useState<AgentCreatorRow[]>([]);
+  const [rows, setRows] = useState<AgencyCreatorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [period, setPeriod] = useState<AgentCreatorsPeriod>('today');
+  const [period, setPeriod] = useState<AgencyCreatorsPeriod>('today');
   const [sort, setSort] = useState('talkMinutesPeriod');
   const [dir, setDir] = useState<'asc' | 'desc'>('desc');
 
   const [addOpen, setAddOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  const [searchResults, setSearchResults] = useState<AgentSearchUserRow[]>([]);
+  const [searchResults, setSearchResults] = useState<AgencySearchUserRow[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AgentSearchUserRow | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AgencySearchUserRow | null>(null);
   const [formName, setFormName] = useState('');
   const [formAbout, setFormAbout] = useState('');
   const [formPhoto, setFormPhoto] = useState('');
@@ -74,7 +74,7 @@ const AgentCreatorsPage: React.FC = () => {
   const [createErr, setCreateErr] = useState('');
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<AgentCreatorRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AgencyCreatorRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState('');
 
@@ -82,7 +82,7 @@ const AgentCreatorsPage: React.FC = () => {
     setLoading(true);
     setErr('');
     try {
-      const data = await agentPortalService.getCreators({
+      const data = await agencyPortalService.getCreators({
         page,
         limit: 30,
         period,
@@ -106,7 +106,7 @@ const AgentCreatorsPage: React.FC = () => {
     setSearching(true);
     setCreateErr('');
     try {
-      const users = await agentPortalService.searchUsersForAgent(searchQ.trim(), 30);
+      const users = await agencyPortalService.searchUsersForAgency(searchQ.trim(), 30);
       setSearchResults(users);
     } catch {
       setCreateErr('Search failed');
@@ -172,7 +172,7 @@ const AgentCreatorsPage: React.FC = () => {
     setCreating(true);
     setCreateErr('');
     try {
-      const { creator } = await agentPortalService.createAgentCreator({
+      const { creator } = await agencyPortalService.createAgencyCreator({
         userId: selectedUser.id,
         name: formName.trim(),
         about: formAbout.trim(),
@@ -181,7 +181,7 @@ const AgentCreatorsPage: React.FC = () => {
         ...(formAge !== '' ? { age: Number(formAge) } : {}),
       });
       setAddOpen(false);
-      navigate(`/agent/creators/${creator.id}/edit`);
+      navigate(`/agency/creators/${creator.id}/edit`);
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
@@ -192,7 +192,7 @@ const AgentCreatorsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (c: AgentCreatorRow) => {
+  const handleDelete = async (c: AgencyCreatorRow) => {
     setDeleteTarget(c);
     setDeleteErr('');
     setDeleteOpen(true);
@@ -203,7 +203,7 @@ const AgentCreatorsPage: React.FC = () => {
     setDeleting(true);
     setDeleteErr('');
     try {
-      await agentPortalService.deleteCreator(deleteTarget.id);
+      await agencyPortalService.deleteCreator(deleteTarget.id);
       setDeleteOpen(false);
       setDeleteTarget(null);
       load();
@@ -246,7 +246,7 @@ const AgentCreatorsPage: React.FC = () => {
             value={period}
             onChange={(e) => {
               setPage(1);
-              setPeriod(e.target.value as AgentCreatorsPeriod);
+              setPeriod(e.target.value as AgencyCreatorsPeriod);
             }}
             className="rounded-lg bg-admin-base border border-admin-border text-white text-sm px-2 py-1.5"
           >
@@ -312,13 +312,13 @@ const AgentCreatorsPage: React.FC = () => {
             )}
             <div className="flex flex-wrap gap-2 pt-2">
               <Link
-                to={`/agent/creators/${c.id}`}
+                to={`/agency/creators/${c.id}`}
                 className="text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5"
               >
                 View
               </Link>
               <Link
-                to={`/agent/creators/${c.id}/edit`}
+                to={`/agency/creators/${c.id}/edit`}
                 className="text-sm text-white border border-admin-border rounded-lg px-3 py-1.5"
               >
                 Edit
@@ -378,14 +378,14 @@ const AgentCreatorsPage: React.FC = () => {
                 <td className="px-3 py-3">
                   <div className="flex flex-wrap gap-1">
                     <Link
-                      to={`/agent/creators/${c.id}`}
+                      to={`/agency/creators/${c.id}`}
                       className="text-emerald-400 hover:underline whitespace-nowrap"
                     >
                       View
                     </Link>
                     <span className="text-zinc-600">·</span>
                     <Link
-                      to={`/agent/creators/${c.id}/edit`}
+                      to={`/agency/creators/${c.id}/edit`}
                       className="text-zinc-300 hover:underline whitespace-nowrap"
                     >
                       Edit
@@ -593,4 +593,4 @@ const AgentCreatorsPage: React.FC = () => {
   );
 };
 
-export default AgentCreatorsPage;
+export default AgencyCreatorsPage;
