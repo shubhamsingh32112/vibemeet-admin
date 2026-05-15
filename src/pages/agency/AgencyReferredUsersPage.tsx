@@ -358,7 +358,6 @@ const AgencyReferredUsersPage: React.FC = () => {
           </div>
         ))}
       </div>
-      </div>
 
       <ConfirmDialog
         open={rejectOpen && !!rejectTarget}
