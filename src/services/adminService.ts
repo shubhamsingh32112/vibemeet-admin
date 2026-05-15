@@ -10,7 +10,6 @@ export interface OverviewData {
     onlineCreators: number;
     recentSignups7d: number;
     onboarded: number;
-    welcomeBonusClaimed: number;
     byRole: Record<string, number>;
   };
   coins: {
@@ -127,7 +126,6 @@ export interface UserAnalytics {
   gender: string | null;
   role: string;
   coins: number;
-  welcomeBonusClaimed: boolean;
   categories: string[];
   isCreator: boolean;
   createdAt: string;
@@ -162,7 +160,6 @@ export interface UserLedger {
     gender: string | null;
     role: string;
     coins: number;
-    welcomeBonusClaimed: boolean;
     categories: string[];
     usernameChangeCount: number;
     createdAt: string;

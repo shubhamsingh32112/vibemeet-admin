@@ -224,16 +224,6 @@ const UsersPage: React.FC = () => {
       ),
     },
     {
-      key: 'welcomeBonusClaimed',
-      header: 'Bonus',
-      render: (row) =>
-        row.welcomeBonusClaimed ? (
-          <span className="text-emerald-400 text-xs">✓</span>
-        ) : (
-          <span className="text-gray-600 text-xs">—</span>
-        ),
-    },
-    {
       key: 'createdAt',
       header: 'Joined',
       sortable: true,

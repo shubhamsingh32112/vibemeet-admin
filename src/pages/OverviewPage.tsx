@@ -157,7 +157,7 @@ const OverviewPage: React.FC = () => {
       </div>
 
       <SectionHeader title="Coin economy (snapshot)" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         <MetricCard label="In circulation" value={coins.totalInCirculation} variant="warning" />
         <MetricCard
           label={data.selectedRange ? 'Net (range)' : 'Net today'}
@@ -168,11 +168,6 @@ const OverviewPage: React.FC = () => {
           label="Net (30d)"
           value={coins.last30d.net}
           variant={coins.last30d.net >= 0 ? 'success' : 'danger'}
-        />
-        <MetricCard
-          label="Welcome bonus claimed"
-          value={users.welcomeBonusClaimed}
-          subtitle="users"
         />
       </div>
 
