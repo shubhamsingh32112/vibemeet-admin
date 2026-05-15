@@ -18,8 +18,8 @@ const AgencyLoginPage: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/agency', { replace: true });
+      const u = await login(email, password);
+      navigate(u.mustChangePassword ? '/agency/change-password' : '/agency', { replace: true });
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err

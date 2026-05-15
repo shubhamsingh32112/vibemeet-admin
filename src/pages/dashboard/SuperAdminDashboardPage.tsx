@@ -152,7 +152,7 @@ const SuperAdminDashboardPage: React.FC = () => {
         <RankingLeaderboardCard
           variant="bds"
           title="Top performing BDs"
-          viewAllHref="/agents"
+          viewAllHref="/bds"
           rows={topBds.data?.rows ?? []}
           loading={topBds.isLoading}
           footnote="Revenue shows BD wallet balance (coins); commission rollup pending. INR preview uses VITE_DASHBOARD_INR_PER_COIN when set."

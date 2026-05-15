@@ -15,7 +15,7 @@ export interface AgencyUser {
 interface AgencyAuthContextType {
   user: AgencyUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AgencyUser>;
   logout: () => void;
   isAgency: boolean;
   updateUser: (patch: Partial<AgencyUser>) => void;
@@ -79,10 +79,11 @@ export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const login = async (email: string, password: string) => {
     const res = await axios.post(`${API_BASE_URL}/auth/agency-login`, { email, password });
-    const { token, user: u } = res.data.data;
+    const { token, user: u } = res.data.data as { token: string; user: AgencyUser };
     localStorage.setItem('agencyToken', token);
     persistAgencyUser(u);
     setUser(u);
+    return u;
   };
 
   const logout = () => {

@@ -5,6 +5,7 @@ import { useBdAuth } from '../../contexts/BdAuthContext';
 const items = [
   { path: '/bd', label: 'Dashboard', icon: '📊', end: true },
   { path: '/bd/agencies', label: 'Agency accounts', icon: '🏢' },
+  { path: '/bd/wallet', label: 'Wallet', icon: '💰' },
 ];
 
 type Props = {

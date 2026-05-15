@@ -26,8 +26,10 @@ const ROUTE_TITLES: Array<{ match: (p: string) => boolean; title: string }> = [
   { match: (p) => p.startsWith('/withdrawals'), title: 'Payout requests' },
   { match: (p) => p.startsWith('/support'), title: 'Support' },
   { match: (p) => p.startsWith('/system'), title: 'System health' },
-  { match: (p) => p.startsWith('/agents'), title: 'BDs' },
-  { match: (p) => p.startsWith('/agencies'), title: 'Agencies' },
+  { match: (p) => p.startsWith('/bds/'), title: 'BD detail' },
+  { match: (p) => p === '/bds', title: 'BDs' },
+  { match: (p) => p.startsWith('/agencies/'), title: 'Agency detail' },
+  { match: (p) => p === '/agencies', title: 'Agencies' },
   { match: (p) => p.startsWith('/overview'), title: 'Operations overview' },
 ];
 

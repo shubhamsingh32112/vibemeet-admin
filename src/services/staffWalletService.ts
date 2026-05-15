@@ -47,7 +47,7 @@ export type StaffWalletWithdrawal = {
   };
 };
 
-export function createStaffWalletService(api: AxiosInstance, basePath: '/agency' | '/agent') {
+export function createStaffWalletService(api: AxiosInstance, basePath: '/agency' | '/bd') {
   const prefix = `${basePath}/wallet`;
   return {
     getSummary: async (): Promise<StaffWalletSummary> => {

@@ -8,9 +8,10 @@ two separate operator portals against a backend at `VITE_API_BASE_URL`
 (default `http://localhost:3000/api/v1`):
 
 1. **Admin Console** (mounted at `/`) — full-platform operations: creators, users,
-   coins, calls, withdrawals, support, agents, system health.
-2. **Agent Portal** (mounted at `/agent`) — recruiter-style mini-dashboard for
-   referral agents who onboard creators and process payouts for their pod.
+   coins, calls, withdrawals, support, BDs, agencies, system health.
+2. **BD Portal** (mounted at `/bd`) — top-tier staff manage agency accounts under their BD.
+3. **Agency Portal** (mounted at `/agency`) — middle-tier staff onboard creators and process payouts.
+   Legacy `/agent/*` URLs redirect to `/agency/*`.
 
 Underneath, the same backend serves both, but each portal uses its **own JWT,
 its own axios client, and its own auth context**. They cannot impersonate each
@@ -133,9 +134,17 @@ so the admin portal isn't held hostage by the agent context still resolving
   /withdrawals → WithdrawalsPage
   /support   → SupportPage
   /system    → SystemPage
-  /agents    → AgentsManagePage   (admin manages agent accounts)
+  /bds       → BdsManagePage      (admin manages BD accounts)
+  /bds/:id   → BdDetailPage
+  /agencies  → AgenciesManagePage
+  /agencies/:id → AgencyDetailPage
+  /agents    → redirects to /bds (legacy bookmark)
 
-/agent                          → Agent DashboardLayout (protected, role=agent)
+/bd                             → BD DashboardLayout (protected, role=bd)
+/agency                         → Agency DashboardLayout (protected, role=agency)
+/agent/*                        → redirects to /agency/* (legacy)
+
+/agent                          → (removed) use /agency
   /          → AgentHomePage
   /referred  → AgentReferredUsersPage
   /creators  → AgentCreatorsPage

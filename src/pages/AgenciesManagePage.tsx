@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../config/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
@@ -8,27 +9,40 @@ interface AgencyRow {
   displayName: string | null;
   referralCode: string | null;
   agencyDisabled: boolean;
+  bdId: string | null;
   pendingApplications: number;
   activeCreators: number;
   pendingWithdrawals: number;
   createdAt: string;
 }
 
+interface BdOption {
+  id: string;
+  email: string;
+  displayName: string | null;
+}
+
 const AgenciesManagePage: React.FC = () => {
   const [agencies, setAgencies] = useState<AgencyRow[]>([]);
+  const [bdOptions, setBdOptions] = useState<BdOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [bdId, setBdId] = useState('');
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr('');
     try {
-      const res = await api.get('/admin/agencies');
-      setAgencies(res.data.data.agencies);
+      const [agenciesRes, bdsRes] = await Promise.all([
+        api.get('/admin/agencies'),
+        api.get('/admin/bds', { params: { limit: 100 } }),
+      ]);
+      setAgencies(agenciesRes.data.data.agencies);
+      setBdOptions(bdsRes.data.data.bds as BdOption[]);
     } catch {
       setErr('Failed to load agencies');
     } finally {
@@ -40,15 +54,27 @@ const AgenciesManagePage: React.FC = () => {
     load();
   }, [load]);
 
+  const bdLabel = (id: string | null) => {
+    if (!id) return '—';
+    const b = bdOptions.find((o) => o.id === id);
+    return b ? b.displayName || b.email : id.slice(-6);
+  };
+
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
     setErr('');
     try {
-      await api.post('/admin/agencies', { email, password, displayName: displayName || undefined });
+      await api.post('/admin/agencies', {
+        email,
+        password,
+        displayName: displayName || undefined,
+        ...(bdId ? { bdId } : {}),
+      });
       setEmail('');
       setPassword('');
       setDisplayName('');
+      setBdId('');
       await load();
     } catch (ex: unknown) {
       const msg =
@@ -117,6 +143,21 @@ const AgenciesManagePage: React.FC = () => {
           onChange={(e) => setDisplayName(e.target.value)}
           className="w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
         />
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1">Parent BD (optional)</label>
+          <select
+            value={bdId}
+            onChange={(e) => setBdId(e.target.value)}
+            className="w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
+          >
+            <option value="">None</option>
+            {bdOptions.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.displayName || b.email}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="submit"
           disabled={creating}
@@ -131,6 +172,7 @@ const AgenciesManagePage: React.FC = () => {
           <thead className="bg-admin-elevated text-zinc-400">
             <tr>
               <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Parent BD</th>
               <th className="px-4 py-3">Code</th>
               <th className="px-4 py-3" title="Referred users not yet creators">
                 Await promote
@@ -143,7 +185,20 @@ const AgenciesManagePage: React.FC = () => {
           <tbody>
             {agencies.map((a) => (
               <tr key={a.id} className="border-t border-admin-border">
-                <td className="px-4 py-3 text-zinc-200">{a.email}</td>
+                <td className="px-4 py-3 text-zinc-200">
+                  <Link to={`/agencies/${a.id}`} className="text-indigo-400 hover:underline">
+                    {a.email}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-zinc-400 text-xs">
+                  {a.bdId ? (
+                    <Link to={`/bds/${a.bdId}`} className="text-indigo-400 hover:underline">
+                      {bdLabel(a.bdId)}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-4 py-3 font-mono text-xs text-emerald-400">{a.referralCode}</td>
                 <td className="px-4 py-3">{a.pendingApplications}</td>
                 <td className="px-4 py-3">{a.activeCreators}</td>

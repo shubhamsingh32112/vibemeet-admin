@@ -36,6 +36,11 @@ export type BdDashboardData = {
 };
 
 export const bdPortalService = {
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const res = await bdApi.post('/bd/change-password', { currentPassword, newPassword });
+    return res.data;
+  },
+
   getSummary: async () => {
     const res = await bdApi.get('/bd/summary');
     return res.data.data as {
@@ -43,6 +48,7 @@ export const bdPortalService = {
       email?: string;
       displayName?: string | null;
       agencyCount: number;
+      mustChangePassword?: boolean;
       hostCount: number;
     };
   },

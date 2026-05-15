@@ -50,7 +50,7 @@ const SECTIONS: NavSection[] = [
     title: 'User management',
     items: [
       { to: '/agencies', label: 'Agencies', icon: Building2 },
-      { to: '/agents', label: 'BDs', icon: Users },
+      { to: '/bds', label: 'BDs', icon: Users },
       { to: '/creators', label: 'Hosts', icon: Users },
       { to: '/blocked-users', label: 'Blocked Users', icon: UserX },
       { to: '/kyc', label: 'KYC Verification', icon: ShieldCheck },

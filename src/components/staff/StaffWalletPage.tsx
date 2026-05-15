@@ -14,7 +14,7 @@ import { formatDateTime } from '../../utils/dateTime';
 
 type Props = {
   api: AxiosInstance;
-  basePath: '/agency' | '/agent';
+  basePath: '/agency' | '/bd';
   portalLabel: string;
 };
 

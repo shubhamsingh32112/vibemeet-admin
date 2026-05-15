@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../config/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 interface BdRow {
   id: string;
   email: string;
+  phone: string | null;
+  agencyPlace: string | null;
   displayName: string | null;
   bdDisabled: boolean;
   agencyCount: number;
@@ -16,9 +19,14 @@ const BdsManagePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [agencyPlace, setAgencyPlace] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [creating, setCreating] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [resetPasswordFor, setResetPasswordFor] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetResult, setResetResult] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,11 +53,15 @@ const BdsManagePage: React.FC = () => {
     try {
       const res = await api.post('/admin/bds', {
         email,
+        phone: phone.trim(),
+        agencyPlace: agencyPlace.trim(),
         displayName: displayName.trim() ? displayName.trim() : undefined,
       });
       const pwd = res.data?.data?.generatedPassword as string | undefined;
       if (pwd) setGeneratedPassword(pwd);
       setEmail('');
+      setPhone('');
+      setAgencyPlace('');
       setDisplayName('');
       await load();
     } catch (ex: unknown) {
@@ -69,6 +81,21 @@ const BdsManagePage: React.FC = () => {
       await load();
     } catch {
       alert('Update failed');
+    }
+  };
+
+  const submitPasswordReset = async (id: string) => {
+    if (newPassword.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+    try {
+      await api.patch(`/admin/bds/${id}`, { password: newPassword });
+      setResetResult(`Password updated for BD ${id.slice(-6)}`);
+      setResetPasswordFor(null);
+      setNewPassword('');
+    } catch {
+      alert('Password reset failed');
     }
   };
 
@@ -92,6 +119,18 @@ const BdsManagePage: React.FC = () => {
           One-time password for new BD: <strong className="font-mono">{generatedPassword}</strong>
         </div>
       )}
+      {resetResult && (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 px-4 py-3 text-emerald-200 text-sm">
+          {resetResult}
+          <button
+            type="button"
+            className="ml-3 text-xs underline"
+            onClick={() => setResetResult(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <form onSubmit={create} className="flex flex-wrap gap-3 items-end">
         <div>
@@ -101,6 +140,26 @@ const BdsManagePage: React.FC = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1">Phone</label>
+          <input
+            type="tel"
+            required
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1">Place</label>
+          <input
+            type="text"
+            required
+            value={agencyPlace}
+            onChange={(e) => setAgencyPlace(e.target.value)}
             className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
           />
         </div>
@@ -130,16 +189,25 @@ const BdsManagePage: React.FC = () => {
             <tr>
               <th className="px-4 py-3 text-left">Email</th>
               <th className="px-4 py-3 text-left">Name</th>
+              <th className="px-4 py-3 text-left">Phone</th>
+              <th className="px-4 py-3 text-left">Place</th>
               <th className="px-4 py-3 text-left">Agencies</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Created</th>
+              <th className="px-4 py-3 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {bds.map((b) => (
               <tr key={b.id} className="border-t border-zinc-800 text-zinc-200">
-                <td className="px-4 py-3">{b.email}</td>
+                <td className="px-4 py-3">
+                  <Link to={`/bds/${b.id}`} className="text-indigo-400 hover:underline">
+                    {b.email}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">{b.displayName || '—'}</td>
+                <td className="px-4 py-3">{b.phone || '—'}</td>
+                <td className="px-4 py-3">{b.agencyPlace || '—'}</td>
                 <td className="px-4 py-3">{b.agencyCount}</td>
                 <td className="px-4 py-3">
                   <button
@@ -154,6 +222,45 @@ const BdsManagePage: React.FC = () => {
                 </td>
                 <td className="px-4 py-3 text-zinc-500">
                   {new Date(b.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-4 py-3">
+                  {resetPasswordFor === b.id ? (
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <input
+                        type="password"
+                        placeholder="New password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                        minLength={8}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => submitPasswordReset(b.id)}
+                        className="text-xs text-indigo-400 hover:underline"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetPasswordFor(null);
+                          setNewPassword('');
+                        }}
+                        className="text-xs text-zinc-500 hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setResetPasswordFor(b.id)}
+                      className="text-xs text-zinc-400 hover:text-white"
+                    >
+                      Reset password
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
