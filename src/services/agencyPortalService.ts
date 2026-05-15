@@ -32,7 +32,12 @@ export interface AgencyReferredUserRow {
   referralCodeUsed: string | null;
   hasCreator: boolean;
   creatorId: string | null;
-  hostOnboardingStatus?: 'none' | 'pending_bd_approval' | 'approved' | 'rejected';
+  hostOnboardingStatus?:
+    | 'none'
+    | 'pending_agency_approval'
+    | 'pending_bd_approval'
+    | 'approved'
+    | 'rejected';
 }
 
 export interface AgencyCreatorRow {

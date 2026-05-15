@@ -28,13 +28,34 @@ function rowToSearchUser(row: AgencyReferredUserRow): AgencySearchUserRow {
   };
 }
 
+type HostOnboardingStatus = NonNullable<AgencyReferredUserRow['hostOnboardingStatus']>;
+
+function isPendingHostApproval(st: HostOnboardingStatus | undefined): boolean {
+  return st === 'pending_agency_approval' || st === 'pending_bd_approval';
+}
+
+function canAgencyApprove(row: AgencyReferredUserRow): boolean {
+  return !row.hasCreator && isPendingHostApproval(row.hostOnboardingStatus);
+}
+
+function canAgencyPromote(row: AgencyReferredUserRow): boolean {
+  return !row.hasCreator && row.hostOnboardingStatus === 'approved';
+}
+
+function canAgencyReject(row: AgencyReferredUserRow): boolean {
+  if (row.hasCreator) return false;
+  const st = row.hostOnboardingStatus ?? 'none';
+  return isPendingHostApproval(st) || st === 'approved' || st === 'none';
+}
+
 function hostStatusLabel(r: AgencyReferredUserRow): { text: string; className: string } {
   if (r.hasCreator) return { text: 'Host (creator)', className: 'text-emerald-400' };
   const st = r.hostOnboardingStatus ?? 'none';
-  if (st === 'pending_bd_approval') return { text: 'Pending BD approval', className: 'text-amber-400' };
+  if (isPendingHostApproval(st)) return { text: 'Pending agency approval', className: 'text-amber-400' };
   if (st === 'approved') return { text: 'Approved — ready to promote', className: 'text-sky-400' };
   if (st === 'rejected') return { text: 'Rejected', className: 'text-red-400' };
-  return { text: 'Legacy / outside funnel', className: 'text-zinc-400' };
+  if (st === 'none') return { text: 'Awaiting approval', className: 'text-zinc-400' };
+  return { text: st, className: 'text-zinc-400' };
 }
 
 const AgencyReferredUsersPage: React.FC = () => {
@@ -97,9 +118,7 @@ const AgencyReferredUsersPage: React.FC = () => {
   };
 
   const openPromote = (row: AgencyReferredUserRow) => {
-    if (row.hasCreator) return;
-    const st = row.hostOnboardingStatus ?? 'none';
-    if (st === 'pending_bd_approval' || st === 'rejected') return;
+    if (!canAgencyPromote(row)) return;
     const u = rowToSearchUser(row);
     setSelectedUser(u);
     setFormName(row.username || row.email?.split('@')[0] || 'Creator');
@@ -203,6 +222,76 @@ const AgencyReferredUsersPage: React.FC = () => {
     }
   };
 
+  const renderReferredActions = (r: AgencyReferredUserRow) => {
+    if (r.hasCreator && r.creatorId) {
+      return (
+        <Link
+          to={`/agency/creators/${r.creatorId}`}
+          className="text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5 inline-block"
+        >
+          View creator
+        </Link>
+      );
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2 items-center">
+        {canAgencyApprove(r) && (
+          <>
+            <button
+              type="button"
+              onClick={() => submitApprove(r)}
+              disabled={approvingId === r.id}
+              className="text-sm bg-sky-600/90 text-white font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
+            >
+              {approvingId === r.id ? 'Approving…' : 'Approve'}
+            </button>
+            <button
+              type="button"
+              onClick={() => openReject(r)}
+              className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+            >
+              Reject
+            </button>
+          </>
+        )}
+        {canAgencyPromote(r) && (
+          <>
+            <button
+              type="button"
+              onClick={() => openPromote(r)}
+              className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
+            >
+              Promote to creator
+            </button>
+            <button
+              type="button"
+              onClick={() => openReject(r)}
+              className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+            >
+              Reject
+            </button>
+          </>
+        )}
+        {!canAgencyApprove(r) && !canAgencyPromote(r) && canAgencyReject(r) && (
+          <button
+            type="button"
+            onClick={() => openReject(r)}
+            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
+          >
+            Reject
+          </button>
+        )}
+        {(r.hostOnboardingStatus ?? 'none') === 'rejected' && (
+          <span className="text-xs text-zinc-500">No actions</span>
+        )}
+        {(r.hostOnboardingStatus ?? 'none') === 'none' && !canAgencyApprove(r) && !canAgencyPromote(r) && (
+          <span className="text-xs text-zinc-500">Approve required before promotion</span>
+        )}
+      </div>
+    );
+  };
+
   if (loading && rows.length === 0) {
     return (
       <div className="flex justify-center py-24">
@@ -216,8 +305,8 @@ const AgencyReferredUsersPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Referred users</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          People who signed up with your referral code. Approve host onboarding when required, then promote to
-          creator (60 coins/min from this flow).
+          People who signed up with your referral code. Approve each referral first, then promote to creator
+          (platform default pricing applies).
         </p>
       </div>
 
@@ -248,77 +337,7 @@ const AgencyReferredUsersPage: React.FC = () => {
                 <td className="px-3 py-3">
                   <span className={hostStatusLabel(r).className}>{hostStatusLabel(r).text}</span>
                 </td>
-                <td className="px-3 py-3">
-                  {r.hasCreator && r.creatorId ? (
-                    <Link
-                      to={`/agency/creators/${r.creatorId}`}
-                      className="text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5 inline-block"
-                    >
-                      View creator
-                    </Link>
-                  ) : (
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {(r.hostOnboardingStatus ?? 'none') === 'pending_bd_approval' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => submitApprove(r)}
-                            disabled={approvingId === r.id}
-                            className="text-sm bg-sky-600/90 text-white font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
-                          >
-                            {approvingId === r.id ? 'Approving…' : 'Approve'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openReject(r)}
-                            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {(r.hostOnboardingStatus ?? 'none') === 'approved' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => openPromote(r)}
-                            className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                          >
-                            Promote to creator
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openReject(r)}
-                            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {(r.hostOnboardingStatus ?? 'none') === 'none' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => openPromote(r)}
-                            className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                          >
-                            Promote to creator
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openReject(r)}
-                            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {(r.hostOnboardingStatus ?? 'none') === 'rejected' && (
-                        <span className="text-xs text-zinc-500">No actions</span>
-                      )}
-                    </div>
-                  )}
-                </td>
+                <td className="px-3 py-3">{renderReferredActions(r)}</td>
               </tr>
             ))}
           </tbody>
@@ -335,77 +354,10 @@ const AgencyReferredUsersPage: React.FC = () => {
             <p className="text-xs text-zinc-500 font-mono">Code: {r.referralCodeUsed || '—'}</p>
             <p className="text-xs text-zinc-400">{new Date(r.createdAt).toLocaleString()}</p>
             <p className={`text-xs ${hostStatusLabel(r).className}`}>{hostStatusLabel(r).text}</p>
-            {r.hasCreator && r.creatorId ? (
-              <Link
-                to={`/agency/creators/${r.creatorId}`}
-                className="inline-block text-sm text-emerald-400 border border-admin-border rounded-lg px-3 py-1.5"
-              >
-                View creator
-              </Link>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {(r.hostOnboardingStatus ?? 'none') === 'pending_bd_approval' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => submitApprove(r)}
-                      disabled={approvingId === r.id}
-                      className="text-sm bg-sky-600/90 text-white font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
-                    >
-                      {approvingId === r.id ? 'Approving…' : 'Approve'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openReject(r)}
-                      className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-                {(r.hostOnboardingStatus ?? 'none') === 'approved' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => openPromote(r)}
-                      className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                    >
-                      Promote to creator
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openReject(r)}
-                      className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-                {(r.hostOnboardingStatus ?? 'none') === 'none' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => openPromote(r)}
-                      className="text-sm bg-admin-accent/90 text-admin-base font-semibold rounded-lg px-3 py-1.5"
-                    >
-                      Promote to creator
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openReject(r)}
-                      className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-                {(r.hostOnboardingStatus ?? 'none') === 'rejected' && (
-                  <span className="text-xs text-zinc-500">No actions</span>
-                )}
-              </div>
-            )}
+            {renderReferredActions(r)}
           </div>
         ))}
+      </div>
       </div>
 
       <ConfirmDialog
