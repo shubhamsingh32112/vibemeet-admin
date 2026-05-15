@@ -24,8 +24,8 @@ export const CallAnalyticsBlock: React.FC<CallAnalyticsBlockProps> = ({ today, d
         </div>
       ))}
     </div>
-    <div className="h-[200px]">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[200px] min-h-0 min-w-0">
+      <ResponsiveContainer width="100%" height={200}>
         <BarChart data={dailyVolume}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis dataKey="date" tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} />

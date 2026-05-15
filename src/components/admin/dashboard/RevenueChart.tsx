@@ -24,8 +24,8 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ points, className })
       <h3 className="text-sm font-semibold text-white">Revenue overview</h3>
       <span className="text-[10px] uppercase tracking-wider text-zinc-500">Coins · UTC day</span>
     </div>
-    <div className="h-[280px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[280px] w-full min-h-0 min-w-0">
+      <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={points}>
           <defs>
             <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">

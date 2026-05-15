@@ -66,8 +66,8 @@ export const KPIStatCard: React.FC<KPIStatCardProps> = ({
         <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-violet-300">{icon}</div>
       </div>
       {chartData.length > 1 ? (
-        <div className="mt-3 h-10 w-full opacity-90">
-          <ResponsiveContainer width="100%" height="100%">
+        <motion.div className="mt-3 h-10 w-full min-h-0 min-w-0 opacity-90">
+          <ResponsiveContainer width="100%" height={40}>
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
@@ -78,7 +78,7 @@ export const KPIStatCard: React.FC<KPIStatCardProps> = ({
               <Area type="monotone" dataKey="y" stroke="#a78bfa" fill={`url(#${gid})`} strokeWidth={1.5} isAnimationActive={false} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </motion.div>
       ) : null}
     </motion.div>
   );
