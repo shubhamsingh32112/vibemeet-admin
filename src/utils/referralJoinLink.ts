@@ -1,4 +1,5 @@
-const JOIN_BASE = 'https://matchvibe.co.in/join';
+const JOIN_BASE =
+  import.meta.env.VITE_REFERRAL_JOIN_BASE ?? 'https://matchvibe.co.in/join';
 const PLAY_STORE_BASE =
   'https://play.google.com/store/apps/details?id=com.matchvibe.app';
 

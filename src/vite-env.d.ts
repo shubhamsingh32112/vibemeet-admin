@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string
   /** Optional: INR per wallet coin for dashboard leaderboard money columns (display only). */
   readonly VITE_DASHBOARD_INR_PER_COIN?: string
+  /** Optional: base URL for agency referral join links (default https://matchvibe.co.in/join). */
+  readonly VITE_REFERRAL_JOIN_BASE?: string
 }
 
 interface ImportMeta {

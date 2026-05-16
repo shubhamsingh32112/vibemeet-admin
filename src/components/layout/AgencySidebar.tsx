@@ -1,6 +1,8 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
+import { NavLink, Link } from 'react-router-dom';
+import { Copy } from 'lucide-react';
 import { useAgencyAuth } from '../../contexts/AgencyAuthContext';
+import { buildReferralJoinUrl } from '../../utils/referralJoinLink';
 
 const items = [
   { path: '/agency', label: 'Dashboard', icon: '📊', end: true },
@@ -26,6 +28,31 @@ const AgencySidebar: React.FC<Props> = ({
   onClose,
 }) => {
   const { logout, user } = useAgencyAuth();
+  const [codeCopied, setCodeCopied] = useState(false);
+  const referralCode = user?.referralCode?.trim().toUpperCase() || '';
+
+  const copyCode = useCallback(async () => {
+    if (!referralCode) return;
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      setCodeCopied(true);
+      window.setTimeout(() => setCodeCopied(false), 1500);
+    } catch {
+      setCodeCopied(false);
+    }
+  }, [referralCode]);
+
+  const copyLink = useCallback(async () => {
+    if (!referralCode) return;
+    try {
+      await navigator.clipboard.writeText(buildReferralJoinUrl(referralCode));
+      setCodeCopied(true);
+      window.setTimeout(() => setCodeCopied(false), 1500);
+    } catch {
+      setCodeCopied(false);
+    }
+  }, [referralCode]);
+
   return (
     <aside
       className={`w-56 min-h-screen bg-admin-surface border-r border-admin-border flex flex-col ${className}`}
@@ -68,10 +95,42 @@ const AgencySidebar: React.FC<Props> = ({
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-admin-border px-4 py-3 space-y-1">
+      <div className="border-t border-admin-border px-4 py-3 space-y-2">
         <p className="text-[10px] text-zinc-500">Referral code</p>
-        <p className="text-xs font-mono text-emerald-400">{user?.referralCode || '—'}</p>
-        <p className="text-xs text-zinc-500 truncate pt-2">{user?.email}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs font-mono text-emerald-400 flex-1 truncate">
+            {referralCode || '—'}
+          </p>
+          {referralCode ? (
+            <button
+              type="button"
+              onClick={copyCode}
+              className="shrink-0 rounded p-1 text-zinc-500 hover:text-violet-300 transition"
+              aria-label={codeCopied ? 'Copied' : 'Copy referral code'}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </div>
+        {referralCode ? (
+          <div className="flex flex-col gap-1">
+            <Link
+              to="/agency#referral-link"
+              onClick={() => onNavigate?.()}
+              className="text-[11px] text-violet-400 hover:text-violet-300 transition"
+            >
+              Share referral link →
+            </Link>
+            <button
+              type="button"
+              onClick={copyLink}
+              className="text-left text-[11px] text-zinc-500 hover:text-zinc-300 transition"
+            >
+              {codeCopied ? 'Link copied' : 'Copy join link'}
+            </button>
+          </div>
+        ) : null}
+        <p className="text-xs text-zinc-500 truncate pt-1">{user?.email}</p>
         <button
           type="button"
           onClick={logout}

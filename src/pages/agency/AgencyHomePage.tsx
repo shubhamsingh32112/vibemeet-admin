@@ -8,8 +8,11 @@ import StaleSectionBadge from '../../components/dashboard/StaleSectionBadge';
 import { useStaffRealtime } from '../../contexts/StaffRealtimeContext';
 import { anySectionStale } from '../../types/dashboardStale';
 import { agencyPortalService } from '../../services/agencyPortalService';
+import { useAgencyAuth } from '../../contexts/AgencyAuthContext';
+import AgencyReferralLinkCard from '../../components/agency/AgencyReferralLinkCard';
 
 const AgencyHomePage: React.FC = () => {
+  const { user } = useAgencyAuth();
   const [s, setS] = useState<Awaited<ReturnType<typeof agencyPortalService.getSummary>> | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,10 @@ const AgencyHomePage: React.FC = () => {
           subtitle={`Today: ${s?.agencyEarningsCoins?.today ?? 0}`}
         />
       </div>
+      <AgencyReferralLinkCard
+        referralCode={user?.referralCode}
+        displayName={user?.displayName}
+      />
     </div>
   );
 };
