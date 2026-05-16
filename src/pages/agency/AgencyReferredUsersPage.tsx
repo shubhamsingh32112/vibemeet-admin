@@ -34,27 +34,26 @@ function isPendingHostApproval(st: HostOnboardingStatus | undefined): boolean {
   return st === 'pending_agency_approval' || st === 'pending_bd_approval';
 }
 
-function canAgencyApprove(row: AgencyReferredUserRow): boolean {
-  return !row.hasCreator && isPendingHostApproval(row.hostOnboardingStatus);
-}
-
+/** Agency may promote any referred user who is not yet a creator and not rejected. */
 function canAgencyPromote(row: AgencyReferredUserRow): boolean {
-  return !row.hasCreator && row.hostOnboardingStatus === 'approved';
-}
-
-function canAgencyReject(row: AgencyReferredUserRow): boolean {
   if (row.hasCreator) return false;
   const st = row.hostOnboardingStatus ?? 'none';
-  return isPendingHostApproval(st) || st === 'approved' || st === 'none';
+  return st !== 'rejected';
+}
+
+function canAgencyApprove(row: AgencyReferredUserRow): boolean {
+  if (row.hasCreator) return false;
+  const st = row.hostOnboardingStatus ?? 'none';
+  return st === 'pending_agency_approval' || st === 'pending_bd_approval';
 }
 
 function hostStatusLabel(r: AgencyReferredUserRow): { text: string; className: string } {
   if (r.hasCreator) return { text: 'Host (creator)', className: 'text-emerald-400' };
   const st = r.hostOnboardingStatus ?? 'none';
-  if (isPendingHostApproval(st)) return { text: 'Pending agency approval', className: 'text-amber-400' };
-  if (st === 'approved') return { text: 'Approved — ready to promote', className: 'text-sky-400' };
+  if (isPendingHostApproval(st)) return { text: 'Pending approval', className: 'text-amber-400' };
+  if (st === 'approved') return { text: 'Ready to promote', className: 'text-sky-400' };
   if (st === 'rejected') return { text: 'Rejected', className: 'text-red-400' };
-  if (st === 'none') return { text: 'Awaiting approval', className: 'text-zinc-400' };
+  if (st === 'none') return { text: 'Ready to promote', className: 'text-zinc-400' };
   return { text: st, className: 'text-zinc-400' };
 }
 
@@ -81,7 +80,7 @@ const AgencyReferredUsersPage: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [createErr, setCreateErr] = useState('');
   const [approvingId, setApprovingId] = useState<string | null>(null);
-
+  const [approveErr, setApproveErr] = useState('');
   const load = useCallback(async () => {
     setLoading(true);
     setErr('');
@@ -101,22 +100,6 @@ const AgencyReferredUsersPage: React.FC = () => {
     load();
   }, [load]);
 
-  const submitApprove = async (row: AgencyReferredUserRow) => {
-    setApprovingId(row.id);
-    setErr('');
-    try {
-      await agencyPortalService.approveReferredUser(row.id);
-      await load();
-    } catch (e: unknown) {
-      const msg =
-        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (e instanceof Error ? e.message : 'Approve failed');
-      setErr(msg);
-    } finally {
-      setApprovingId(null);
-    }
-  };
-
   const openPromote = (row: AgencyReferredUserRow) => {
     if (!canAgencyPromote(row)) return;
     const u = rowToSearchUser(row);
@@ -128,6 +111,23 @@ const AgencyReferredUsersPage: React.FC = () => {
     setFormAge('');
     setCreateErr('');
     setAddOpen(true);
+  };
+
+  const handleApprove = async (row: AgencyReferredUserRow) => {
+    if (!canAgencyApprove(row)) return;
+    setApprovingId(row.id);
+    setApproveErr('');
+    try {
+      await agencyPortalService.approveReferredUser(row.id);
+      await load();
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        (e instanceof Error ? e.message : 'Approve failed');
+      setApproveErr(msg);
+    } finally {
+      setApprovingId(null);
+    }
   };
 
   const openReject = (row: AgencyReferredUserRow) => {
@@ -237,23 +237,14 @@ const AgencyReferredUsersPage: React.FC = () => {
     return (
       <div className="flex flex-wrap gap-2 items-center">
         {canAgencyApprove(r) && (
-          <>
-            <button
-              type="button"
-              onClick={() => submitApprove(r)}
-              disabled={approvingId === r.id}
-              className="text-sm bg-sky-600/90 text-white font-semibold rounded-lg px-3 py-1.5 disabled:opacity-50"
-            >
-              {approvingId === r.id ? 'Approving…' : 'Approve'}
-            </button>
-            <button
-              type="button"
-              onClick={() => openReject(r)}
-              className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-            >
-              Reject
-            </button>
-          </>
+          <button
+            type="button"
+            disabled={approvingId === r.id}
+            onClick={() => handleApprove(r)}
+            className="text-sm text-sky-300 border border-sky-900/50 rounded-lg px-3 py-1.5 disabled:opacity-50"
+          >
+            {approvingId === r.id ? 'Approving…' : 'Approve'}
+          </button>
         )}
         {canAgencyPromote(r) && (
           <>
@@ -273,20 +264,8 @@ const AgencyReferredUsersPage: React.FC = () => {
             </button>
           </>
         )}
-        {!canAgencyApprove(r) && !canAgencyPromote(r) && canAgencyReject(r) && (
-          <button
-            type="button"
-            onClick={() => openReject(r)}
-            className="text-sm text-red-300 border border-red-900/50 rounded-lg px-3 py-1.5"
-          >
-            Reject
-          </button>
-        )}
         {(r.hostOnboardingStatus ?? 'none') === 'rejected' && (
           <span className="text-xs text-zinc-500">No actions</span>
-        )}
-        {(r.hostOnboardingStatus ?? 'none') === 'none' && !canAgencyApprove(r) && !canAgencyPromote(r) && (
-          <span className="text-xs text-zinc-500">Approve required before promotion</span>
         )}
       </div>
     );
@@ -305,12 +284,13 @@ const AgencyReferredUsersPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Referred users</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          People who signed up with your referral code. Approve each referral first, then promote to creator
-          (platform default pricing applies).
+          People who signed up with your referral code. Promote to creator or reject — new hosts start at
+          60 coins/min (Super Admin or BD can adjust pricing later).
         </p>
       </div>
 
       {err && <p className="text-red-400 text-sm">{err}</p>}
+      {approveErr && <p className="text-red-400 text-sm">{approveErr}</p>}
 
       <div className="hidden md:block overflow-x-auto rounded-xl border border-admin-border">
         <table className="w-full text-sm">
@@ -449,7 +429,7 @@ const AgencyReferredUsersPage: React.FC = () => {
                 />
               </div>
               <p className="text-[11px] text-zinc-500 rounded-lg border border-admin-border border-dashed px-3 py-2">
-                Pricing uses the platform default for new hosts — Super Admin can change it later.
+                New hosts are created at 60 coins/min. Super Admin or BD can change pricing later.
               </p>
               <div>
                 <label className="text-xs text-zinc-500">Age (18–100)</label>

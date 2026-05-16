@@ -32,6 +32,7 @@ import BdHomePage from './pages/bd/BdHomePage';
 import BdAgenciesPage from './pages/bd/BdAgenciesPage';
 import BdChangePasswordPage from './pages/bd/BdChangePasswordPage';
 import BdWalletPage from './pages/bd/BdWalletPage';
+import BdHostsPage from './pages/bd/BdHostsPage';
 import AgencyLoginPage from './pages/agency/AgencyLoginPage';
 import AgencyHomePage from './pages/agency/AgencyHomePage';
 import AgencyReferredUsersPage from './pages/agency/AgencyReferredUsersPage';
@@ -252,6 +253,7 @@ const AppRoutes: React.FC = () => {
       >
         <Route index element={<BdHomePage />} />
         <Route path="agencies" element={<BdAgenciesPage />} />
+        <Route path="hosts" element={<BdHostsPage />} />
         <Route path="wallet" element={<BdWalletPage />} />
         <Route path="change-password" element={<BdChangePasswordPage />} />
       </Route>

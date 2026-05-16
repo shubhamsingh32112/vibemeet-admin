@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { StaffRealtimeProvider } from '../../contexts/StaffRealtimeContext';
 import { AGENCY_VISIBLE_SECTIONS } from '../../types/dashboardStale';
 import BdSidebar from './BdSidebar';
+import BdHeaderBar from '../bd/BdHeaderBar';
 
 const BdDashboardLayout: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -44,11 +45,14 @@ const BdDashboardLayout: React.FC = () => {
             </div>
           </>
         )}
-        <main className="flex-1 overflow-auto min-w-0 pt-14 md:pt-0">
-          <div className="p-4 sm:p-6 max-w-[1400px] mx-auto">
-            <Outlet />
-          </div>
-        </main>
+        <div className="flex flex-1 flex-col min-w-0 pt-14 md:pt-0">
+          <BdHeaderBar />
+          <main className="flex-1 overflow-auto min-w-0">
+            <div className="p-4 sm:p-6 max-w-[1400px] mx-auto">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
     </StaffRealtimeProvider>
   );

@@ -35,6 +35,16 @@ export type BdDashboardData = {
   }>;
 };
 
+export type BdCreatorRow = {
+  id: string;
+  name: string;
+  price: number;
+  userId: string | null;
+  agencyId: string | null;
+  agencyLabel: string | null;
+  userLabel: string | null;
+};
+
 export const bdPortalService = {
   changePassword: async (currentPassword: string, newPassword: string) => {
     const res = await bdApi.post('/bd/change-password', { currentPassword, newPassword });
@@ -113,6 +123,16 @@ export const bdPortalService = {
       referralCode: string | null;
       generatedPassword: string;
     };
+  },
+
+  listCreators: async (): Promise<BdCreatorRow[]> => {
+    const res = await bdApi.get('/bd/creators');
+    return (res.data.data?.creators ?? []) as BdCreatorRow[];
+  },
+
+  updateCreatorPrice: async (creatorId: string, price: number) => {
+    const res = await bdApi.patch(`/bd/creators/${creatorId}/price`, { price });
+    return res.data.data as { id: string; price: number };
   },
 
   requestStaffWithdrawal: async (body: {

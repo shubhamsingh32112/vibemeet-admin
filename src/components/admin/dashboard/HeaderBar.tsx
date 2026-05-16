@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Bell, CalendarDays, Circle } from 'lucide-react';
+import { CalendarDays, Circle } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAdminRealtime } from '../../../contexts/AdminRealtimeContext';
 import DateRangeFilter from '../../filters/DateRangeFilter';
 import { useAdminDateRange } from '../../../hooks/useAdminDateRange';
-import api from '../../../config/api';
+import StaffNotificationsBell from '../../staff/StaffNotificationsBell';
+import { useAdminNotifications } from '../../../hooks/useStaffNotifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,16 +38,6 @@ function titleForPath(pathname: string): string {
   return hit?.title ?? 'Super Admin';
 }
 
-async function fetchRealtimeAlerts() {
-  const res = await api.get('/admin/realtime-metrics');
-  const d = res.data?.data as {
-    pendingWithdrawals?: number;
-    openSupportTickets?: number;
-  };
-  const n = (d?.pendingWithdrawals ?? 0) + (d?.openSupportTickets ?? 0);
-  return n;
-}
-
 export const HeaderBar: React.FC = () => {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
@@ -55,11 +45,7 @@ export const HeaderBar: React.FC = () => {
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
   const showDate = pathname === '/' || pathname === '/dashboard' || pathname.startsWith('/overview');
 
-  const { data: alertCount = 0 } = useQuery({
-    queryKey: ['admin', 'realtime-metrics', 'header-bell'],
-    queryFn: fetchRealtimeAlerts,
-    refetchInterval: 45_000,
-  });
+  const { alerts, isLoading, isError, refetchOnOpen } = useAdminNotifications();
 
   return (
     <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-white/8 bg-[#08080f]/90 px-4 py-3 backdrop-blur-xl md:px-6">
@@ -89,14 +75,12 @@ export const HeaderBar: React.FC = () => {
             {connected ? 'Live' : 'Reconnecting'}
           </div>
 
-          <Button variant="ghost" size="icon" className="relative rounded-full border border-white/10" type="button">
-            <Bell className="h-4 w-4" />
-            {alertCount > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-fuchsia-600 px-1 text-[10px] font-bold text-white">
-                {alertCount > 9 ? '9+' : alertCount}
-              </span>
-            ) : null}
-          </Button>
+          <StaffNotificationsBell
+            alerts={alerts}
+            isLoading={isLoading}
+            isError={isError}
+            onOpenChange={refetchOnOpen}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

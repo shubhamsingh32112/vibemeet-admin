@@ -1,5 +1,7 @@
 import * as React from 'react';
-import { Bell, CalendarRange } from 'lucide-react';
+import { CalendarRange } from 'lucide-react';
+import StaffNotificationsBell from '../staff/StaffNotificationsBell';
+import { useAgencyNotifications } from '../../hooks/useStaffNotifications';
 import { useAgencyAuth } from '../../contexts/AgencyAuthContext';
 import StaffAccountMenu from '../staff/StaffAccountMenu';
 import { agencyPortalService } from '../../services/agencyPortalService';
@@ -7,6 +9,8 @@ import { agencyPortalService } from '../../services/agencyPortalService';
 const AgencyHeaderBar: React.FC = () => {
   const { user, updateUserFields } = useAgencyAuth();
   const title = user?.displayName?.trim() || user?.email || 'Agency';
+  const { alerts, isLoading, isError, refetchOnOpen } = useAgencyNotifications();
+
   const rangeLabel = React.useMemo(() => {
     const end = new Date();
     const start = new Date(end.getTime() - 30 * 86400000);
@@ -31,14 +35,13 @@ const AgencyHeaderBar: React.FC = () => {
           <CalendarRange className="h-3.5 w-3.5 text-violet-400" aria-hidden />
           <span className="tabular-nums">{rangeLabel}</span>
         </div>
-        <button
-          type="button"
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-zinc-900/60 text-zinc-300 transition hover:border-violet-500/40 hover:text-white"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-violet-500 ring-2 ring-[#070712]" />
-        </button>
+        <StaffNotificationsBell
+          alerts={alerts}
+          isLoading={isLoading}
+          isError={isError}
+          onOpenChange={refetchOnOpen}
+          variant="agency"
+        />
         <StaffAccountMenu
           roleLabel="Agency"
           email={user?.email}
