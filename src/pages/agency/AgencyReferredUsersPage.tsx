@@ -16,14 +16,23 @@ function isPendingHostApproval(st: HostOnboardingStatus | undefined): boolean {
 function canAgencyApprove(row: AgencyReferredUserRow): boolean {
   if (row.hasCreator) return false;
   const st = row.hostOnboardingStatus ?? 'none';
-  return st === 'pending_agency_approval' || st === 'pending_bd_approval';
+  return (
+    st === 'pending_agency_approval' ||
+    st === 'pending_bd_approval' ||
+    st === 'approved'
+  );
 }
 
 function hostStatusLabel(r: AgencyReferredUserRow): { text: string; className: string } {
   if (r.hasCreator) return { text: 'Host (creator)', className: 'text-emerald-400' };
   const st = r.hostOnboardingStatus ?? 'none';
   if (isPendingHostApproval(st)) return { text: 'Pending approval', className: 'text-amber-400' };
-  if (st === 'approved') return { text: 'Approved — awaiting profile in app', className: 'text-sky-400' };
+  if (st === 'approved') {
+    return {
+      text: 'Approved — tap Approve again to promote',
+      className: 'text-sky-400',
+    };
+  }
   if (st === 'rejected') return { text: 'Rejected', className: 'text-red-400' };
   if (st === 'none') return { text: 'Referred', className: 'text-zinc-400' };
   return { text: st, className: 'text-zinc-400' };
@@ -166,8 +175,8 @@ const AgencyReferredUsersPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Referred users</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          People who signed up with your referral code. Approve or reject — approved users complete
-          their own host profile in the app.
+          People who signed up with your referral code. Approve promotes them to host immediately;
+          they can fill in profile details in the app.
         </p>
       </div>
 
