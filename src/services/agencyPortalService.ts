@@ -1,9 +1,11 @@
 import agencyApi from '../config/agencyApi';
 
 export interface AgencySummary {
-  /** Users referred by this agency who are not yet creators */
+  /** Referred users awaiting agency approval */
+  referredUsersPendingApproval: number;
+  /** @deprecated Use referredUsersPendingApproval */
   referredUsersAwaitingPromotion: number;
-  /** @deprecated Same as referredUsersAwaitingPromotion */
+  /** @deprecated Same as referredUsersPendingApproval */
   pendingApplications: number;
   pendingWithdrawals: number;
   activeCreators: number;
@@ -195,24 +197,6 @@ export const agencyPortalService = {
       params: period ? { period } : undefined,
     });
     return res.data.data as AgencyCreatorDetailData;
-  },
-
-  searchUsersForAgency: async (q: string, limit = 30) => {
-    const res = await agencyApi.get('/agency/search-users', { params: { q, limit } });
-    return res.data.data.users as AgencySearchUserRow[];
-  },
-
-  createAgencyCreator: async (body: {
-    userId: string;
-    name: string;
-    about: string;
-    photo: string;
-    categories?: string[];
-    age?: number;
-    location?: string;
-  }) => {
-    const res = await agencyApi.post('/agency/creators', body);
-    return res.data.data as { creator: { id: string; userId: string; name: string } };
   },
 
   deleteCreator: async (creatorId: string) => {

@@ -30,13 +30,16 @@ export function buildAgencyAlerts(summary: AgencySummary): StaffAlert[] {
   }
 
   const awaiting =
-    summary.referredUsersAwaitingPromotion ?? summary.pendingApplications ?? 0;
+    summary.referredUsersPendingApproval ??
+    summary.referredUsersAwaitingPromotion ??
+    summary.pendingApplications ??
+    0;
   if (awaiting > 0) {
     alerts.push({
       id: 'agency-referred-awaiting',
       type: 'onboarding',
       severity: 'info',
-      message: `${awaiting} referred user(s) awaiting promotion`,
+      message: `${awaiting} referred user(s) pending approval`,
       createdAt: now,
       href: '/agency/referred',
     });

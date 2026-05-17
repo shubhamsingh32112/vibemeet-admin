@@ -68,8 +68,13 @@ const AgencyHomePage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/agency/referred" className="block">
           <MetricCard
-            label="Awaiting promotion"
-            value={s?.referredUsersAwaitingPromotion ?? s?.pendingApplications ?? 0}
+            label="Pending approval"
+            value={
+              s?.referredUsersPendingApproval ??
+              s?.referredUsersAwaitingPromotion ??
+              s?.pendingApplications ??
+              0
+            }
             subtitle="Referred users — tap to review"
           />
         </Link>
