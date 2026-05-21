@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../config/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -22,9 +22,39 @@ interface BdOption {
   displayName: string | null;
 }
 
+type AgencySortOption = 'default' | 'hosts_desc' | 'hosts_asc' | 'name_asc';
+
+const AGENCY_SORT_OPTIONS: { value: AgencySortOption; label: string }[] = [
+  { value: 'default', label: 'Recently added' },
+  { value: 'hosts_desc', label: 'Most hosts → fewest' },
+  { value: 'hosts_asc', label: 'Fewest hosts → most' },
+  { value: 'name_asc', label: 'Agency name (A–Z)' },
+];
+
+function agencyDisplayName(a: AgencyRow): string {
+  return (a.displayName && a.displayName.trim()) || a.email;
+}
+
+function sortAgencies(rows: AgencyRow[], sort: AgencySortOption): AgencyRow[] {
+  const copy = [...rows];
+  switch (sort) {
+    case 'hosts_desc':
+      return copy.sort((a, b) => b.activeCreators - a.activeCreators || agencyDisplayName(a).localeCompare(agencyDisplayName(b)));
+    case 'hosts_asc':
+      return copy.sort((a, b) => a.activeCreators - b.activeCreators || agencyDisplayName(a).localeCompare(agencyDisplayName(b)));
+    case 'name_asc':
+      return copy.sort((a, b) => agencyDisplayName(a).localeCompare(agencyDisplayName(b), undefined, { sensitivity: 'base' }));
+    default:
+      return copy.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  }
+}
+
 const AgenciesManagePage: React.FC = () => {
   const [agencies, setAgencies] = useState<AgencyRow[]>([]);
   const [bdOptions, setBdOptions] = useState<BdOption[]>([]);
+  const [agencySort, setAgencySort] = useState<AgencySortOption>('default');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [email, setEmail] = useState('');
@@ -32,6 +62,14 @@ const AgenciesManagePage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [bdId, setBdId] = useState('');
   const [creating, setCreating] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const handleSortChange = (value: AgencySortOption) => {
+    setAgencySort(value);
+    requestAnimationFrame(() => {
+      tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,6 +134,8 @@ const AgenciesManagePage: React.FC = () => {
     }
   };
 
+  const sortedAgencies = sortAgencies(agencies, agencySort);
+
   if (loading && agencies.length === 0) {
     return (
       <div className="flex justify-center py-24">
@@ -112,6 +152,87 @@ const AgenciesManagePage: React.FC = () => {
           Create agency (middle-tier) accounts with referral codes and portal access. Managed under BDs
           when applicable.
         </p>
+      </div>
+
+      <div ref={tableRef} className="space-y-3 scroll-mt-20">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-zinc-500">
+          {sortedAgencies.length} agenc{sortedAgencies.length === 1 ? 'y' : 'ies'}
+        </p>
+        <label className="flex items-center gap-2 text-sm text-zinc-400">
+          <span className="whitespace-nowrap">Sort by</span>
+          <select
+            value={agencySort}
+            onChange={(e) => handleSortChange(e.target.value as AgencySortOption)}
+            className="rounded-lg border border-admin-border bg-admin-base px-3 py-2 text-sm text-white min-w-[200px]"
+          >
+            {AGENCY_SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-admin-border">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-admin-elevated text-zinc-400">
+            <tr>
+              <th className="px-4 py-3">Agency name</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Parent BD</th>
+              <th className="px-4 py-3">Code</th>
+              <th className="px-4 py-3" title="Referred users not yet creators">
+                Await promote
+              </th>
+              <th className="px-4 py-3">Hosts</th>
+              <th className="px-4 py-3">WD pend.</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedAgencies.map((a) => (
+              <tr key={a.id} className="border-t border-admin-border">
+                <td className="px-4 py-3 text-zinc-100 font-medium">
+                  <Link to={`/agencies/${a.id}`} className="text-indigo-400 hover:underline">
+                    {a.displayName?.trim() || '—'}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-zinc-300">
+                  <Link to={`/agencies/${a.id}`} className="text-indigo-400/90 hover:underline text-xs">
+                    {a.email}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-zinc-400 text-xs">
+                  {a.bdId ? (
+                    <Link to={`/bds/${a.bdId}`} className="text-indigo-400 hover:underline">
+                      {bdLabel(a.bdId)}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td className="px-4 py-3 font-mono text-xs text-emerald-400">{a.referralCode}</td>
+                <td className="px-4 py-3">{a.pendingApplications}</td>
+                <td className="px-4 py-3">{a.activeCreators}</td>
+                <td className="px-4 py-3">{a.pendingWithdrawals}</td>
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => toggle(a.id, a.agencyDisabled)}
+                    className={`text-xs px-2 py-1 rounded ${
+                      a.agencyDisabled ? 'bg-red-900/40 text-red-300' : 'bg-emerald-900/40 text-emerald-300'
+                    }`}
+                  >
+                    {a.agencyDisabled ? 'Disabled' : 'Active'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       </div>
 
       <form
@@ -166,59 +287,6 @@ const AgenciesManagePage: React.FC = () => {
           {creating ? 'Creating…' : 'Create agency'}
         </button>
       </form>
-
-      <div className="overflow-x-auto rounded-xl border border-admin-border">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-admin-elevated text-zinc-400">
-            <tr>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Parent BD</th>
-              <th className="px-4 py-3">Code</th>
-              <th className="px-4 py-3" title="Referred users not yet creators">
-                Await promote
-              </th>
-              <th className="px-4 py-3">Creators</th>
-              <th className="px-4 py-3">WD pend.</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agencies.map((a) => (
-              <tr key={a.id} className="border-t border-admin-border">
-                <td className="px-4 py-3 text-zinc-200">
-                  <Link to={`/agencies/${a.id}`} className="text-indigo-400 hover:underline">
-                    {a.email}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-zinc-400 text-xs">
-                  {a.bdId ? (
-                    <Link to={`/bds/${a.bdId}`} className="text-indigo-400 hover:underline">
-                      {bdLabel(a.bdId)}
-                    </Link>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-4 py-3 font-mono text-xs text-emerald-400">{a.referralCode}</td>
-                <td className="px-4 py-3">{a.pendingApplications}</td>
-                <td className="px-4 py-3">{a.activeCreators}</td>
-                <td className="px-4 py-3">{a.pendingWithdrawals}</td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => toggle(a.id, a.agencyDisabled)}
-                    className={`text-xs px-2 py-1 rounded ${
-                      a.agencyDisabled ? 'bg-red-900/40 text-red-300' : 'bg-emerald-900/40 text-emerald-300'
-                    }`}
-                  >
-                    {a.agencyDisabled ? 'Disabled' : 'Active'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 };

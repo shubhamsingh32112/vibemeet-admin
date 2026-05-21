@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { HostProfileMedia } from '../../components/host/HostProfileMedia';
 import {
   agencyPortalService,
   type AgencyCreatorDetailData,
@@ -61,7 +62,6 @@ const AgencyCreatorViewPage: React.FC = () => {
   }
 
   const { creator, user, availability, callStats, pendingWithdrawal, earningsSummaryCoins } = data;
-  const gallery = [...(creator.galleryImages || [])].sort((a, b) => a.position - b.position);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -94,41 +94,31 @@ const AgencyCreatorViewPage: React.FC = () => {
 
       <div className="rounded-2xl border border-admin-border bg-admin-surface overflow-hidden">
         <div className="p-6 space-y-4">
-          <div className="flex gap-4 items-start">
-            <div className="flex gap-2 shrink-0">
-              <img
-                src={creator.photo}
-                alt=""
-                className="w-24 h-24 rounded-2xl object-cover border border-admin-border"
-              />
-              {user.avatar && user.avatar !== creator.photo ? (
-                <img
-                  src={user.avatar}
-                  alt="Avatar"
-                  title="User avatar"
-                  className="w-16 h-16 rounded-2xl object-cover border border-admin-border self-end"
-                />
-              ) : null}
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-white">{creator.name}</h1>
-              <p className="text-emerald-400 font-medium">@{user.username || '—'}</p>
-              <p className="text-sm text-zinc-500 mt-1">
-                {availability === 'online' ? (
-                  <span className="text-emerald-400">Online</span>
-                ) : (
-                  <span className="text-zinc-500">Busy / offline</span>
-                )}{' '}
-                · {creator.price} coins/min
-                {creator.age != null ? ` · ${creator.age} yrs` : ''}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">{creator.name}</h1>
+            <p className="text-emerald-400 font-medium">@{user.username || '—'}</p>
+            <p className="text-sm text-zinc-500 mt-1">
+              {availability === 'online' ? (
+                <span className="text-emerald-400">Online</span>
+              ) : (
+                <span className="text-zinc-500">Busy / offline</span>
+              )}{' '}
+              · {creator.price} coins/min
+              {creator.age != null ? ` · ${creator.age} yrs` : ''}
+            </p>
           </div>
 
-          <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">About</h2>
-            <p className="text-zinc-200 whitespace-pre-wrap text-sm leading-relaxed">{creator.about}</p>
-          </div>
+          <HostProfileMedia
+            creator={creator}
+            user={user ? { avatarUrl: user.avatarUrl ?? null, avatar: user.avatar } : null}
+          />
+
+          {creator.about ? (
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">About</h2>
+              <p className="text-zinc-200 whitespace-pre-wrap text-sm leading-relaxed">{creator.about}</p>
+            </div>
+          ) : null}
 
           {creator.categories?.length ? (
             <div className="flex flex-wrap gap-2">
@@ -142,27 +132,6 @@ const AgencyCreatorViewPage: React.FC = () => {
               ))}
             </div>
           ) : null}
-
-          {gallery.length > 0 && (
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
-                Gallery ({gallery.length})
-              </h2>
-              <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
-                {gallery.map((img) => (
-                  <a
-                    key={img.id}
-                    href={img.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="aspect-square rounded-xl overflow-hidden border border-admin-border bg-admin-base"
-                  >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

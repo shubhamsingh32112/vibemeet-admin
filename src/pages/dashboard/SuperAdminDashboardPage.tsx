@@ -145,7 +145,7 @@ const SuperAdminDashboardPage: React.FC = () => {
         <RankingLeaderboardCard
           variant="hosts"
           title="Top performing hosts"
-          viewAllHref="/creators"
+          viewAllHref="/leaderboards"
           rows={topHosts.data?.rows ?? []}
           loading={topHosts.isLoading}
         />

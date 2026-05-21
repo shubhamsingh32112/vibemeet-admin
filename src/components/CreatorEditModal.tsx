@@ -4,6 +4,7 @@ import { adminService, type CreatorPerformance, type GalleryImageDto } from '../
 import { uploadCreatorProfileImage } from '../utils/firebaseStorage';
 import { compressImage } from '../utils/imageCompression';
 import { CREATOR_PRICE_TIERS, normalizeCreatorPriceTier } from '../constants/creatorPriceTiers';
+import { hostAvatarEditUrl, hostPhotoEditUrl } from '../types/hostProfile';
 
 type Props = {
   row: CreatorPerformance;
@@ -46,9 +47,9 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
   const [about, setAbout] = useState('');
   const [age, setAge] = useState<number | ''>('');
   const [price, setPrice] = useState(() => normalizeCreatorPriceTier(row.price));
-  const [photo, setPhoto] = useState(row.photo);
+  const [photo, setPhoto] = useState(() => hostPhotoEditUrl(row.photo, row.avatarUrl));
   const [username, setUsername] = useState(row.username || '');
-  const [avatar, setAvatar] = useState(row.avatar || '');
+  const [avatar, setAvatar] = useState(() => hostAvatarEditUrl(row.avatar, row.avatarUrl));
   const [syncAvatarWithPhoto, setSyncAvatarWithPhoto] = useState(true);
   const [categoriesStr, setCategoriesStr] = useState(categoriesToString(row.categories));
   const [galleryImages, setGalleryImages] = useState<GalleryImageDto[]>([]);
@@ -75,7 +76,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       const c = await creatorService.getById(row.creatorId);
       setName(c.name);
       setAbout(c.about || '');
-      setPhoto(c.photo);
+      setPhoto(c.photo ?? hostPhotoEditUrl(row.photo, row.avatarUrl));
       setPrice(normalizeCreatorPriceTier(c.price));
       setAge(c.age !== undefined && c.age !== null ? c.age : '');
       setCategoriesStr(categoriesToString(c.categories));
@@ -83,7 +84,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
         [...(c.galleryImages || [])].sort((a, b) => a.position - b.position)
       );
       setUsername(row.username || '');
-      setAvatar(row.avatar || '');
+      setAvatar(hostAvatarEditUrl(row.avatar, row.avatarUrl));
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       setLoadError(err.response?.data?.error || err.message || 'Failed to load creator');

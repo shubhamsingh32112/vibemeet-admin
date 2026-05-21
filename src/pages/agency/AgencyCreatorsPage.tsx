@@ -177,7 +177,20 @@ const AgencyCreatorsPage: React.FC = () => {
             key={c.id}
             className="rounded-xl border border-admin-border bg-admin-surface p-4 space-y-2"
           >
-            <p className="text-white font-medium">{c.name}</p>
+            <div className="flex items-center gap-2">
+              {c.avatarUrl || c.photo ? (
+                <img
+                  src={c.avatarUrl || c.photo || ''}
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm text-zinc-400">
+                  {c.name.charAt(0)}
+                </div>
+              )}
+              <p className="text-white font-medium">{c.name}</p>
+            </div>
             <p className="text-xs text-zinc-500">
               @{c.username || 'â€”'} Â· {c.availability === 'online' ? 'ðŸŸ¢ online' : 'âš« busy'} Â· coins{' '}
               {c.coins ?? 'â€”'}
@@ -233,7 +246,22 @@ const AgencyCreatorsPage: React.FC = () => {
           <tbody>
             {rows.map((c) => (
               <tr key={c.id} className="border-t border-admin-border hover:bg-admin-elevated/40">
-                <td className="px-3 py-3 text-white font-medium">{c.name}</td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    {c.avatarUrl || c.photo ? (
+                      <img
+                        src={c.avatarUrl || c.photo || ''}
+                        alt=""
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-zinc-400">
+                        {c.name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="text-white font-medium">{c.name}</span>
+                  </div>
+                </td>
                 <td className="px-3 py-3 text-zinc-400">{c.username || 'â€”'}</td>
                 <td className="px-3 py-3">
                   <span className={c.availability === 'online' ? 'text-emerald-400' : 'text-zinc-500'}>

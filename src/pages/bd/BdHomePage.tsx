@@ -1,10 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import RefreshButton from '../../components/dashboard/RefreshButton';
 import GlobalStaleBanner from '../../components/dashboard/GlobalStaleBanner';
 import StaleSectionBadge from '../../components/dashboard/StaleSectionBadge';
 import { useStaffRealtime } from '../../contexts/StaffRealtimeContext';
 import { anySectionStale } from '../../types/dashboardStale';
+import {
+  HOST_COUNT_SORT_OPTIONS,
+  agencyRowLabel,
+  sortByHostCount,
+  type HostCountSortOption,
+} from '../../lib/bdAgencySort';
 import {
   bdPortalService,
   type BdDashboardData,
@@ -14,7 +20,16 @@ const BdHomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [d, setD] = useState<BdDashboardData | null>(null);
+  const [agencySort, setAgencySort] = useState<HostCountSortOption>('hosts_desc');
   const { stale, pendingHint, markFresh } = useStaffRealtime();
+  const agencyTableRef = useRef<HTMLDivElement>(null);
+
+  const handleAgencySortChange = (value: HostCountSortOption) => {
+    setAgencySort(value);
+    requestAnimationFrame(() => {
+      agencyTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,6 +68,12 @@ const BdHomePage: React.FC = () => {
 
   const pageStale = anySectionStale(stale, ['revenue', 'creators', 'bds', 'withdrawals', 'overview']);
 
+  const sortedAgencyRows = sortByHostCount(
+    d.agencyAnalytics,
+    agencySort,
+    (row) => agencyRowLabel(row.displayName, row.email)
+  );
+
   return (
     <div className="space-y-8">
       {pendingHint && pageStale && (
@@ -77,7 +98,12 @@ const BdHomePage: React.FC = () => {
         <Metric label="Agency active" value={d.agencyActive} accent="text-emerald-400" />
         <Metric label="Agency inactive" value={d.agencyInactive} accent="text-amber-400" />
         <Metric label="Wallet balance (coins)" value={d.staffCoinsBalance} accent="text-sky-400" />
-        <Metric label="Hosts" value={d.totalHosts} />
+        <Metric
+          label="Hosts (all agencies)"
+          value={d.totalHosts}
+          accent="text-emerald-400"
+          subtitle={`${d.agencyTotal} agenc${d.agencyTotal === 1 ? 'y' : 'ies'}`}
+        />
         <Metric label="Hosts online" value={d.onlineHosts} />
         <Metric label="Pending withdrawals" value={d.withdrawals.pendingCount} />
         <Metric label="Completed withdrawals" value={d.withdrawals.completedCount} />
@@ -101,13 +127,36 @@ const BdHomePage: React.FC = () => {
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Agency analytics (last 7 days)</h2>
+      <div ref={agencyTableRef} className="scroll-mt-20">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Agencies & hosts</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              {d.totalHosts.toLocaleString()} hosts across {d.agencyAnalytics.length} agencies · 7d
+              metrics below
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-zinc-400">
+            <span className="whitespace-nowrap">Sort</span>
+            <select
+              value={agencySort}
+              onChange={(e) => handleAgencySortChange(e.target.value as HostCountSortOption)}
+              className="rounded-lg border border-admin-border bg-admin-base px-3 py-2 text-sm text-white min-w-[200px]"
+            >
+              {HOST_COUNT_SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="overflow-x-auto rounded-xl border border-admin-border">
           <table className="w-full text-sm text-left min-w-[720px]">
             <thead className="bg-admin-elevated text-zinc-400">
               <tr>
-                <th className="px-3 py-2">Agency</th>
+                <th className="px-3 py-2">Agency name</th>
+                <th className="px-3 py-2">Email</th>
                 <th className="px-3 py-2">Code</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2 text-right">Hosts</th>
@@ -118,13 +167,13 @@ const BdHomePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {d.agencyAnalytics.map((row) => (
+              {sortedAgencyRows.map((row) => (
                 <tr key={row.id} className="border-t border-admin-border">
-                  <td className="px-3 py-2 text-zinc-200">
-                    <span className="block truncate max-w-[180px]">{row.email}</span>
-                    {row.displayName ? (
-                      <span className="text-xs text-zinc-500">{row.displayName}</span>
-                    ) : null}
+                  <td className="px-3 py-2 text-zinc-100 font-medium max-w-[160px] truncate">
+                    {row.displayName?.trim() || '—'}
+                  </td>
+                  <td className="px-3 py-2 text-zinc-400 text-xs max-w-[180px] truncate">
+                    {row.email}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs text-emerald-400/90">
                     {row.referralCode || '—'}
@@ -149,9 +198,9 @@ const BdHomePage: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {d.agencyAnalytics.length === 0 && (
+              {sortedAgencyRows.length === 0 && (
                 <tr>
-                  <td className="px-3 py-6 text-zinc-500 text-center" colSpan={8}>
+                  <td className="px-3 py-6 text-zinc-500 text-center" colSpan={9}>
                     No agency accounts yet — create one under Agency accounts.
                   </td>
                 </tr>
@@ -205,15 +254,18 @@ function Metric({
   label,
   value,
   accent = 'text-white',
+  subtitle,
 }: {
   label: string;
   value: number;
   accent?: string;
+  subtitle?: string;
 }) {
   return (
     <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
       <p className="text-[10px] text-zinc-500 uppercase tracking-wide">{label}</p>
       <p className={`text-2xl font-bold mt-1 tabular-nums ${accent}`}>{value.toLocaleString()}</p>
+      {subtitle ? <p className="text-[10px] text-zinc-500 mt-1">{subtitle}</p> : null}
     </div>
   );
 }

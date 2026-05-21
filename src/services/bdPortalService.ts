@@ -43,6 +43,14 @@ export type BdCreatorRow = {
   agencyId: string | null;
   agencyLabel: string | null;
   userLabel: string | null;
+  avatarUrl?: string | null;
+  galleryCount?: number;
+};
+
+export type BdCreatorDetailData = {
+  creator: import('../types/hostProfile').HostProfileCreator;
+  user: import('../types/hostProfile').HostProfileUser;
+  agency: { id: string; label: string };
 };
 
 export const bdPortalService = {
@@ -128,6 +136,11 @@ export const bdPortalService = {
   listCreators: async (): Promise<BdCreatorRow[]> => {
     const res = await bdApi.get('/bd/creators');
     return (res.data.data?.creators ?? []) as BdCreatorRow[];
+  },
+
+  getCreatorDetail: async (creatorId: string): Promise<BdCreatorDetailData> => {
+    const res = await bdApi.get(`/bd/creators/${creatorId}`);
+    return res.data.data as BdCreatorDetailData;
   },
 
   updateCreatorPrice: async (creatorId: string, price: number) => {

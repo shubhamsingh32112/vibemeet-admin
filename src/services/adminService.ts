@@ -90,8 +90,10 @@ export interface CreatorPerformance {
   userId: string;
   name: string;
   username: string | null;
-  avatar: string | null;
-  photo: string;
+  avatar?: import('../types/hostProfile').HostAvatarDto | null;
+  avatarUrl?: string | null;
+  photo?: string | null;
+  galleryCount?: number;
   categories: string[];
   price: number;
   isOnline: boolean;
@@ -441,6 +443,126 @@ export interface SupportSummary {
   agingOver24h: number;
 }
 
+export type LeaderboardPeriod = '7d' | '30d' | '90d' | 'all';
+
+export type HostLeaderboardSort =
+  | 'calls'
+  | 'talk_time'
+  | 'earnings'
+  | 'gross_spend'
+  | 'avg_duration';
+
+export type UserLeaderboardSort =
+  | 'calls'
+  | 'talk_time'
+  | 'messages'
+  | 'recharge_inr'
+  | 'recharge_coins'
+  | 'coins_received'
+  | 'coins_spent';
+
+export interface HostLeaderboardRow {
+  rank: number;
+  creatorId: string | null;
+  hostUserId: string;
+  hostName: string;
+  avatarUrl: string | null;
+  callCount: number;
+  talkSeconds: number;
+  talkMinutes: number;
+  avgCallDurationSec: number;
+  earningsCoins: number;
+  grossSpendCoins: number;
+  lifetimeEarningsCoins: number;
+}
+
+export interface HostLeaderboardResponse {
+  period: LeaderboardPeriod;
+  sort: HostLeaderboardSort;
+  rows: HostLeaderboardRow[];
+  note?: string;
+}
+
+export interface UserLeaderboardRow {
+  rank: number;
+  userId: string;
+  label: string;
+  email: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+  walletCoins: number;
+  callCount: number;
+  talkSeconds: number;
+  talkMinutes: number;
+  totalMessages: number;
+  freeMessages: number;
+  paidMessages: number;
+  rechargeCoins: number;
+  rechargeInr: number;
+  coinsReceived: number;
+  coinsSpent: number;
+  coinsSpentOnCalls: number;
+}
+
+export interface UserLeaderboardResponse {
+  period: LeaderboardPeriod;
+  sort: UserLeaderboardSort;
+  rows: UserLeaderboardRow[];
+  note?: string;
+}
+
+export interface RevenueSplitSummary {
+  rangeDays: number;
+  from: string;
+  inrPerCoin: number;
+  inrPerCoinNote: string;
+  actual: {
+    totalRevenue: number;
+    hostRevenue: number;
+    bdRevenue: number;
+    agencyRevenue: number;
+    platformRevenue: number;
+  };
+  scenarios: {
+    withAgencyAndBd: {
+      key: string;
+      label: string;
+      slices: Array<{ key: string; label: string; pct: number; coins: number }>;
+      platformCoins: number;
+    };
+    independentHost: {
+      key: string;
+      label: string;
+      slices: Array<{ key: string; label: string; pct: number; coins: number }>;
+      platformCoins: number;
+    };
+  };
+  combinedPlatformCoins: {
+    actualSettled: number;
+    policyWithStaff: number;
+    policyIndependentHost: number;
+  };
+}
+
+export interface BlockedHostRow {
+  creatorId: string;
+  hostName: string;
+  creatorUserId: string | null;
+  email: string | null;
+  username: string | null;
+  phone: string | null;
+  blockCount: number;
+  reportCount: number;
+  lastReportedAt: string | null;
+  blockedBySample: Array<{ userId: string; label: string }>;
+}
+
+export interface BlockedHostsResponse {
+  summary: { totalHosts: number; totalBlocks: number; totalReports: number };
+  rows: BlockedHostRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
 export interface SupportTicketsResponse {
   tickets: AdminSupportTicket[];
   summary: SupportSummary;
@@ -461,6 +583,16 @@ export const adminService = {
   },
 
   // ── Creators ─────────────────────────────────────────
+  getCreatorDetail: async (creatorId: string) => {
+    const res = await api.get(`/admin/creators/${creatorId}/detail`);
+    return res.data.data as {
+      creator: import('../types/hostProfile').HostProfileCreator;
+      user: import('../types/hostProfile').HostProfileUser;
+      assignedAgencyId: string | null;
+      assignedAgencyLabel: string | null;
+    };
+  },
+
   getCreatorsPerformance: async (): Promise<CreatorPerformance[]> => {
     const res = await api.get('/admin/creators/performance');
     return res.data.data.creators;
@@ -719,6 +851,20 @@ export const adminService = {
     return res.data.data;
   },
 
+  // ── Blocked hosts (user blocks + creator reports) ──
+  getBlockedHosts: async (params?: {
+    page?: number;
+    limit?: number;
+    sort?: 'blocks_desc' | 'blocks_asc' | 'reports_desc' | 'name_asc';
+  }): Promise<BlockedHostsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', String(params.page));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.sort) searchParams.append('sort', params.sort);
+    const res = await api.get(`/admin/blocked-hosts?${searchParams.toString()}`);
+    return res.data.data;
+  },
+
   // ── Support Tickets ────────────────────────────────
   getSupportTickets: async (params?: {
     role?: string;
@@ -756,7 +902,19 @@ export const adminService = {
     return res.data.data;
   },
 
-  getPlatformRevenue: async (): Promise<{ bdBps: number; agencyBps: number }> => {
+  getRevenueSplitSummary: async (days = 30): Promise<RevenueSplitSummary> => {
+    const res = await api.get('/admin/revenue-split/summary', { params: { days } });
+    return res.data.data;
+  },
+
+  getPlatformRevenue: async (): Promise<{
+    bdBps: number;
+    agencyBps: number;
+    hostSharePct?: number;
+    bdPctOfGross?: number;
+    agencyPctOfGross?: number;
+    note?: string;
+  }> => {
     const res = await api.get('/admin/platform-revenue');
     return res.data.data;
   },
@@ -766,6 +924,24 @@ export const adminService = {
     agencyBps: number;
   }): Promise<{ bdBps: number; agencyBps: number }> => {
     const res = await api.put('/admin/platform-revenue', body);
+    return res.data.data;
+  },
+
+  getLeaderboardHosts: async (params?: {
+    period?: LeaderboardPeriod;
+    sort?: HostLeaderboardSort;
+    limit?: number;
+  }): Promise<HostLeaderboardResponse> => {
+    const res = await api.get('/admin/leaderboards/hosts', { params });
+    return res.data.data;
+  },
+
+  getLeaderboardUsers: async (params?: {
+    period?: LeaderboardPeriod;
+    sort?: UserLeaderboardSort;
+    limit?: number;
+  }): Promise<UserLeaderboardResponse> => {
+    const res = await api.get('/admin/leaderboards/users', { params });
     return res.data.data;
   },
 };

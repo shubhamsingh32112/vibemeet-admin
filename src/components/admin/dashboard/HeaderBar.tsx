@@ -19,8 +19,10 @@ import { cn } from '../../../lib/utils';
 
 const ROUTE_TITLES: Array<{ match: (p: string) => boolean; title: string }> = [
   { match: (p) => p === '/' || p === '/dashboard', title: 'Command center' },
+  { match: (p) => p.startsWith('/blocked-hosts'), title: 'Blocked hosts' },
   { match: (p) => p.startsWith('/creators'), title: 'Hosts' },
   { match: (p) => p.startsWith('/users'), title: 'Users' },
+  { match: (p) => p.startsWith('/revenue-split'), title: 'Revenue split' },
   { match: (p) => p.startsWith('/coins'), title: 'Wallet & transactions' },
   { match: (p) => p.startsWith('/calls') || p.startsWith('/call-logs'), title: 'Calls & billing' },
   { match: (p) => p.startsWith('/withdrawals'), title: 'Payout requests' },

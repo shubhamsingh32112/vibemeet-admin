@@ -9,6 +9,7 @@ import {
 import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
 import { compressImage } from '../../utils/imageCompression';
 import { normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
+import { hostAvatarEditUrl, hostPhotoEditUrl } from '../../types/hostProfile';
 
 const GalleryContentType = 'image/jpeg' as const;
 
@@ -56,10 +57,10 @@ const AgencyCreatorEditPage: React.FC = () => {
       setData(d);
       setName(d.creator.name);
       setAbout(d.creator.about);
-      setPhoto(d.creator.photo);
+      setPhoto(hostPhotoEditUrl(d.creator.photo, d.creator.avatarUrl));
       setAge(d.creator.age ?? '');
       setUsername(d.user?.username || '');
-      setAvatar(d.user?.avatar || '');
+      setAvatar(hostAvatarEditUrl(d.user?.avatar, d.user?.avatarUrl));
       setSyncAvatarWithPhoto(true);
       setCategoriesStr(categoriesToString(d.creator.categories));
       setGalleryImages([...(d.creator.galleryImages || [])].sort((a, b) => a.position - b.position));

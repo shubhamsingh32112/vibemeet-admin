@@ -46,7 +46,8 @@ export interface AgencyCreatorRow {
   id: string;
   userId: string;
   name: string;
-  photo: string;
+  photo: string | null;
+  avatarUrl?: string | null;
   categories: string[];
   price: number;
   age?: number;
@@ -69,7 +70,6 @@ export type AgencyCreatorsPeriod = 'today' | '7d' | '30d' | 'all';
 export interface GalleryImageDto {
   id: string;
   url: string;
-  storagePath: string;
   position: number;
   createdAt: string;
 }
@@ -81,8 +81,11 @@ export interface AgencyCreatorDetailData {
     userId: string;
     name: string;
     about: string;
-    photo: string;
+    photo: string | null;
+    avatarUrl: string | null;
+    avatar: import('../types/hostProfile').HostAvatarDto | null;
     galleryImages: GalleryImageDto[];
+    galleryCount: number;
     categories: string[];
     price: number;
     age?: number;
@@ -98,7 +101,8 @@ export interface AgencyCreatorDetailData {
     email?: string;
     phone?: string;
     coins?: number;
-    avatar?: string;
+    avatarUrl?: string | null;
+    avatar?: import('../types/hostProfile').HostAvatarDto | null;
     profileRevision?: number;
   };
   availability: 'online' | 'busy';

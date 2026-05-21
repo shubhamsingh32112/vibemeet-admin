@@ -27,6 +27,11 @@ import BdDetailPage from './pages/BdDetailPage';
 import AgencyDetailPage from './pages/AgencyDetailPage';
 import SuperAdminDashboardPage from './pages/dashboard/SuperAdminDashboardPage';
 import StubPage from './pages/StubPage';
+import BlockedHostsPage from './pages/BlockedHostsPage';
+import RevenueSplitPage from './pages/RevenueSplitPage';
+import LeaderboardsPage from './pages/LeaderboardsPage';
+import AdminCreatorViewPage from './pages/AdminCreatorViewPage';
+import BdHostDetailPage from './pages/bd/BdHostDetailPage';
 import BdLoginPage from './pages/bd/BdLoginPage';
 import BdHomePage from './pages/bd/BdHomePage';
 import BdAgenciesPage from './pages/bd/BdAgenciesPage';
@@ -254,6 +259,7 @@ const AppRoutes: React.FC = () => {
         <Route index element={<BdHomePage />} />
         <Route path="agencies" element={<BdAgenciesPage />} />
         <Route path="hosts" element={<BdHostsPage />} />
+        <Route path="hosts/:creatorId" element={<BdHostDetailPage />} />
         <Route path="wallet" element={<BdWalletPage />} />
         <Route path="change-password" element={<BdChangePasswordPage />} />
       </Route>
@@ -290,6 +296,7 @@ const AppRoutes: React.FC = () => {
         <Route path="overview" element={<OverviewPage />} />
         <Route path="dashboard" element={<SuperAdminDashboardPage />} />
         <Route path="creators" element={<CreatorsPage />} />
+        <Route path="creators/:creatorId" element={<AdminCreatorViewPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="coins" element={<CoinsPage />} />
         <Route path="calls" element={<CallsPage />} />
@@ -300,12 +307,8 @@ const AppRoutes: React.FC = () => {
         <Route path="bds/:bdId" element={<BdDetailPage />} />
         <Route path="agencies" element={<AgenciesManagePage />} />
         <Route path="agencies/:agencyId" element={<AgencyDetailPage />} />
-        <Route
-          path="blocked-users"
-          element={
-            <StubPage title="Blocked users" relatedTo={{ label: 'Open users', href: '/users' }} />
-          }
-        />
+        <Route path="blocked-users" element={<Navigate to="/blocked-hosts" replace />} />
+        <Route path="blocked-hosts" element={<BlockedHostsPage />} />
         <Route
           path="kyc"
           element={<StubPage title="KYC verification" relatedTo={{ label: 'Open hosts (creators)', href: '/creators' }} />}
@@ -314,18 +317,12 @@ const AppRoutes: React.FC = () => {
           path="analytics/revenue"
           element={<StubPage title="Revenue analytics" relatedTo={{ label: 'Coins & economy', href: '/coins' }} />}
         />
-        <Route
-          path="leaderboards"
-          element={<StubPage title="Leaderboards" relatedTo={{ label: 'Creators performance', href: '/creators' }} />}
-        />
+        <Route path="leaderboards" element={<LeaderboardsPage />} />
         <Route
           path="settlements"
           element={<StubPage title="Settlements" relatedTo={{ label: 'Withdrawals', href: '/withdrawals' }} />}
         />
-        <Route
-          path="revenue-split"
-          element={<StubPage title="Revenue split" relatedTo={{ label: "Platform revenue", href: '/system' }} />}
-        />
+        <Route path="revenue-split" element={<RevenueSplitPage />} />
         <Route path="call-logs" element={<CallsPage />} />
         <Route
           path="fraud"

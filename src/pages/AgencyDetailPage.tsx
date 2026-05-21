@@ -28,11 +28,39 @@ interface CreatorRow {
   createdAt: string;
 }
 
+type CreatorSortOption = 'earnings_desc' | 'earnings_asc' | 'name_asc' | 'newest';
+
+const CREATOR_SORT_OPTIONS: { value: CreatorSortOption; label: string }[] = [
+  { value: 'earnings_desc', label: 'Highest earning hosts first' },
+  { value: 'earnings_asc', label: 'Lowest earning hosts first' },
+  { value: 'name_asc', label: 'Host name (A–Z)' },
+  { value: 'newest', label: 'Recently added' },
+];
+
+function sortCreators(rows: CreatorRow[], sort: CreatorSortOption): CreatorRow[] {
+  const copy = [...rows];
+  switch (sort) {
+    case 'earnings_desc':
+      return copy.sort((a, b) => b.earningsCoins - a.earningsCoins || a.name.localeCompare(b.name));
+    case 'earnings_asc':
+      return copy.sort((a, b) => a.earningsCoins - b.earningsCoins || a.name.localeCompare(b.name));
+    case 'name_asc':
+      return copy.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    case 'newest':
+      return copy.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    default:
+      return copy;
+  }
+}
+
 const AgencyDetailPage: React.FC = () => {
   const { agencyId } = useParams<{ agencyId: string }>();
   const [agency, setAgency] = useState<AgencyInfo | null>(null);
   const [pending, setPending] = useState<PendingApp[]>([]);
   const [creators, setCreators] = useState<CreatorRow[]>([]);
+  const [creatorSort, setCreatorSort] = useState<CreatorSortOption>('earnings_desc');
   const [pendingWd, setPendingWd] = useState(0);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -60,6 +88,15 @@ const AgencyDetailPage: React.FC = () => {
     load();
   }, [load]);
 
+  const creatorsTableRef = React.useRef<HTMLDivElement>(null);
+
+  const handleCreatorSortChange = (value: CreatorSortOption) => {
+    setCreatorSort(value);
+    requestAnimationFrame(() => {
+      creatorsTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   const toggle = async () => {
     if (!agency) return;
     try {
@@ -69,6 +106,8 @@ const AgencyDetailPage: React.FC = () => {
       alert('Update failed');
     }
   };
+
+  const sortedCreators = sortCreators(creators, creatorSort);
 
   if (loading) {
     return (
@@ -96,7 +135,14 @@ const AgencyDetailPage: React.FC = () => {
       </Link>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-3">
-        <h1 className="text-2xl font-bold text-white">{agency.displayName || agency.email}</h1>
+        <h1 className="text-2xl font-bold text-white">
+          {agency.displayName?.trim() || agency.email}
+        </h1>
+        {agency.displayName?.trim() ? (
+          <p className="text-sm text-zinc-300">
+            Agency name: <span className="text-white font-medium">{agency.displayName}</span>
+          </p>
+        ) : null}
         <p className="text-sm text-zinc-400">{agency.email}</p>
         <p className="text-sm font-mono text-emerald-400">Referral: {agency.referralCode || '—'}</p>
         {agency.bdId && (
@@ -121,6 +167,63 @@ const AgencyDetailPage: React.FC = () => {
         </button>
       </div>
 
+      <section ref={creatorsTableRef} className="scroll-mt-20">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h2 className="text-lg font-semibold text-white">Hosts / creators ({creators.length})</h2>
+          <label className="flex items-center gap-2 text-sm text-zinc-400">
+            <span className="whitespace-nowrap">Sort</span>
+            <select
+              value={creatorSort}
+              onChange={(e) => handleCreatorSortChange(e.target.value as CreatorSortOption)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white min-w-[220px]"
+            >
+              {CREATOR_SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="overflow-x-auto rounded-lg border border-zinc-800">
+          <table className="min-w-full text-sm">
+            <thead className="bg-zinc-900 text-zinc-400">
+              <tr>
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Earnings (coins)</th>
+                <th className="px-4 py-3 text-left">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {creators.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-zinc-500 text-center">
+                    No creators assigned.
+                  </td>
+                </tr>
+              ) : (
+                sortedCreators.map((c) => (
+                  <tr key={c.id} className="border-t border-zinc-800 text-zinc-200">
+                    <td className="px-4 py-3">{c.name}</td>
+                    <td className="px-4 py-3 tabular-nums">{c.earningsCoins.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-zinc-500">
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-zinc-500 mt-2">
+          Full host editing is available on the{' '}
+          <Link to="/creators" className="text-indigo-400 hover:underline">
+            Hosts
+          </Link>{' '}
+          page.
+        </p>
+      </section>
+
       <section>
         <h2 className="text-lg font-semibold text-white mb-3">
           Pending applications ({pending.length})
@@ -139,47 +242,6 @@ const AgencyDetailPage: React.FC = () => {
             ))}
           </ul>
         )}
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-white mb-3">Creators ({creators.length})</h2>
-        <div className="overflow-x-auto rounded-lg border border-zinc-800">
-          <table className="min-w-full text-sm">
-            <thead className="bg-zinc-900 text-zinc-400">
-              <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Earnings (coins)</th>
-                <th className="px-4 py-3 text-left">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {creators.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="px-4 py-6 text-zinc-500 text-center">
-                    No creators assigned.
-                  </td>
-                </tr>
-              ) : (
-                creators.map((c) => (
-                  <tr key={c.id} className="border-t border-zinc-800 text-zinc-200">
-                    <td className="px-4 py-3">{c.name}</td>
-                    <td className="px-4 py-3">{c.earningsCoins}</td>
-                    <td className="px-4 py-3 text-zinc-500">
-                      {new Date(c.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-zinc-500 mt-2">
-          Full host editing is available on the{' '}
-          <Link to="/creators" className="text-indigo-400 hover:underline">
-            Hosts
-          </Link>{' '}
-          page.
-        </p>
       </section>
     </div>
   );

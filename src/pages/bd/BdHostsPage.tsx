@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { CREATOR_PRICE_TIERS } from '../../constants/creatorPriceTiers';
 import { bdPortalService, type BdCreatorRow } from '../../services/bdPortalService';
@@ -68,16 +69,39 @@ const BdHostsPage: React.FC = () => {
           <thead className="bg-admin-elevated text-zinc-400">
             <tr>
               <th className="px-3 py-2">Host</th>
+              <th className="px-3 py-2">Photos</th>
               <th className="px-3 py-2">Agency</th>
               <th className="px-3 py-2">Coins / min</th>
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="border-t border-admin-border">
                 <td className="px-3 py-2 text-zinc-200">
-                  <span className="block font-medium">{row.name}</span>
-                  <span className="text-xs text-zinc-500">{row.userLabel || '—'}</span>
+                  <div className="flex items-center gap-2">
+                    {row.avatarUrl ? (
+                      <img
+                        src={row.avatarUrl}
+                        alt=""
+                        className="w-9 h-9 rounded-full object-cover ring-1 ring-white/10"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-zinc-400">
+                        {row.name.charAt(0)}
+                      </div>
+                    )}
+                    <div>
+                      <span className="block font-medium">{row.name}</span>
+                      <span className="text-xs text-zinc-500">{row.userLabel || '—'}</span>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-3 py-2 text-zinc-400 text-xs tabular-nums">
+                  {(row.galleryCount ?? 0) > 0 ? `${row.galleryCount} gallery` : 'No gallery'}
+                  <span className="block text-zinc-600">
+                    {row.avatarUrl ? 'DP set' : 'No DP'}
+                  </span>
                 </td>
                 <td className="px-3 py-2 text-zinc-400 text-xs">{row.agencyLabel || '—'}</td>
                 <td className="px-3 py-2">
@@ -97,11 +121,19 @@ const BdHostsPage: React.FC = () => {
                     <span className="ml-2 text-xs text-zinc-500">Saving…</span>
                   ) : null}
                 </td>
+                <td className="px-3 py-2">
+                  <Link
+                    to={`/bd/hosts/${row.id}`}
+                    className="text-sm text-emerald-400 hover:underline whitespace-nowrap"
+                  >
+                    View profile
+                  </Link>
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-3 py-8 text-center text-zinc-500">
+                <td colSpan={5} className="px-3 py-8 text-center text-zinc-500">
                   No hosts under your agencies yet.
                 </td>
               </tr>

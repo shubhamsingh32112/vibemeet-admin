@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -118,8 +119,12 @@ const CreatorsPage: React.FC = () => {
       width: '200px',
       render: (row) => (
         <div className="flex items-center gap-2">
-          {row.photo ? (
-            <img src={row.photo} className="w-7 h-7 rounded-full object-cover" alt="" />
+          {row.avatarUrl || row.photo ? (
+            <img
+              src={row.avatarUrl || row.photo || ''}
+              className="w-7 h-7 rounded-full object-cover"
+              alt=""
+            />
           ) : (
             <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs text-gray-400">
               {row.name.charAt(0)}
@@ -255,6 +260,13 @@ const CreatorsPage: React.FC = () => {
       width: '140px',
       render: (row) => (
         <div className="flex items-center gap-1 flex-wrap">
+          <Link
+            to={`/creators/${row.creatorId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="px-2 py-1 text-xs bg-emerald-900/30 border border-emerald-800 rounded text-emerald-300 hover:text-emerald-100 transition min-h-[36px] inline-flex items-center"
+          >
+            View
+          </Link>
           <button
             type="button"
             onClick={(e) => {
