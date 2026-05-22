@@ -621,6 +621,32 @@ export const adminService = {
    * gallery upload. The admin uploads the bytes directly to Cloudflare,
    * then calls `creatorGalleryCommit` with the returned `sessionId`.
    */
+  creatorAvatarUploadUrl: async (
+    contentType: string,
+    declaredSizeBytes: number,
+  ): Promise<{ uploadUrl: string; sessionId: string; imageId: string; expiresAt: string }> => {
+    const res = await api.post('/images/direct-upload', {
+      purpose: 'creator-avatar',
+      declaredSizeBytes,
+      declaredMimeType: contentType,
+    });
+    return res.data.data;
+  },
+
+  creatorAvatarCommit: async (
+    creatorId: string,
+    sessionId: string,
+  ): Promise<{
+    avatar: import('../types/hostProfile').HostAvatarDto | null;
+    avatarUrl: string | null;
+    photo: string | null;
+    galleryImages: GalleryImageDto[];
+    user: { avatar: import('../types/hostProfile').HostAvatarDto | null; avatarUrl: string | null } | null;
+  }> => {
+    const res = await api.post(`/admin/creators/${creatorId}/avatar/commit`, { sessionId });
+    return res.data.data;
+  },
+
   creatorGalleryUploadUrl: async (
     _creatorId: string,
     contentType: string,
@@ -911,8 +937,8 @@ export const adminService = {
     bdBps: number;
     agencyBps: number;
     hostSharePct?: number;
-    bdPctOfGross?: number;
-    agencyPctOfGross?: number;
+    bdPctOfHostEarnings?: number;
+    agencyPctOfHostEarnings?: number;
     note?: string;
   }> => {
     const res = await api.get('/admin/platform-revenue');

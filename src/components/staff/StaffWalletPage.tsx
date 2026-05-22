@@ -158,6 +158,12 @@ const StaffWalletPage: React.FC<Props> = ({ api, basePath, portalLabel }) => {
         <p className="mt-1 text-sm text-zinc-500">
           Earnings, payout account, transactions, and withdrawal requests.
         </p>
+        {typeof summary?.commissionPctOfHostEarnings === 'number' ? (
+          <p className="mt-2 text-sm text-zinc-400">
+            You earn <strong className="text-zinc-200">{summary.commissionPctOfHostEarnings}%</strong>{' '}
+            of host earnings on each settled call (credited here; not deducted from creators).
+          </p>
+        ) : null}
       </div>
 
       {err ? <p className="text-sm text-red-400">{err}</p> : null}

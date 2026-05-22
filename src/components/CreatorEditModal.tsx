@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { creatorService } from '../services/creatorService';
 import { adminService, type CreatorPerformance, type GalleryImageDto } from '../services/adminService';
-import { uploadCreatorProfileImage } from '../utils/firebaseStorage';
+import api from '../config/api';
 import { compressImage } from '../utils/imageCompression';
+import { uploadImageViaDirectSession, formatCloudflareApiError } from '../utils/cloudflareImageUpload';
 import { CREATOR_PRICE_TIERS, normalizeCreatorPriceTier } from '../constants/creatorPriceTiers';
-import { hostAvatarEditUrl, hostPhotoEditUrl } from '../types/hostProfile';
 
 type Props = {
   row: CreatorPerformance;
@@ -47,10 +47,10 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
   const [about, setAbout] = useState('');
   const [age, setAge] = useState<number | ''>('');
   const [price, setPrice] = useState(() => normalizeCreatorPriceTier(row.price));
-  const [photo, setPhoto] = useState(() => hostPhotoEditUrl(row.photo, row.avatarUrl));
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(
+    row.avatarUrl || null
+  );
   const [username, setUsername] = useState(row.username || '');
-  const [avatar, setAvatar] = useState(() => hostAvatarEditUrl(row.avatar, row.avatarUrl));
-  const [syncAvatarWithPhoto, setSyncAvatarWithPhoto] = useState(true);
   const [categoriesStr, setCategoriesStr] = useState(categoriesToString(row.categories));
   const [galleryImages, setGalleryImages] = useState<GalleryImageDto[]>([]);
 
@@ -73,18 +73,18 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       );
       setAgenciesLoading(false);
 
-      const c = await creatorService.getById(row.creatorId);
+      const detail = await adminService.getCreatorDetail(row.creatorId);
+      const c = detail.creator;
       setName(c.name);
       setAbout(c.about || '');
-      setPhoto(c.photo ?? hostPhotoEditUrl(row.photo, row.avatarUrl));
+      setAvatarPreviewUrl(c.avatarUrl ?? c.avatar?.avatarUrls?.md ?? null);
       setPrice(normalizeCreatorPriceTier(c.price));
       setAge(c.age !== undefined && c.age !== null ? c.age : '');
       setCategoriesStr(categoriesToString(c.categories));
       setGalleryImages(
         [...(c.galleryImages || [])].sort((a, b) => a.position - b.position)
       );
-      setUsername(row.username || '');
-      setAvatar(hostAvatarEditUrl(row.avatar, row.avatarUrl));
+      setUsername(detail.user?.username || row.username || '');
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       setLoadError(err.response?.data?.error || err.message || 'Failed to load creator');
@@ -92,7 +92,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       setLoading(false);
       setAgenciesLoading(false);
     }
-  }, [row.creatorId, row.username, row.avatar]);
+  }, [row.creatorId, row.username, row.avatarUrl]);
 
   useEffect(() => {
     load();
@@ -147,8 +147,8 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       alert('About must be between 10 and 1000 characters');
       return;
     }
-    if (!photo.trim()) {
-      alert('Main photo URL is required');
+    if (!avatarPreviewUrl) {
+      alert('Profile photo is required — upload an image (saved via Cloudflare)');
       return;
     }
     if (username.trim().length < 4 || username.trim().length > 10) {
@@ -161,16 +161,13 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       await creatorService.update(row.creatorId, {
         name: name.trim(),
         about: about.trim(),
-        photo: photo.trim(),
         categories: cats,
         price: Number(price),
         age: age === '' ? undefined : Number(age),
       });
 
-      const avatarVal = syncAvatarWithPhoto ? photo.trim() : avatar.trim();
       await adminService.patchCreatorLinkedUser(row.creatorId, {
         username: username.trim(),
-        avatar: avatarVal || undefined,
         categories: cats,
       });
 
@@ -192,33 +189,17 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       setSaving(true);
       const b64 = await compressImage(file, 1024, 1024, 0.82, 350);
       const blob = await dataUrlToBlob(b64);
-      const jpeg = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-      const url = await uploadCreatorProfileImage(jpeg, row.creatorId);
-      setPhoto(url);
-      if (syncAvatarWithPhoto) setAvatar(url);
+      const session = await uploadImageViaDirectSession(api, {
+        purpose: 'creator-avatar',
+        blob,
+        contentType: 'image/jpeg',
+        filename: 'profile.jpg',
+      });
+      const result = await adminService.creatorAvatarCommit(row.creatorId, session.sessionId);
+      setAvatarPreviewUrl(result.avatarUrl ?? result.avatar?.avatarUrls?.md ?? null);
+      onSaved();
     } catch (err: unknown) {
-      const m = err instanceof Error ? err.message : 'Upload failed';
-      alert(m);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    try {
-      setSaving(true);
-      const b64 = await compressImage(file, 512, 512, 0.82, 200);
-      const blob = await dataUrlToBlob(b64);
-      const jpeg = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
-      const url = await uploadCreatorProfileImage(jpeg, `${row.creatorId}-avatar`);
-      setSyncAvatarWithPhoto(false);
-      setAvatar(url);
-    } catch (err: unknown) {
-      const m = err instanceof Error ? err.message : 'Upload failed';
-      alert(m);
+      alert(formatCloudflareApiError(err));
     } finally {
       setSaving(false);
     }
@@ -383,15 +364,10 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                   placeholder="e.g. lifestyle, gaming"
                   className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm"
                 />
-                <label className="block text-xs text-zinc-500">Main photo URL</label>
-                <input
-                  value={photo}
-                  onChange={(e) => {
-                    setPhoto(e.target.value);
-                    if (syncAvatarWithPhoto) setAvatar(e.target.value);
-                  }}
-                  className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-xs font-mono"
-                />
+                <p className="text-xs text-zinc-500">
+                  Profile photo is stored on Cloudflare Images and synced to the user avatar for
+                  chat and the app.
+                </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="inline-flex items-center gap-2 text-sm text-zinc-300 cursor-pointer min-h-[44px]">
                     <input
@@ -401,12 +377,18 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                       onChange={handleMainPhotoFile}
                     />
                     <span className="px-3 py-2 rounded-xl bg-violet-600/20 border border-violet-500/40 text-violet-200">
-                      Upload main photo
+                      Upload profile photo
                     </span>
                   </label>
-                  {photo ? (
-                    <img src={photo} alt="" className="h-14 w-14 rounded-xl object-cover border border-zinc-700" />
-                  ) : null}
+                  {avatarPreviewUrl ? (
+                    <img
+                      src={avatarPreviewUrl}
+                      alt=""
+                      className="h-14 w-14 rounded-xl object-cover border border-zinc-700"
+                    />
+                  ) : (
+                    <span className="text-xs text-amber-400/90">No photo yet</span>
+                  )}
                 </div>
               </section>
 
@@ -420,38 +402,9 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm"
                 />
-                <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer min-h-[44px]">
-                  <input
-                    type="checkbox"
-                    checked={syncAvatarWithPhoto}
-                    onChange={(e) => {
-                      setSyncAvatarWithPhoto(e.target.checked);
-                      if (e.target.checked) setAvatar(photo);
-                    }}
-                  />
-                  Use main photo as user avatar
-                </label>
-                {!syncAvatarWithPhoto && (
-                  <>
-                    <label className="block text-xs text-zinc-500">Avatar URL</label>
-                    <input
-                      value={avatar}
-                      onChange={(e) => setAvatar(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-xs font-mono"
-                    />
-                    <label className="inline-flex items-center gap-2 text-sm text-zinc-300 cursor-pointer min-h-[44px]">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={handleAvatarFile}
-                      />
-                      <span className="px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200">
-                        Upload avatar
-                      </span>
-                    </label>
-                  </>
-                )}
+                <p className="text-xs text-zinc-500">
+                  User avatar is updated automatically when you upload the profile photo above.
+                </p>
               </section>
 
               <section className="space-y-3 border-t border-zinc-800 pt-4">

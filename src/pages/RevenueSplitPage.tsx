@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { RevenueSplitPie } from '../components/admin/dashboard/RevenueSplitPie';
 import {
-  SPLIT_INDEPENDENT_HOST,
-  SPLIT_WITH_AGENCY_AND_BD,
   applyCoinsToSlices,
+  buildSplitIndependentHost,
+  buildSplitWithAgencyAndBd,
   formatCoinsAndInr,
+  formatSplitSubtitle,
   type SplitSlice,
 } from '../lib/revenueSplitModel';
 import { adminService, type RevenueSplitSummary } from '../services/adminService';
@@ -79,24 +80,38 @@ const RevenueSplitPage: React.FC = () => {
     }
   };
 
+  const policyWithStaff = useMemo(
+    () => buildSplitWithAgencyAndBd(hostSharePct, bdBps, agencyBps),
+    [hostSharePct, bdBps, agencyBps]
+  );
+
+  const policyIndependent = useMemo(
+    () => buildSplitIndependentHost(hostSharePct),
+    [hostSharePct]
+  );
+
+  const platformPctWithStaff =
+    policyWithStaff.find((s) => s.key === 'platform')?.pct ?? 0;
+  const platformPctIndependent =
+    policyIndependent.find((s) => s.key === 'platform')?.pct ?? 0;
+
   const pieWithStaff: SplitSlice[] = useMemo(() => {
-    if (!summary) return SPLIT_WITH_AGENCY_AND_BD;
-    return applyCoinsToSlices(
-      SPLIT_WITH_AGENCY_AND_BD,
-      summary.actual.totalRevenue
-    ).map((s) => {
+    const base = policyWithStaff;
+    if (!summary) return base;
+    return applyCoinsToSlices(base, summary.actual.totalRevenue).map((s) => {
       const fromApi = summary.scenarios.withAgencyAndBd.slices.find((x) => x.key === s.key);
       return { ...s, coins: fromApi?.coins ?? s.coins };
     });
-  }, [summary]);
+  }, [summary, policyWithStaff]);
 
   const pieIndependent: SplitSlice[] = useMemo(() => {
-    if (!summary) return SPLIT_INDEPENDENT_HOST;
-    return applyCoinsToSlices(SPLIT_INDEPENDENT_HOST, summary.actual.totalRevenue).map((s) => {
+    const base = policyIndependent;
+    if (!summary) return base;
+    return applyCoinsToSlices(base, summary.actual.totalRevenue).map((s) => {
       const fromApi = summary.scenarios.independentHost.slices.find((x) => x.key === s.key);
       return { ...s, coins: fromApi?.coins ?? s.coins };
     });
-  }, [summary]);
+  }, [summary, policyIndependent]);
 
   if (loading && !summary) {
     return (
@@ -162,11 +177,11 @@ const RevenueSplitPage: React.FC = () => {
                   highlight
                 />
                 <PlatformCombinedCard
-                  title="Policy — with agency & BD (55%)"
+                  title={`Policy — with agency & BD (${platformPctWithStaff}%)`}
                   coins={combined.policyWithStaff}
                 />
                 <PlatformCombinedCard
-                  title="Policy — no agency / BD (75%)"
+                  title={`Policy — no agency / BD (${platformPctIndependent}%)`}
                   coins={combined.policyIndependentHost}
                 />
               </div>
@@ -178,12 +193,12 @@ const RevenueSplitPage: React.FC = () => {
       <div className="grid gap-4 lg:grid-cols-2">
         <RevenueSplitPie
           title="Host with agency & BD"
-          subtitle="25% host · 5% BD · 15% agency · 55% platform — coin amounts from total revenue"
+          subtitle={formatSplitSubtitle(policyWithStaff)}
           slices={pieWithStaff}
         />
         <RevenueSplitPie
           title="Host without agency or BD"
-          subtitle="25% host · 75% platform (BD/agency share stays with platform)"
+          subtitle={`${formatSplitSubtitle(policyIndependent)} (BD/agency share stays with platform)`}
           slices={pieIndependent}
         />
       </div>

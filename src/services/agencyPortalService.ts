@@ -235,7 +235,6 @@ export const agencyPortalService = {
     body: Partial<{
       name: string;
       about: string;
-      photo: string;
       categories: string[];
       price: number;
       age: number;
@@ -252,6 +251,16 @@ export const agencyPortalService = {
   ) => {
     const res = await agencyApi.patch(`/admin/creators/${creatorId}/user`, body);
     return res.data.data;
+  },
+
+  creatorAvatarCommit: async (creatorId: string, sessionId: string) => {
+    const res = await agencyApi.post(`/admin/creators/${creatorId}/avatar/commit`, { sessionId });
+    return res.data.data as {
+      avatar: import('../types/hostProfile').HostAvatarDto | null;
+      avatarUrl: string | null;
+      photo: string | null;
+      galleryImages: GalleryImageDto[];
+    };
   },
 
   creatorGalleryUploadUrl: async (

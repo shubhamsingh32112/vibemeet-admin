@@ -17,6 +17,9 @@ export type StaffWalletSummary = {
   pendingWithdrawalCount: number;
   payoutAccount: StaffPayoutAccount | null;
   payoutAccountBound: boolean;
+  /** % of host earnings per settled call (e.g. 5 for BD, 15 for agency). */
+  commissionPctOfHostEarnings?: number;
+  commissionNote?: string;
 };
 
 export type StaffWalletTransaction = {

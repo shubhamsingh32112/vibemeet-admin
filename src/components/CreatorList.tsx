@@ -32,7 +32,7 @@ const CreatorList: React.FC<CreatorListProps> = ({
         >
           <div className="relative h-48 bg-gray-700">
             <img
-              src={creator.photo}
+              src={(creator as { avatarUrl?: string }).avatarUrl || creator.photo}
               alt={creator.name}
               className="w-full h-full object-cover"
               onError={(e) => {

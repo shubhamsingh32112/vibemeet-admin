@@ -6,10 +6,10 @@ import {
   type AgencyCreatorDetailData,
   type GalleryImageDto,
 } from '../../services/agencyPortalService';
-import { uploadCreatorProfileImage } from '../../utils/firebaseStorage';
+import { agencyApi } from '../../config/agencyApi';
 import { compressImage } from '../../utils/imageCompression';
+import { uploadImageViaDirectSession, formatCloudflareApiError } from '../../utils/cloudflareImageUpload';
 import { normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
-import { hostAvatarEditUrl, hostPhotoEditUrl } from '../../types/hostProfile';
 
 const GalleryContentType = 'image/jpeg' as const;
 
@@ -38,11 +38,9 @@ const AgencyCreatorEditPage: React.FC = () => {
 
   const [name, setName] = useState('');
   const [about, setAbout] = useState('');
-  const [photo, setPhoto] = useState('');
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [age, setAge] = useState<number | ''>('');
   const [username, setUsername] = useState('');
-  const [avatar, setAvatar] = useState('');
-  const [syncAvatarWithPhoto, setSyncAvatarWithPhoto] = useState(true);
   const [categoriesStr, setCategoriesStr] = useState('');
   const [galleryImages, setGalleryImages] = useState<GalleryImageDto[]>([]);
   const [saving, setSaving] = useState(false);
@@ -57,11 +55,9 @@ const AgencyCreatorEditPage: React.FC = () => {
       setData(d);
       setName(d.creator.name);
       setAbout(d.creator.about);
-      setPhoto(hostPhotoEditUrl(d.creator.photo, d.creator.avatarUrl));
+      setAvatarPreviewUrl(d.creator.avatarUrl ?? d.creator.avatar?.avatarUrls?.md ?? null);
       setAge(d.creator.age ?? '');
       setUsername(d.user?.username || '');
-      setAvatar(hostAvatarEditUrl(d.user?.avatar, d.user?.avatarUrl));
-      setSyncAvatarWithPhoto(true);
       setCategoriesStr(categoriesToString(d.creator.categories));
       setGalleryImages([...(d.creator.galleryImages || [])].sort((a, b) => a.position - b.position));
     } catch {
@@ -86,8 +82,8 @@ const AgencyCreatorEditPage: React.FC = () => {
       setErr('About must be between 10 and 1000 characters');
       return;
     }
-    if (!photo.trim()) {
-      setErr('Main photo is required — upload an image');
+    if (!avatarPreviewUrl) {
+      setErr('Profile photo is required — upload an image');
       return;
     }
     if (username.trim().length < 4 || username.trim().length > 10) {
@@ -101,14 +97,11 @@ const AgencyCreatorEditPage: React.FC = () => {
       await agencyPortalService.updateCreatorProfile(creatorId, {
         name: name.trim(),
         about: about.trim(),
-        photo: photo.trim(),
         categories: cats,
         age: age === '' ? undefined : Number(age),
       });
-      const avatarVal = syncAvatarWithPhoto ? photo.trim() : avatar.trim();
       await agencyPortalService.patchCreatorUser(creatorId, {
         username: username.trim(),
-        avatar: avatarVal || undefined,
         categories: cats,
       });
       await load();
@@ -125,33 +118,19 @@ const AgencyCreatorEditPage: React.FC = () => {
     if (!file || !creatorId) return;
     try {
       setSaving(true);
+      setErr('');
       const b64 = await compressImage(file, 1024, 1024, 0.82, 350);
       const blob = await dataUrlToBlob(b64);
-      const jpeg = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
-      const url = await uploadCreatorProfileImage(jpeg, creatorId);
-      setPhoto(url);
-      if (syncAvatarWithPhoto) setAvatar(url);
+      const session = await uploadImageViaDirectSession(agencyApi, {
+        purpose: 'creator-avatar',
+        blob,
+        contentType: 'image/jpeg',
+        filename: 'profile.jpg',
+      });
+      const result = await agencyPortalService.creatorAvatarCommit(creatorId, session.sessionId);
+      setAvatarPreviewUrl(result.avatarUrl ?? result.avatar?.avatarUrls?.md ?? null);
     } catch (ex: unknown) {
-      setErr(ex instanceof Error ? ex.message : 'Upload failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !creatorId) return;
-    try {
-      setSaving(true);
-      const b64 = await compressImage(file, 512, 512, 0.82, 200);
-      const blob = await dataUrlToBlob(b64);
-      const jpeg = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
-      const url = await uploadCreatorProfileImage(jpeg, `${creatorId}-avatar`);
-      setSyncAvatarWithPhoto(false);
-      setAvatar(url);
-    } catch (ex: unknown) {
-      setErr(ex instanceof Error ? ex.message : 'Upload failed');
+      setErr(formatCloudflareApiError(ex));
     } finally {
       setSaving(false);
     }
@@ -308,16 +287,24 @@ const AgencyCreatorEditPage: React.FC = () => {
         </div>
 
         <div className="border-t border-admin-border pt-4">
-          <label className="text-xs text-zinc-400">Main photo</label>
-          <p className="text-xs text-zinc-500 mt-0.5 mb-2">Upload an image — no URL field.</p>
+          <label className="text-xs text-zinc-400">Profile photo</label>
+          <p className="text-xs text-zinc-500 mt-0.5 mb-2">
+            Stored on Cloudflare Images; user avatar syncs automatically for the app.
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex items-center gap-2 text-sm text-emerald-300 cursor-pointer min-h-[44px]">
               <input type="file" accept="image/*" className="sr-only" onChange={handleMainPhotoFile} />
-              <span className="px-3 py-2 rounded-xl border border-admin-border">Upload main photo</span>
+              <span className="px-3 py-2 rounded-xl border border-admin-border">Upload profile photo</span>
             </label>
-            {photo ? (
-              <img src={photo} alt="" className="h-16 w-16 rounded-xl object-cover border border-admin-border" />
-            ) : null}
+            {avatarPreviewUrl ? (
+              <img
+                src={avatarPreviewUrl}
+                alt=""
+                className="h-16 w-16 rounded-xl object-cover border border-admin-border"
+              />
+            ) : (
+              <span className="text-xs text-amber-400/90">No photo yet</span>
+            )}
           </div>
         </div>
 
@@ -328,34 +315,6 @@ const AgencyCreatorEditPage: React.FC = () => {
             onChange={(e) => setUsername(e.target.value)}
             className="mt-1 w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
           />
-        </div>
-
-        <div className="border-t border-admin-border pt-4 space-y-2">
-          <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={syncAvatarWithPhoto}
-              onChange={(e) => {
-                setSyncAvatarWithPhoto(e.target.checked);
-                if (e.target.checked) setAvatar(photo);
-              }}
-            />
-            Use main photo as user avatar
-          </label>
-          {!syncAvatarWithPhoto && (
-            <div>
-              <label className="text-xs text-zinc-400">Avatar (upload)</label>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <label className="inline-flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
-                  <input type="file" accept="image/*" className="sr-only" onChange={handleAvatarFile} />
-                  <span className="px-3 py-2 rounded-xl border border-admin-border">Upload avatar</span>
-                </label>
-                {avatar ? (
-                  <img src={avatar} alt="" className="h-12 w-12 rounded-xl object-cover border border-admin-border" />
-                ) : null}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="border-t border-admin-border pt-4 space-y-2">

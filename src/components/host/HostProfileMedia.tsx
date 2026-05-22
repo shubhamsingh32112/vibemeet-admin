@@ -7,9 +7,9 @@ function pickDisplayUrl(
   user?: HostProfileMediaProps['user'] | null
 ): string | null {
   return (
+    creator.avatar?.avatarUrls?.md ||
     creator.avatarUrl ||
     creator.photo ||
-    creator.avatar?.avatarUrls?.md ||
     creator.avatar?.avatarUrls?.sm ||
     user?.avatarUrl ||
     user?.avatar?.avatarUrls?.md ||
