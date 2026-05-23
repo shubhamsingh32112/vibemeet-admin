@@ -228,22 +228,12 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     try {
       const b64 = await compressImage(file, 1200, 1200, 0.82, 400);
       const blob = await dataUrlToBlob(b64);
-      // Cloudflare-Images direct upload: issue a session, multipart-POST the
-      // blob to the returned uploadUrl, then commit by sessionId.
-      const { uploadUrl, sessionId } = await adminService.creatorGalleryUploadUrl(
-        row.creatorId,
-        GalleryContentType,
-        blob.size,
-      );
-      const formData = new FormData();
-      formData.append('file', blob, `gallery-${Date.now()}.jpg`);
-      const put = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
+      const { sessionId } = await uploadImageViaDirectSession(api, {
+        purpose: 'creator-gallery',
+        blob,
+        contentType: GalleryContentType,
+        filename: `gallery-${Date.now()}.jpg`,
       });
-      if (!put.ok) {
-        throw new Error(`Cloudflare upload failed (${put.status})`);
-      }
       const imgs = await adminService.creatorGalleryCommit(row.creatorId, sessionId);
       setGalleryImages(normalizeGalleryImages(imgs));
       onSaved();

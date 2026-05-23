@@ -1,4 +1,5 @@
 import agencyApi from '../config/agencyApi';
+import { parseDirectUploadPayload } from '../utils/cloudflareImageUpload';
 
 export interface AgencySummary {
   /** Referred users awaiting agency approval */
@@ -273,12 +274,7 @@ export const agencyPortalService = {
       declaredSizeBytes,
       declaredMimeType: contentType,
     });
-    return res.data.data as {
-      uploadUrl: string;
-      sessionId: string;
-      imageId: string;
-      expiresAt: string;
-    };
+    return parseDirectUploadPayload(res.data);
   },
 
   creatorGalleryCommit: async (creatorId: string, sessionId: string) => {

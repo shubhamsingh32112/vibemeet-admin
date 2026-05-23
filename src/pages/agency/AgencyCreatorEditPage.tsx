@@ -162,19 +162,12 @@ const AgencyCreatorEditPage: React.FC = () => {
     try {
       const b64 = await compressImage(file, 1200, 1200, 0.82, 400);
       const blob = await dataUrlToBlob(b64);
-      // Cloudflare-Images direct upload (see CreatorEditModal for shape).
-      const { uploadUrl, sessionId } = await agencyPortalService.creatorGalleryUploadUrl(
-        creatorId,
-        GalleryContentType,
-        blob.size,
-      );
-      const formData = new FormData();
-      formData.append('file', blob, `gallery-${Date.now()}.jpg`);
-      const put = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
+      const { sessionId } = await uploadImageViaDirectSession(agencyApi, {
+        purpose: 'creator-gallery',
+        blob,
+        contentType: GalleryContentType,
+        filename: `gallery-${Date.now()}.jpg`,
       });
-      if (!put.ok) throw new Error(`Cloudflare upload failed (${put.status})`);
       const imgs = await agencyPortalService.creatorGalleryCommit(creatorId, sessionId);
       setGalleryImages(normalizeGalleryImages(imgs));
     } catch (ex: unknown) {

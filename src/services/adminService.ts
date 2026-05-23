@@ -1,4 +1,5 @@
 import api from '../config/api';
+import { parseDirectUploadPayload } from '../utils/cloudflareImageUpload';
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -638,7 +639,7 @@ export const adminService = {
       declaredSizeBytes,
       declaredMimeType: contentType,
     });
-    return res.data.data;
+    return parseDirectUploadPayload(res.data);
   },
 
   creatorAvatarCommit: async (
@@ -665,7 +666,7 @@ export const adminService = {
       declaredSizeBytes,
       declaredMimeType: contentType,
     });
-    return res.data.data;
+    return parseDirectUploadPayload(res.data);
   },
 
   creatorGalleryCommit: async (
