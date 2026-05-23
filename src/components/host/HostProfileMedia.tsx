@@ -1,25 +1,19 @@
 import React from 'react';
 import { ImageIcon, User } from 'lucide-react';
 import type { HostProfileMediaProps } from '../../types/hostProfile';
-
-function pickDisplayUrl(
-  creator: HostProfileMediaProps['creator'],
-  user?: HostProfileMediaProps['user'] | null
-): string | null {
-  return (
-    creator.avatar?.avatarUrls?.md ||
-    creator.avatarUrl ||
-    creator.photo ||
-    creator.avatar?.avatarUrls?.sm ||
-    user?.avatarUrl ||
-    user?.avatar?.avatarUrls?.md ||
-    user?.avatar?.avatarUrls?.sm ||
-    null
-  );
-}
+import {
+  galleryThumbUrl,
+  hasLegacyFirebaseAvatarOnly,
+  hostAvatarPreviewUrl,
+} from '../../utils/hostImageUrls';
 
 export const HostProfileMedia: React.FC<HostProfileMediaProps> = ({ creator, user }) => {
-  const dpUrl = pickDisplayUrl(creator, user);
+  const dpUrl = hostAvatarPreviewUrl(creator) ?? hostAvatarPreviewUrl({
+    avatar: user?.avatar ?? null,
+    avatarUrl: user?.avatarUrl ?? null,
+    photo: null,
+  });
+  const legacyOnly = hasLegacyFirebaseAvatarOnly(creator);
   const gallery = [...(creator.galleryImages || [])].sort((a, b) => a.position - b.position);
   return (
     <div className="space-y-4">
@@ -47,6 +41,8 @@ export const HostProfileMedia: React.FC<HostProfileMediaProps> = ({ creator, use
             <span className="text-zinc-500">Profile photo:</span>{' '}
             {dpUrl ? (
               <span className="text-emerald-400/90">Uploaded</span>
+            ) : legacyOnly ? (
+              <span className="text-amber-400/90">Legacy — re-upload</span>
             ) : (
               <span className="text-amber-400/90">Not set</span>
             )}
@@ -61,6 +57,12 @@ export const HostProfileMedia: React.FC<HostProfileMediaProps> = ({ creator, use
         </div>
       </div>
 
+      {legacyOnly ? (
+        <p className="text-xs text-amber-400/90 rounded-lg border border-amber-500/30 bg-amber-950/30 px-3 py-2">
+          Legacy Firebase profile photo — edit the host and upload again to migrate to Cloudflare.
+        </p>
+      ) : null}
+
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1.5">
           <ImageIcon className="h-3.5 w-3.5" />
@@ -72,24 +74,30 @@ export const HostProfileMedia: React.FC<HostProfileMediaProps> = ({ creator, use
           </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {gallery.map((img, idx) => (
-              <a
-                key={img.id}
-                href={img.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group relative aspect-square rounded-xl overflow-hidden border border-admin-border bg-admin-base"
-              >
-                <img
-                  src={img.url}
-                  alt={`${creator.name} gallery ${idx + 1}`}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                />
-                <span className="absolute bottom-1 right-1 text-[10px] rounded bg-black/60 px-1.5 py-0.5 text-zinc-300">
-                  {idx + 1}
-                </span>
-              </a>
-            ))}
+            {gallery.map((img, idx) => {
+              const thumb = galleryThumbUrl(img);
+              return (
+                <div
+                  key={img.id}
+                  className="group relative aspect-square rounded-xl overflow-hidden border border-admin-border bg-admin-base"
+                >
+                  {thumb ? (
+                    <a href={thumb} target="_blank" rel="noreferrer" className="block w-full h-full">
+                      <img
+                        src={thumb}
+                        alt={`${creator.name} gallery ${idx + 1}`}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    </a>
+                  ) : (
+                    <div className="w-full h-full border border-dashed border-zinc-600" />
+                  )}
+                  <span className="absolute bottom-1 right-1 text-[10px] rounded bg-black/60 px-1.5 py-0.5 text-zinc-300">
+                    {idx + 1}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

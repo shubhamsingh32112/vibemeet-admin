@@ -9,6 +9,13 @@ import {
 import { agencyApi } from '../../config/agencyApi';
 import { compressImage } from '../../utils/imageCompression';
 import { uploadImageViaDirectSession, formatCloudflareApiError } from '../../utils/cloudflareImageUpload';
+import {
+  galleryThumbUrl,
+  hasLegacyFirebaseAvatarOnly,
+  hostAvatarPreviewUrl,
+  isLegacyFirebaseStorageUrl,
+  normalizeGalleryImages,
+} from '../../utils/hostImageUrls';
 import { normalizeCreatorPriceTier } from '../../constants/creatorPriceTiers';
 
 const GalleryContentType = 'image/jpeg' as const;
@@ -39,6 +46,7 @@ const AgencyCreatorEditPage: React.FC = () => {
   const [name, setName] = useState('');
   const [about, setAbout] = useState('');
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [legacyPhotoOnly, setLegacyPhotoOnly] = useState(false);
   const [age, setAge] = useState<number | ''>('');
   const [username, setUsername] = useState('');
   const [categoriesStr, setCategoriesStr] = useState('');
@@ -55,11 +63,12 @@ const AgencyCreatorEditPage: React.FC = () => {
       setData(d);
       setName(d.creator.name);
       setAbout(d.creator.about);
-      setAvatarPreviewUrl(d.creator.avatarUrl ?? d.creator.avatar?.avatarUrls?.md ?? null);
+      setAvatarPreviewUrl(hostAvatarPreviewUrl(d.creator));
+      setLegacyPhotoOnly(hasLegacyFirebaseAvatarOnly(d.creator));
       setAge(d.creator.age ?? '');
       setUsername(d.user?.username || '');
       setCategoriesStr(categoriesToString(d.creator.categories));
-      setGalleryImages([...(d.creator.galleryImages || [])].sort((a, b) => a.position - b.position));
+      setGalleryImages(normalizeGalleryImages(d.creator.galleryImages));
     } catch {
       setErr('Failed to load creator');
     } finally {
@@ -128,7 +137,16 @@ const AgencyCreatorEditPage: React.FC = () => {
         filename: 'profile.jpg',
       });
       const result = await agencyPortalService.creatorAvatarCommit(creatorId, session.sessionId);
-      setAvatarPreviewUrl(result.avatarUrl ?? result.avatar?.avatarUrls?.md ?? null);
+      const nextUrl = result.avatarUrl ?? result.avatar?.avatarUrls?.md ?? null;
+      if (!nextUrl || isLegacyFirebaseStorageUrl(nextUrl)) {
+        setErr('Photo upload did not return a Cloudflare URL. Check API image settings.');
+        await load();
+        return;
+      }
+      setAvatarPreviewUrl(nextUrl);
+      setLegacyPhotoOnly(false);
+      setGalleryImages(normalizeGalleryImages(result.galleryImages));
+      await load();
     } catch (ex: unknown) {
       setErr(formatCloudflareApiError(ex));
     } finally {
@@ -158,7 +176,7 @@ const AgencyCreatorEditPage: React.FC = () => {
       });
       if (!put.ok) throw new Error(`Cloudflare upload failed (${put.status})`);
       const imgs = await agencyPortalService.creatorGalleryCommit(creatorId, sessionId);
-      setGalleryImages(imgs.sort((a, b) => a.position - b.position));
+      setGalleryImages(normalizeGalleryImages(imgs));
     } catch (ex: unknown) {
       setErr(ex instanceof Error ? ex.message : 'Gallery upload failed');
     } finally {
@@ -171,7 +189,7 @@ const AgencyCreatorEditPage: React.FC = () => {
     setGalleryBusy(true);
     try {
       const imgs = await agencyPortalService.creatorGalleryDelete(creatorId, imageId);
-      setGalleryImages(imgs.sort((a, b) => a.position - b.position));
+      setGalleryImages(normalizeGalleryImages(imgs));
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
@@ -193,7 +211,7 @@ const AgencyCreatorEditPage: React.FC = () => {
     setGalleryBusy(true);
     try {
       const imgs = await agencyPortalService.creatorGalleryReorder(creatorId, ids);
-      setGalleryImages(imgs.sort((a, b) => a.position - b.position));
+      setGalleryImages(normalizeGalleryImages(imgs));
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
@@ -291,6 +309,11 @@ const AgencyCreatorEditPage: React.FC = () => {
           <p className="text-xs text-zinc-500 mt-0.5 mb-2">
             Stored on Cloudflare Images; user avatar syncs automatically for the app.
           </p>
+          {legacyPhotoOnly ? (
+            <p className="text-xs text-amber-400/90 rounded-lg border border-amber-500/30 bg-amber-950/30 px-3 py-2 mb-2">
+              Legacy Firebase photo on file — upload again to store on Cloudflare.
+            </p>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex items-center gap-2 text-sm text-emerald-300 cursor-pointer min-h-[44px]">
               <input type="file" accept="image/*" className="sr-only" onChange={handleMainPhotoFile} />
@@ -340,7 +363,15 @@ const AgencyCreatorEditPage: React.FC = () => {
                 key={img.id}
                 className="flex items-center gap-3 p-2 rounded-xl bg-admin-base border border-admin-border"
               >
-                <img src={img.url} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />
+                {galleryThumbUrl(img) ? (
+                  <img
+                    src={galleryThumbUrl(img)!}
+                    alt=""
+                    className="h-16 w-16 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-lg border border-dashed border-admin-border shrink-0" />
+                )}
                 <div className="flex flex-col gap-1 shrink-0 ml-auto">
                   <button
                     type="button"

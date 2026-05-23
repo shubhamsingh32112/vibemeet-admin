@@ -4,6 +4,13 @@ import { adminService, type CreatorPerformance, type GalleryImageDto } from '../
 import api from '../config/api';
 import { compressImage } from '../utils/imageCompression';
 import { uploadImageViaDirectSession, formatCloudflareApiError } from '../utils/cloudflareImageUpload';
+import {
+  galleryThumbUrl,
+  hasLegacyFirebaseAvatarOnly,
+  hostAvatarPreviewUrl,
+  isLegacyFirebaseStorageUrl,
+  normalizeGalleryImages,
+} from '../utils/hostImageUrls';
 import { CREATOR_PRICE_TIERS, normalizeCreatorPriceTier } from '../constants/creatorPriceTiers';
 
 type Props = {
@@ -47,9 +54,8 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
   const [about, setAbout] = useState('');
   const [age, setAge] = useState<number | ''>('');
   const [price, setPrice] = useState(() => normalizeCreatorPriceTier(row.price));
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(
-    row.avatarUrl || null
-  );
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [legacyPhotoOnly, setLegacyPhotoOnly] = useState(false);
   const [username, setUsername] = useState(row.username || '');
   const [categoriesStr, setCategoriesStr] = useState(categoriesToString(row.categories));
   const [galleryImages, setGalleryImages] = useState<GalleryImageDto[]>([]);
@@ -77,13 +83,12 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
       const c = detail.creator;
       setName(c.name);
       setAbout(c.about || '');
-      setAvatarPreviewUrl(c.avatarUrl ?? c.avatar?.avatarUrls?.md ?? null);
+      setAvatarPreviewUrl(hostAvatarPreviewUrl(c));
+      setLegacyPhotoOnly(hasLegacyFirebaseAvatarOnly(c));
       setPrice(normalizeCreatorPriceTier(c.price));
       setAge(c.age !== undefined && c.age !== null ? c.age : '');
       setCategoriesStr(categoriesToString(c.categories));
-      setGalleryImages(
-        [...(c.galleryImages || [])].sort((a, b) => a.position - b.position)
-      );
+      setGalleryImages(normalizeGalleryImages(c.galleryImages));
       setUsername(detail.user?.username || row.username || '');
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -196,7 +201,17 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
         filename: 'profile.jpg',
       });
       const result = await adminService.creatorAvatarCommit(row.creatorId, session.sessionId);
-      setAvatarPreviewUrl(result.avatarUrl ?? result.avatar?.avatarUrls?.md ?? null);
+      const nextUrl =
+        result.avatarUrl ?? result.avatar?.avatarUrls?.md ?? null;
+      if (!nextUrl || isLegacyFirebaseStorageUrl(nextUrl)) {
+        alert('Photo upload did not return a Cloudflare URL. Check API image settings.');
+        await load();
+        return;
+      }
+      setAvatarPreviewUrl(nextUrl);
+      setLegacyPhotoOnly(false);
+      setGalleryImages(normalizeGalleryImages(result.galleryImages));
+      await load();
       onSaved();
     } catch (err: unknown) {
       alert(formatCloudflareApiError(err));
@@ -230,7 +245,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
         throw new Error(`Cloudflare upload failed (${put.status})`);
       }
       const imgs = await adminService.creatorGalleryCommit(row.creatorId, sessionId);
-      setGalleryImages(imgs);
+      setGalleryImages(normalizeGalleryImages(imgs));
       onSaved();
     } catch (err: unknown) {
       const m = err instanceof Error ? err.message : 'Gallery upload failed';
@@ -245,7 +260,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     setGalleryBusy(true);
     try {
       const imgs = await adminService.creatorGalleryDelete(row.creatorId, imageId);
-      setGalleryImages(imgs);
+      setGalleryImages(normalizeGalleryImages(imgs));
       onSaved();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } }; message?: string };
@@ -265,7 +280,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     setGalleryBusy(true);
     try {
       const imgs = await adminService.creatorGalleryReorder(row.creatorId, ids);
-      setGalleryImages(imgs);
+      setGalleryImages(normalizeGalleryImages(imgs));
       onSaved();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } }; message?: string };
@@ -368,6 +383,11 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                   Profile photo is stored on Cloudflare Images and synced to the user avatar for
                   chat and the app.
                 </p>
+                {legacyPhotoOnly ? (
+                  <p className="text-xs text-amber-400/90 rounded-lg border border-amber-500/30 bg-amber-950/30 px-3 py-2">
+                    Legacy Firebase photo on file — upload again to store on Cloudflare.
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="inline-flex items-center gap-2 text-sm text-zinc-300 cursor-pointer min-h-[44px]">
                     <input
@@ -487,11 +507,15 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
                       key={img.id}
                       className="flex items-center gap-3 p-2 rounded-xl bg-zinc-800/80 border border-zinc-700/80"
                     >
-                      <img
-                        src={img.url}
-                        alt=""
-                        className="h-16 w-16 rounded-lg object-cover shrink-0"
-                      />
+                      {galleryThumbUrl(img) ? (
+                        <img
+                          src={galleryThumbUrl(img)!}
+                          alt=""
+                          className="h-16 w-16 rounded-lg object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-lg border border-dashed border-zinc-600 shrink-0" />
+                      )}
                       <div className="flex-1 min-w-0 text-xs text-zinc-500 truncate">{img.id}</div>
                       <div className="flex flex-col gap-1 shrink-0">
                         <button

@@ -80,9 +80,17 @@ export interface AbuseSignals {
 export interface GalleryImageDto {
   id: string;
   url: string;
-  storagePath: string;
+  storagePath?: string;
   position: number;
   createdAt: string;
+  /** Nested shape from some API paths before staff DTO mapping. */
+  image?: {
+    galleryUrls?: {
+      thumb?: string;
+      md?: string;
+      xl?: string;
+    };
+  };
 }
 
 export interface CreatorPerformance {
