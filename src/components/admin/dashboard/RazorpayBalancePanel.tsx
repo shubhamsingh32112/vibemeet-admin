@@ -37,6 +37,21 @@ const RazorpayBalancePanel: React.FC<RazorpayBalancePanelProps> = ({ data, loadi
   if (!data) return null;
 
   const currency = data.totals.currency || 'INR';
+  const hasFunds =
+    Math.abs(data.totals.available) > 0 ||
+    Math.abs(data.maxNegativeLimit) > 0 ||
+    Math.abs(data.totals.onHold) > 0 ||
+    Math.abs(data.totals.net) > 0;
+  const statusTone = data.hasNegativeAvailable
+    ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+    : hasFunds
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+      : 'border-zinc-500/40 bg-zinc-500/10 text-zinc-300';
+  const statusText = data.hasNegativeAvailable
+    ? 'Negative available balance'
+    : hasFunds
+      ? 'Available balance healthy'
+      : 'No balance activity yet';
 
   return (
     <div className="glass-panel rounded-2xl p-5">
@@ -47,15 +62,9 @@ const RazorpayBalancePanel: React.FC<RazorpayBalancePanelProps> = ({ data, loadi
             Available, reserve, and channel-level balances for Superadmin visibility.
           </p>
         </div>
-        <div
-          className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] ${
-            data.hasNegativeAvailable
-              ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
-              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
-          }`}
-        >
+        <div className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] ${statusTone}`}>
           {data.hasNegativeAvailable ? <AlertCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-          {data.hasNegativeAvailable ? 'Negative available balance' : 'Available balance healthy'}
+          {statusText}
         </div>
       </div>
 

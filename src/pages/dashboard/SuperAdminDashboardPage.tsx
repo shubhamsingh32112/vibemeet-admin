@@ -140,6 +140,13 @@ const SuperAdminDashboardPage: React.FC = () => {
         <KPIStatCard title="Call minutes today" value={ov?.totalCallMinutesToday ?? 0} icon={<Clock className="h-5 w-5" />} accent="blue" />
       </div>
 
+      <PayoutTable rows={payouts.data?.rows ?? []} loading={payouts.isLoading} />
+      <RazorpayBalancePanel
+        data={razorpayBalance.data}
+        loading={razorpayBalance.isLoading}
+        error={razorpayBalance.isError}
+      />
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2">
           <RevenueChart points={revenue.data?.points ?? []} />
@@ -191,12 +198,6 @@ const SuperAdminDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <PayoutTable rows={payouts.data?.rows ?? []} loading={payouts.isLoading} />
-      <RazorpayBalancePanel
-        data={razorpayBalance.data}
-        loading={razorpayBalance.isLoading}
-        error={razorpayBalance.isError}
-      />
     </motion.div>
   );
 };

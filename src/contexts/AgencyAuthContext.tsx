@@ -60,8 +60,16 @@ export const AgencyAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           const mustChangePassword = res.data?.data?.mustChangePassword === true;
           parsed = { ...parsed, mustChangePassword };
           persistAgencyUser(parsed);
-        } catch {
-          /* keep cached user; protected routes may 401 */
+        } catch (error) {
+          const status =
+            typeof error === 'object' && error && 'response' in error
+              ? Number((error as { response?: { status?: number } }).response?.status ?? 0)
+              : 0;
+          if (status === 401 || status === 403) {
+            localStorage.removeItem('agencyToken');
+            localStorage.removeItem('agencyUser');
+            parsed = null;
+          }
         }
       }
 
