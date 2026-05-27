@@ -20,6 +20,7 @@ export type DashboardRazorpayBalance = {
   configured: boolean;
   fetchedAt: string;
   note?: string;
+  fetchError?: string | null;
   totals: {
     currency: string;
     available: number;

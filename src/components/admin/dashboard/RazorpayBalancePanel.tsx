@@ -65,6 +65,11 @@ const RazorpayBalancePanel: React.FC<RazorpayBalancePanelProps> = ({ data, loadi
         </div>
       ) : (
         <>
+          {data.fetchError ? (
+            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+              {data.fetchError}
+            </div>
+          ) : null}
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
               <p className="text-[11px] uppercase tracking-wide text-zinc-500">Available</p>
