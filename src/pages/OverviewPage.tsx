@@ -138,7 +138,16 @@ const OverviewPage: React.FC = () => {
 
       <SectionHeader title="Growth" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MetricCard label="Total users" value={users.total} />
+        <MetricCard
+          label={data.selectedRange ? 'Users joined (range)' : 'Total users'}
+          value={data.selectedRange ? (data.rangeMetrics?.users.signups ?? 0) : users.total}
+          subtitle={
+            data.selectedRange
+              ? `All-time users: ${users.total.toLocaleString()}`
+              : undefined
+          }
+          variant={data.selectedRange ? 'info' : 'default'}
+        />
         <MetricCard
           label="Creators"
           value={users.creators}

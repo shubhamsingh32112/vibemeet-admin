@@ -695,7 +695,7 @@ export const adminService = {
     referrerAgencyId?: string;
     from?: string;
     to?: string;
-  }): Promise<UserAnalytics[]> => {
+  }): Promise<{ users: UserAnalytics[]; total: number }> => {
     const searchParams = new URLSearchParams();
     if (params?.query) searchParams.append('query', params.query);
     if (params?.role) searchParams.append('role', params.role);
@@ -704,7 +704,10 @@ export const adminService = {
     if (params?.from) searchParams.append('from', params.from);
     if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/users/analytics?${searchParams.toString()}`);
-    return res.data.data.users;
+    return {
+      users: res.data.data.users,
+      total: Number(res.data.data.total ?? res.data.data.users?.length ?? 0),
+    };
   },
 
   listAgenciesBrief: async (): Promise<AdminAgencyBrief[]> => {

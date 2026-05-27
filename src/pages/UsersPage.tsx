@@ -15,6 +15,7 @@ import { formatDateTime } from '../utils/dateTime';
 
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<UserAnalytics[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -46,7 +47,8 @@ const UsersPage: React.FC = () => {
         from: dateRange.from,
         to: dateRange.to,
       });
-      setUsers(data);
+      setUsers(data.users);
+      setTotalUsers(data.total);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
@@ -329,7 +331,10 @@ const UsersPage: React.FC = () => {
         >
           Apply
         </button>
-        <span className="text-xs text-gray-500 ml-auto">{users.length} users</span>
+        <span className="text-xs text-gray-500 ml-auto">
+          {totalUsers.toLocaleString()} users
+          {users.length < totalUsers ? ` (${users.length.toLocaleString()} shown)` : ''}
+        </span>
       </div>
 
       {loading ? (

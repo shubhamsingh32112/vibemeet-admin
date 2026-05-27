@@ -20,6 +20,7 @@ import {
   fetchDashboardLiveCalls,
   fetchDashboardOverview,
   fetchDashboardPayouts,
+  fetchDashboardRazorpayBalance,
   fetchDashboardRealtime,
   fetchDashboardRevenue,
   fetchDashboardTopAgencies,
@@ -35,6 +36,7 @@ import AlertsPanel from '../../components/admin/dashboard/AlertsPanel';
 import HeatmapChart from '../../components/admin/dashboard/HeatmapChart';
 import CallAnalyticsBlock from '../../components/admin/dashboard/CallAnalyticsBlock';
 import PayoutTable from '../../components/admin/dashboard/PayoutTable';
+import RazorpayBalancePanel from '../../components/admin/dashboard/RazorpayBalancePanel';
 
 const DASH = 'dashboard' as const;
 
@@ -67,6 +69,12 @@ const SuperAdminDashboardPage: React.FC = () => {
   const heatmap = useQuery({ queryKey: [DASH, 'heatmap'], queryFn: fetchDashboardHeatmap, staleTime: 120_000 });
   const callAn = useQuery({ queryKey: [DASH, 'call-analytics'], queryFn: fetchDashboardCallAnalytics, staleTime: 45_000 });
   const payouts = useQuery({ queryKey: [DASH, 'payouts'], queryFn: fetchDashboardPayouts, staleTime: 30_000 });
+  const razorpayBalance = useQuery({
+    queryKey: [DASH, 'razorpay-balance'],
+    queryFn: fetchDashboardRazorpayBalance,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
 
   const ov = overview.data;
   const spark = (revenue.data?.points ?? []).slice(-8).map((p: { revenueCoins: number }) => p.revenueCoins);
@@ -184,6 +192,11 @@ const SuperAdminDashboardPage: React.FC = () => {
       </div>
 
       <PayoutTable rows={payouts.data?.rows ?? []} loading={payouts.isLoading} />
+      <RazorpayBalancePanel
+        data={razorpayBalance.data}
+        loading={razorpayBalance.isLoading}
+        error={razorpayBalance.isError}
+      />
     </motion.div>
   );
 };

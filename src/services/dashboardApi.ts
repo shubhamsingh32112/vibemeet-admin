@@ -16,6 +16,36 @@ export type DashboardOverview = {
   generatedAt: string;
 };
 
+export type DashboardRazorpayBalance = {
+  configured: boolean;
+  fetchedAt: string;
+  note?: string;
+  totals: {
+    currency: string;
+    available: number;
+    onHold: number;
+    pending: number;
+    reserved: number;
+    settled: number;
+    net: number;
+  };
+  hasNegativeAvailable: boolean;
+  maxNegativeLimit: number;
+  channels: Array<{
+    key: string;
+    channelLabel: string;
+    currency: string;
+    available: number;
+    onHold: number;
+    pending: number;
+    reserved: number;
+    settled: number;
+    net: number;
+    raw: Record<string, unknown>;
+  }>;
+  raw: unknown;
+};
+
 export async function fetchDashboardOverview(): Promise<DashboardOverview> {
   const res = await api.get('/admin/dashboard/overview');
   return res.data.data;
@@ -153,4 +183,9 @@ export async function fetchDashboardGeo() {
     topCountries: Array<{ code: string; label: string; pct: number }>;
     note?: string;
   };
+}
+
+export async function fetchDashboardRazorpayBalance(): Promise<DashboardRazorpayBalance> {
+  const res = await api.get('/admin/dashboard/razorpay-balance');
+  return res.data.data;
 }
