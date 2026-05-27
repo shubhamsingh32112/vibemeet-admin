@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import MetricCard from '../components/ui/MetricCard';
@@ -41,17 +42,61 @@ const SupportPage: React.FC = () => {
   const [summary, setSummary] = useState<SupportSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
 
   // Filters
-  const [roleFilter, setRoleFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('');
-  const [quickTab, setQuickTab] = useState<QuickTab>('all');
+  const roleFilter = searchParams.get('role') ?? '';
+  const statusFilter = searchParams.get('status') ?? '';
+  const priorityFilter = searchParams.get('priority') ?? '';
+  const sourceFilter = searchParams.get('source') ?? '';
+  const quickTab = (searchParams.get('tab') === 'creator_reports' ? 'creator_reports' : 'all') as QuickTab;
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+
+  const updateListQuery = useCallback(
+    (updates: {
+      page?: number;
+      role?: string;
+      status?: string;
+      priority?: string;
+      source?: string;
+      tab?: QuickTab;
+    }) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (typeof updates.page === 'number' && Number.isFinite(updates.page)) {
+            next.set('page', String(Math.max(1, Math.trunc(updates.page))));
+          }
+          if (typeof updates.role === 'string') {
+            if (updates.role.trim()) next.set('role', updates.role);
+            else next.delete('role');
+          }
+          if (typeof updates.status === 'string') {
+            if (updates.status.trim()) next.set('status', updates.status);
+            else next.delete('status');
+          }
+          if (typeof updates.priority === 'string') {
+            if (updates.priority.trim()) next.set('priority', updates.priority);
+            else next.delete('priority');
+          }
+          if (typeof updates.source === 'string') {
+            if (updates.source.trim()) next.set('source', updates.source);
+            else next.delete('source');
+          }
+          if (updates.tab) {
+            if (updates.tab === 'creator_reports') next.set('tab', updates.tab);
+            else next.delete('tab');
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   // Status update modal
   const [statusTarget, setStatusTarget] = useState<AdminSupportTicket | null>(null);
@@ -77,6 +122,10 @@ const SupportPage: React.FC = () => {
         from: dateRange.from,
         to: dateRange.to,
       });
+      if (page > data.pagination.totalPages && data.pagination.totalPages > 0) {
+        updateListQuery({ page: data.pagination.totalPages });
+        return;
+      }
       setTickets(data.tickets);
       setSummary(data.summary);
       setTotalPages(data.pagination.totalPages);
@@ -87,7 +136,18 @@ const SupportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, roleFilter, statusFilter, priorityFilter, sourceFilter, quickTab, dateRange.from, dateRange.to, markFresh]);
+  }, [
+    page,
+    roleFilter,
+    statusFilter,
+    priorityFilter,
+    sourceFilter,
+    quickTab,
+    dateRange.from,
+    dateRange.to,
+    markFresh,
+    updateListQuery,
+  ]);
 
   useEffect(() => {
     load();
@@ -259,7 +319,9 @@ const SupportPage: React.FC = () => {
       {/* Quick Tabs */}
       <div className="flex items-center gap-2 mb-4">
         <button
-          onClick={() => { setQuickTab('all'); setPage(1); }}
+          onClick={() => {
+            updateListQuery({ tab: 'all', page: 1 });
+          }}
           className={`px-3 py-1.5 text-xs rounded border transition ${
             quickTab === 'all'
               ? 'bg-blue-900/40 border-blue-700 text-blue-200'
@@ -269,7 +331,9 @@ const SupportPage: React.FC = () => {
           All Tickets
         </button>
         <button
-          onClick={() => { setQuickTab('creator_reports'); setPage(1); }}
+          onClick={() => {
+            updateListQuery({ tab: 'creator_reports', page: 1 });
+          }}
           className={`px-3 py-1.5 text-xs rounded border transition ${
             quickTab === 'creator_reports'
               ? 'bg-rose-900/40 border-rose-700 text-rose-200'
@@ -319,18 +383,20 @@ const SupportPage: React.FC = () => {
           value={dateRange}
           onPresetChange={(p) => {
             setPreset(p);
-            setPage(1);
+            updateListQuery({ page: 1 });
           }}
           onCustomChange={(from, to) => {
             setCustom(from, to);
-            setPage(1);
+            updateListQuery({ page: 1 });
           }}
         />
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-400">Role:</label>
           <select
             value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              updateListQuery({ role: e.target.value, page: 1 });
+            }}
             className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All</option>
@@ -342,7 +408,9 @@ const SupportPage: React.FC = () => {
           <label className="text-xs text-gray-400">Status:</label>
           <select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              updateListQuery({ status: e.target.value, page: 1 });
+            }}
             className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All</option>
@@ -356,7 +424,9 @@ const SupportPage: React.FC = () => {
           <label className="text-xs text-gray-400">Priority:</label>
           <select
             value={priorityFilter}
-            onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              updateListQuery({ priority: e.target.value, page: 1 });
+            }}
             className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All</option>
@@ -370,7 +440,9 @@ const SupportPage: React.FC = () => {
           <label className="text-xs text-gray-400">Source:</label>
           <select
             value={sourceFilter}
-            onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              updateListQuery({ source: e.target.value, page: 1 });
+            }}
             className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All</option>
@@ -387,7 +459,7 @@ const SupportPage: React.FC = () => {
         data={tickets}
         keyField="id"
         emptyMessage="No support tickets found"
-        searchPlaceholder="Search by name, email, subject…"
+        searchPlaceholder="Search current page by name, email, subject…"
         searchFields={['username', 'email', 'subject', 'category']}
         compact
       />
@@ -398,7 +470,7 @@ const SupportPage: React.FC = () => {
           <p className="text-xs text-gray-500">{total} total tickets</p>
           <div className="flex gap-2">
             <button
-              onClick={() => setPage(Math.max(1, page - 1))}
+              onClick={() => updateListQuery({ page: Math.max(1, page - 1) })}
               disabled={page === 1}
               className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-30"
             >
@@ -408,7 +480,7 @@ const SupportPage: React.FC = () => {
               {page} / {totalPages}
             </span>
             <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              onClick={() => updateListQuery({ page: Math.min(totalPages, page + 1) })}
               disabled={page === totalPages}
               className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-30"
             >

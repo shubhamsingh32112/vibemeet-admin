@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -12,11 +13,32 @@ const CallsPage: React.FC = () => {
   const [calls, setCalls] = useState<AdminCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [anomalyOnly, setAnomalyOnly] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
+  const anomalyOnly = searchParams.get('anomaly') === '1';
+
+  const updateListQuery = useCallback(
+    (updates: { page?: number; anomalyOnly?: boolean }) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (typeof updates.page === 'number' && Number.isFinite(updates.page)) {
+            next.set('page', String(Math.max(1, Math.trunc(updates.page))));
+          }
+          if (typeof updates.anomalyOnly === 'boolean') {
+            if (updates.anomalyOnly) next.set('anomaly', '1');
+            else next.delete('anomaly');
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   // Refund modal
   const [refundTarget, setRefundTarget] = useState<AdminCall | null>(null);
@@ -35,6 +57,10 @@ const CallsPage: React.FC = () => {
         from: dateRange.from,
         to: dateRange.to,
       });
+      if (page > data.pagination.totalPages && data.pagination.totalPages > 0) {
+        updateListQuery({ page: data.pagination.totalPages });
+        return;
+      }
       setCalls(data.calls);
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total);
@@ -43,7 +69,7 @@ const CallsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, anomalyOnly, dateRange.from, dateRange.to]);
+  }, [page, anomalyOnly, dateRange.from, dateRange.to, updateListQuery]);
 
   useEffect(() => {
     load();
@@ -204,11 +230,11 @@ const CallsPage: React.FC = () => {
           value={dateRange}
           onPresetChange={(p) => {
             setPreset(p);
-            setPage(1);
+            updateListQuery({ page: 1 });
           }}
           onCustomChange={(from, to) => {
             setCustom(from, to);
-            setPage(1);
+            updateListQuery({ page: 1 });
           }}
         />
         <label className="flex items-center gap-2 text-sm text-gray-300">
@@ -216,8 +242,7 @@ const CallsPage: React.FC = () => {
             type="checkbox"
             checked={anomalyOnly}
             onChange={(e) => {
-              setAnomalyOnly(e.target.checked);
-              setPage(1);
+              updateListQuery({ anomalyOnly: e.target.checked, page: 1 });
             }}
             className="rounded bg-gray-800 border-gray-600 text-blue-500"
           />
@@ -232,21 +257,21 @@ const CallsPage: React.FC = () => {
       {calls.length > 0 && (
         <div className="flex gap-3 mb-4">
           <div className="px-3 py-1.5 bg-gray-900 border border-gray-800 rounded text-xs text-gray-400">
-            Showing: {calls.length} calls
+            Current page: {calls.length} calls
           </div>
           {calls.filter((c) => c.isSuspicious).length > 0 && (
             <div className="px-3 py-1.5 bg-red-900/20 border border-red-800 rounded text-xs text-red-400">
-              ⚠ {calls.filter((c) => c.isSuspicious).length} suspicious
+              ⚠ {calls.filter((c) => c.isSuspicious).length} suspicious on page
             </div>
           )}
           {calls.filter((c) => c.isZeroDuration).length > 0 && (
             <div className="px-3 py-1.5 bg-yellow-900/20 border border-yellow-800 rounded text-xs text-yellow-400">
-              {calls.filter((c) => c.isZeroDuration).length} zero-duration
+              {calls.filter((c) => c.isZeroDuration).length} zero-duration on page
             </div>
           )}
           {calls.filter((c) => c.isRefunded).length > 0 && (
             <div className="px-3 py-1.5 bg-blue-900/20 border border-blue-800 rounded text-xs text-blue-400">
-              {calls.filter((c) => c.isRefunded).length} refunded
+              {calls.filter((c) => c.isRefunded).length} refunded on page
             </div>
           )}
         </div>
@@ -270,7 +295,7 @@ const CallsPage: React.FC = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-4">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => updateListQuery({ page: Math.max(1, page - 1) })}
                 disabled={page <= 1}
                 className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-30"
               >
@@ -280,7 +305,7 @@ const CallsPage: React.FC = () => {
                 Page {page} of {totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => updateListQuery({ page: Math.min(totalPages, page + 1) })}
                 disabled={page >= totalPages}
                 className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-30"
               >

@@ -13,8 +13,32 @@ export type DashboardOverview = {
   totalCallsToday: number;
   coinsSpentOnCallsToday: number;
   growthPlaceholder: { revenuePct: number | null; callsPct: number | null; hostsPct: number | null };
+  selectedRange?: { from: string; to: string };
+  metricContract?: Record<
+    string,
+    {
+      label: string;
+      backendField: string;
+      scope: 'selected_range' | 'realtime';
+      unit: string;
+      definition: string;
+    }
+  >;
   generatedAt: string;
 };
+
+export type DashboardDateParams = {
+  from?: string;
+  to?: string;
+};
+
+function withDateParams(params?: DashboardDateParams, extra?: Record<string, unknown>) {
+  return {
+    ...(extra ?? {}),
+    ...(params?.from ? { from: params.from } : {}),
+    ...(params?.to ? { to: params.to } : {}),
+  };
+}
 
 export type DashboardRazorpayBalance = {
   configured: boolean;
@@ -47,13 +71,13 @@ export type DashboardRazorpayBalance = {
   raw: unknown;
 };
 
-export async function fetchDashboardOverview(): Promise<DashboardOverview> {
-  const res = await api.get('/admin/dashboard/overview');
+export async function fetchDashboardOverview(params?: DashboardDateParams): Promise<DashboardOverview> {
+  const res = await api.get('/admin/dashboard/overview', { params: withDateParams(params) });
   return res.data.data;
 }
 
-export async function fetchDashboardRevenue(days = 14) {
-  const res = await api.get('/admin/dashboard/revenue', { params: { days } });
+export async function fetchDashboardRevenue(days = 14, params?: DashboardDateParams) {
+  const res = await api.get('/admin/dashboard/revenue', { params: withDateParams(params, { days }) });
   return res.data.data as {
     points: Array<{ date: string; revenueCoins: number; commissionCoins: number }>;
     note?: string;
@@ -80,8 +104,8 @@ export async function fetchDashboardRealtime() {
   return res.data.data;
 }
 
-export async function fetchDashboardTopHosts() {
-  const res = await api.get('/admin/dashboard/top-hosts', { params: { limit: 5 } });
+export async function fetchDashboardTopHosts(params?: DashboardDateParams) {
+  const res = await api.get('/admin/dashboard/top-hosts', { params: withDateParams(params, { limit: 5 }) });
   return res.data.data as {
     rows: Array<{
       rank: number;
@@ -92,24 +116,27 @@ export async function fetchDashboardTopHosts() {
       calls: number;
       earningsCoins: number;
     }>;
+    note?: string;
   };
 }
 
-export async function fetchDashboardTopBds() {
-  const res = await api.get('/admin/dashboard/top-bds', { params: { limit: 5 } });
+export async function fetchDashboardTopBds(params?: DashboardDateParams) {
+  const res = await api.get('/admin/dashboard/top-bds', { params: withDateParams(params, { limit: 5 }) });
   return res.data.data as {
     rows: Array<{
       rank: number;
       bdName: string;
+      agencies: number;
       hosts: number;
       revenueCoins: number;
       commissionCoins: number;
     }>;
+    note?: string;
   };
 }
 
-export async function fetchDashboardTopAgencies() {
-  const res = await api.get('/admin/dashboard/top-agencies', { params: { limit: 5 } });
+export async function fetchDashboardTopAgencies(params?: DashboardDateParams) {
+  const res = await api.get('/admin/dashboard/top-agencies', { params: withDateParams(params, { limit: 5 }) });
   return res.data.data as {
     rows: Array<{
       rank: number;
@@ -144,8 +171,8 @@ export async function fetchDashboardHeatmap() {
   };
 }
 
-export async function fetchDashboardCallAnalytics() {
-  const res = await api.get('/admin/dashboard/call-analytics');
+export async function fetchDashboardCallAnalytics(params?: DashboardDateParams) {
+  const res = await api.get('/admin/dashboard/call-analytics', { params: withDateParams(params) });
   return res.data.data as {
     today: {
       totalCalls: number;
@@ -154,11 +181,12 @@ export async function fetchDashboardCallAnalytics() {
       avgCallDurationSec: number;
     };
     dailyVolume: Array<{ date: string; calls: number }>;
+    selectedRange?: { from: string; to: string };
   };
 }
 
-export async function fetchDashboardPayouts() {
-  const res = await api.get('/admin/dashboard/payouts');
+export async function fetchDashboardPayouts(params?: DashboardDateParams) {
+  const res = await api.get('/admin/dashboard/payouts', { params: withDateParams(params) });
   return res.data.data as {
     rows: Array<{
       id: string;
@@ -168,6 +196,7 @@ export async function fetchDashboardPayouts() {
       requestedAt: string;
       status: string;
     }>;
+    selectedRange?: { from: string; to: string };
   };
 }
 

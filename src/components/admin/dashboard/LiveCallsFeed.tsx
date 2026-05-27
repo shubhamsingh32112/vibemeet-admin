@@ -23,7 +23,7 @@ type LiveCallsFeedProps = {
 export const LiveCallsFeed: React.FC<LiveCallsFeedProps> = ({ calls, loading, className }) => (
   <div className={cn('glass-panel rounded-2xl p-4 flex flex-col min-h-[280px]', className)}>
     <div className="mb-3 flex items-center justify-between">
-      <h3 className="text-sm font-semibold text-white">Live calls feed</h3>
+      <h3 className="text-sm font-semibold text-white">Recent creator calls (30m feed)</h3>
       <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400/90 animate-live-pulse">
         Auto-refresh
       </span>
@@ -35,7 +35,7 @@ export const LiveCallsFeed: React.FC<LiveCallsFeedProps> = ({ calls, loading, cl
         <Skeleton className="h-14 w-full" />
       </div>
     ) : calls.length === 0 ? (
-      <p className="text-sm text-zinc-500 py-8 text-center">No recent creator-side sessions in the last 30 minutes.</p>
+      <p className="text-sm text-zinc-500 py-8 text-center">No creator-side sessions in the trailing 30 minutes.</p>
     ) : (
       <ScrollArea className="h-[240px] pr-2">
         <ul className="space-y-2">

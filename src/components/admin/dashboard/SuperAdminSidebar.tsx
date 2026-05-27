@@ -160,7 +160,17 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
 }) => {
   const { logout, user } = useAuth();
   const { sidebarCollapsed, toggleSidebar } = useAdminShell();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const preservedSearch = React.useMemo(() => {
+    const current = new URLSearchParams(search);
+    const next = new URLSearchParams();
+    for (const key of ['drPreset', 'drFrom', 'drTo']) {
+      const value = current.get(key);
+      if (value) next.set(key, value);
+    }
+    const qs = next.toString();
+    return qs ? `?${qs}` : '';
+  }, [search]);
 
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>(() => {
     const stored = readStoredOpenSections();
@@ -201,7 +211,7 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
     return (
       <NavLink
         key={`${keyPrefix}-${item.to}-${item.label}`}
-        to={item.to}
+        to={{ pathname: item.to, search: preservedSearch }}
         end={item.end}
         title={sidebarCollapsed ? item.label : undefined}
         onClick={() => onNavigate?.()}

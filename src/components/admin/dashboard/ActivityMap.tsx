@@ -33,7 +33,7 @@ export const ActivityMap: React.FC<ActivityMapProps> = ({ stats, countries, isDe
             <p className="text-lg font-semibold text-white tabular-nums">{stats.onlineHosts}</p>
           </div>
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2">
-            <p className="text-[10px] text-zinc-500">Live calls</p>
+            <p className="text-[10px] text-zinc-500">Live calls (5m proxy)</p>
             <p className="text-lg font-semibold text-white tabular-nums">{stats.liveCalls}</p>
           </div>
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import MetricCard from '../components/ui/MetricCard';
@@ -30,11 +31,32 @@ const WithdrawalsPage: React.FC = () => {
   const [summary, setSummary] = useState<WithdrawalSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
+  const statusFilter = searchParams.get('status') ?? '';
+
+  const updateListQuery = useCallback(
+    (updates: { page?: number; status?: string }) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (typeof updates.page === 'number' && Number.isFinite(updates.page)) {
+            next.set('page', String(Math.max(1, Math.trunc(updates.page))));
+          }
+          if (typeof updates.status === 'string') {
+            if (updates.status.trim()) next.set('status', updates.status);
+            else next.delete('status');
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   // Action modal
   const [actionTarget, setActionTarget] = useState<AdminWithdrawal | null>(null);
@@ -53,6 +75,10 @@ const WithdrawalsPage: React.FC = () => {
         from: dateRange.from,
         to: dateRange.to,
       });
+      if (page > data.pagination.totalPages && data.pagination.totalPages > 0) {
+        updateListQuery({ page: data.pagination.totalPages });
+        return;
+      }
       setWithdrawals(data.withdrawals);
       setSummary(data.summary);
       setTotalPages(data.pagination.totalPages);
@@ -63,7 +89,7 @@ const WithdrawalsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, dateRange.from, dateRange.to, markFresh]);
+  }, [page, statusFilter, dateRange.from, dateRange.to, markFresh, updateListQuery]);
 
   useEffect(() => {
     load();
@@ -289,17 +315,19 @@ const WithdrawalsPage: React.FC = () => {
           value={dateRange}
           onPresetChange={(p) => {
             setPreset(p);
-            setPage(1);
+            updateListQuery({ page: 1 });
           }}
           onCustomChange={(from, to) => {
             setCustom(from, to);
-            setPage(1);
+            updateListQuery({ page: 1 });
           }}
         />
         <label className="text-xs text-gray-400">Status:</label>
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            updateListQuery({ status: e.target.value, page: 1 });
+          }}
           className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="">All</option>
@@ -316,7 +344,7 @@ const WithdrawalsPage: React.FC = () => {
         data={withdrawals}
         keyField="id"
         emptyMessage="No withdrawals found"
-        searchPlaceholder="Search by name, email…"
+        searchPlaceholder="Search current page by name, email…"
         searchFields={['creatorName', 'creatorEmail', 'creatorPhone']}
         compact
       />
@@ -327,7 +355,7 @@ const WithdrawalsPage: React.FC = () => {
           <p className="text-xs text-gray-500">{total} total withdrawals</p>
           <div className="flex gap-2">
             <button
-              onClick={() => setPage(Math.max(1, page - 1))}
+              onClick={() => updateListQuery({ page: Math.max(1, page - 1) })}
               disabled={page === 1}
               className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-30"
             >
@@ -337,7 +365,7 @@ const WithdrawalsPage: React.FC = () => {
               {page} / {totalPages}
             </span>
             <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              onClick={() => updateListQuery({ page: Math.min(totalPages, page + 1) })}
               disabled={page === totalPages}
               className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-30"
             >

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAdminRealtime } from '../../contexts/AdminRealtimeContext';
+import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import {
   fetchDashboardAlerts,
   fetchDashboardCallAnalytics,
@@ -43,14 +44,27 @@ const DASH = 'dashboard' as const;
 const SuperAdminDashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { refreshGeneration } = useAdminRealtime();
+  const { dateRange } = useAdminDateRange('today');
+  const dashboardDateParams = React.useMemo(
+    () => ({ from: dateRange.from, to: dateRange.to }),
+    [dateRange.from, dateRange.to]
+  );
 
   React.useEffect(() => {
     if (refreshGeneration === 0) return;
     void queryClient.invalidateQueries({ queryKey: [DASH] });
   }, [refreshGeneration, queryClient]);
 
-  const overview = useQuery({ queryKey: [DASH, 'overview'], queryFn: fetchDashboardOverview, staleTime: 20_000 });
-  const revenue = useQuery({ queryKey: [DASH, 'revenue'], queryFn: () => fetchDashboardRevenue(14), staleTime: 60_000 });
+  const overview = useQuery({
+    queryKey: [DASH, 'overview', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardOverview(dashboardDateParams),
+    staleTime: 20_000,
+  });
+  const revenue = useQuery({
+    queryKey: [DASH, 'revenue', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardRevenue(14, dashboardDateParams),
+    staleTime: 60_000,
+  });
   const live = useQuery({
     queryKey: [DASH, 'live-calls'],
     queryFn: fetchDashboardLiveCalls,
@@ -62,13 +76,33 @@ const SuperAdminDashboardPage: React.FC = () => {
     refetchInterval: 15_000,
   });
   const geo = useQuery({ queryKey: [DASH, 'geo'], queryFn: fetchDashboardGeo, staleTime: 120_000 });
-  const topHosts = useQuery({ queryKey: [DASH, 'top-hosts'], queryFn: fetchDashboardTopHosts, staleTime: 60_000 });
-  const topBds = useQuery({ queryKey: [DASH, 'top-bds'], queryFn: fetchDashboardTopBds, staleTime: 60_000 });
-  const topAgencies = useQuery({ queryKey: [DASH, 'top-agencies'], queryFn: fetchDashboardTopAgencies, staleTime: 60_000 });
+  const topHosts = useQuery({
+    queryKey: [DASH, 'top-hosts', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardTopHosts(dashboardDateParams),
+    staleTime: 60_000,
+  });
+  const topBds = useQuery({
+    queryKey: [DASH, 'top-bds', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardTopBds(dashboardDateParams),
+    staleTime: 60_000,
+  });
+  const topAgencies = useQuery({
+    queryKey: [DASH, 'top-agencies', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardTopAgencies(dashboardDateParams),
+    staleTime: 60_000,
+  });
   const alerts = useQuery({ queryKey: [DASH, 'alerts'], queryFn: fetchDashboardAlerts, staleTime: 30_000 });
   const heatmap = useQuery({ queryKey: [DASH, 'heatmap'], queryFn: fetchDashboardHeatmap, staleTime: 120_000 });
-  const callAn = useQuery({ queryKey: [DASH, 'call-analytics'], queryFn: fetchDashboardCallAnalytics, staleTime: 45_000 });
-  const payouts = useQuery({ queryKey: [DASH, 'payouts'], queryFn: fetchDashboardPayouts, staleTime: 30_000 });
+  const callAn = useQuery({
+    queryKey: [DASH, 'call-analytics', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardCallAnalytics(dashboardDateParams),
+    staleTime: 45_000,
+  });
+  const payouts = useQuery({
+    queryKey: [DASH, 'payouts', dashboardDateParams.from, dashboardDateParams.to],
+    queryFn: () => fetchDashboardPayouts(dashboardDateParams),
+    staleTime: 30_000,
+  });
   const razorpayBalance = useQuery({
     queryKey: [DASH, 'razorpay-balance'],
     queryFn: fetchDashboardRazorpayBalance,
@@ -110,7 +144,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">MatchVibe</p>
           <h2 className="text-2xl font-bold text-white tracking-tight">Command center</h2>
           <p className="text-xs text-zinc-500 mt-1 max-w-xl">
-            Revenue KPIs use wallet coin flow; live call tiles use operational proxies (see API notes).{' '}
+            Revenue and call aggregates follow the selected header date range; live call tiles remain realtime proxies.{' '}
             <Link className="text-violet-400 hover:underline" to="/overview">
               Legacy operations overview
             </Link>
@@ -120,7 +154,7 @@ const SuperAdminDashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-3">
         <KPIStatCard
-          title="Revenue today (coins)"
+          title="Revenue (net wallet flow)"
           value={ov?.revenueCoinsToday ?? 0}
           icon={<Coins className="h-5 w-5" />}
           sparkline={spark.length > 1 ? spark : undefined}
@@ -137,7 +171,7 @@ const SuperAdminDashboardPage: React.FC = () => {
         <KPIStatCard title="Agencies" value={ov?.totalAgencies ?? 0} icon={<Building2 className="h-5 w-5" />} accent="blue" />
         <KPIStatCard title="BDs" value={ov?.totalBds ?? 0} icon={<Users className="h-5 w-5" />} accent="amber" />
         <KPIStatCard title="Pending payouts" value={ov?.pendingPayouts ?? 0} icon={<Wallet className="h-5 w-5" />} accent="amber" />
-        <KPIStatCard title="Call minutes today" value={ov?.totalCallMinutesToday ?? 0} icon={<Clock className="h-5 w-5" />} accent="blue" />
+        <KPIStatCard title="Call minutes (selected range)" value={ov?.totalCallMinutesToday ?? 0} icon={<Clock className="h-5 w-5" />} accent="blue" />
       </div>
 
       <PayoutTable rows={payouts.data?.rows ?? []} loading={payouts.isLoading} />
@@ -163,6 +197,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           viewAllHref="/leaderboards"
           rows={topHosts.data?.rows ?? []}
           loading={topHosts.isLoading}
+          footnote={topHosts.data?.note}
         />
         <RankingLeaderboardCard
           variant="bds"
@@ -170,7 +205,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           viewAllHref="/bds"
           rows={topBds.data?.rows ?? []}
           loading={topBds.isLoading}
-          footnote="Revenue shows BD wallet balance (coins); commission rollup pending. INR preview uses VITE_DASHBOARD_INR_PER_COIN when set."
+          footnote={topBds.data?.note}
         />
         <RankingLeaderboardCard
           variant="agencies"

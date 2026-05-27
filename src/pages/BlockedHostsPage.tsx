@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import MetricCard from '../components/ui/MetricCard';
 import {
@@ -22,14 +22,41 @@ const BlockedHostsPage: React.FC = () => {
   const [data, setData] = useState<BlockedHostsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [page, setPage] = useState(1);
-  const [sort, setSort] = useState<SortOption>('blocks_desc');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
+  const sortParam = searchParams.get('sort');
+  const sort = SORT_OPTIONS.some((option) => option.value === sortParam)
+    ? (sortParam as SortOption)
+    : 'blocks_desc';
+
+  const updateListQuery = useCallback(
+    (updates: { page?: number; sort?: SortOption }) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (typeof updates.page === 'number' && Number.isFinite(updates.page)) {
+            next.set('page', String(Math.max(1, Math.trunc(updates.page))));
+          }
+          if (updates.sort) {
+            next.set('sort', updates.sort);
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr('');
     try {
       const res = await adminService.getBlockedHosts({ page, limit: 50, sort });
+      if (page > res.pagination.totalPages && res.pagination.totalPages > 0) {
+        updateListQuery({ page: res.pagination.totalPages });
+        return;
+      }
       setData(res);
     } catch {
       setErr('Failed to load blocked hosts');
@@ -37,15 +64,14 @@ const BlockedHostsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, sort]);
+  }, [page, sort, updateListQuery]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const handleSortChange = (value: SortOption) => {
-    setSort(value);
-    setPage(1);
+    updateListQuery({ sort: value, page: 1 });
   };
 
   if (loading && !data) {
@@ -104,7 +130,7 @@ const BlockedHostsPage: React.FC = () => {
             <button
               type="button"
               disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => updateListQuery({ page: Math.max(1, page - 1) })}
               className="px-3 py-1 rounded border border-zinc-700 disabled:opacity-40"
             >
               Prev
@@ -115,7 +141,7 @@ const BlockedHostsPage: React.FC = () => {
             <button
               type="button"
               disabled={page >= pagination.totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => updateListQuery({ page: Math.min(pagination.totalPages, page + 1) })}
               className="px-3 py-1 rounded border border-zinc-700 disabled:opacity-40"
             >
               Next
