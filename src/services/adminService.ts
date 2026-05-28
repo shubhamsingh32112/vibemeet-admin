@@ -419,17 +419,29 @@ export interface WithdrawalsResponse {
 
 // ── Support Ticket Types ─────────────────────────────────────────────────
 
+export interface AdminSupportTicketAttachment {
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  isScreenshot: boolean;
+  imageId?: string;
+  url?: string;
+  dataUrl?: string;
+}
+
 export interface AdminSupportTicket {
   id: string;
   userId: string;
   username: string;
   email: string | null;
   phone: string | null;
+  contactPhone: string | null;
   userRole: string | null;
   role: 'user' | 'creator' | 'agency' | 'bd';
   category: string;
   subject: string;
   message: string;
+  attachments?: AdminSupportTicketAttachment[];
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignedAdminId: string | null;

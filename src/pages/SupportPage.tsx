@@ -37,7 +37,7 @@ const priorityVariant = (p: string) => {
 
 const SupportPage: React.FC = () => {
   type QuickTab = 'all' | 'creator_reports';
-  const { markFresh } = useStaffRealtime();
+  const { markFresh, stale } = useStaffRealtime();
   const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
   const [summary, setSummary] = useState<SupportSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,6 +153,12 @@ const SupportPage: React.FC = () => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (stale.support) {
+      void load();
+    }
+  }, [stale.support, load]);
+
   const openStatusModal = (ticket: AdminSupportTicket) => {
     setStatusTarget(ticket);
     setNewStatus(ticket.status);
@@ -214,6 +220,7 @@ const SupportPage: React.FC = () => {
           title={row.subject}
           onClick={(e) => { e.stopPropagation(); setDetailTicket(row); }}
         >
+          {(row.attachments?.length ?? 0) > 0 ? '📎 ' : ''}
           {row.subject}
         </span>
       ),
@@ -563,6 +570,14 @@ const SupportPage: React.FC = () => {
                   <p className="text-white">{detailTicket.email || '—'}</p>
                 </div>
                 <div>
+                  <p className="text-gray-500">Contact phone (ticket)</p>
+                  <p className="text-white">{detailTicket.contactPhone || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Profile phone</p>
+                  <p className="text-white">{detailTicket.phone || '—'}</p>
+                </div>
+                <div>
                   <p className="text-gray-500">Category</p>
                   <p className="text-white">{detailTicket.category}</p>
                 </div>
@@ -590,6 +605,34 @@ const SupportPage: React.FC = () => {
                   {detailTicket.message}
                 </div>
               </div>
+
+              {(detailTicket.attachments?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-gray-500 text-xs mb-2">Attachments</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {detailTicket.attachments!.map((att, idx) => {
+                      const src = att.url || att.dataUrl;
+                      if (!src) return null;
+                      return (
+                        <a
+                          key={`${att.name}-${idx}`}
+                          href={src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block rounded border border-gray-700 overflow-hidden bg-gray-900 hover:border-violet-500/50"
+                        >
+                          <img
+                            src={src}
+                            alt={att.name}
+                            className="w-full h-32 object-cover"
+                          />
+                          <p className="text-[10px] text-gray-400 px-2 py-1 truncate">{att.name}</p>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {detailTicket.adminNotes && (
                 <div>
