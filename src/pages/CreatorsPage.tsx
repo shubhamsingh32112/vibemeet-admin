@@ -15,7 +15,7 @@ const CreatorsPage: React.FC = () => {
   const [error, setError] = useState('');
 
   // Modals
-  const [forceOfflineTarget, setForceOfflineTarget] = useState<CreatorPerformance | null>(null);
+  const [resetPresenceTarget, setResetPresenceTarget] = useState<CreatorPerformance | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<CreatorPerformance | null>(null);
 
@@ -46,14 +46,17 @@ const CreatorsPage: React.FC = () => {
     load();
   }, [load]);
 
-  const handleForceOffline = async () => {
-    if (!forceOfflineTarget) return;
+  const handleResetPresence = async () => {
+    if (!resetPresenceTarget) return;
     try {
-      await adminService.forceCreatorOffline(forceOfflineTarget.creatorId);
-      setForceOfflineTarget(null);
+      const result = await adminService.resetCreatorPresence(resetPresenceTarget.creatorId);
+      setResetPresenceTarget(null);
       load();
+      alert(
+        `Presence reset for ${resetPresenceTarget.name}. Status is now "${result.presenceStatus}" (toggle ${result.isOnline ? 'online' : 'offline'}).`
+      );
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to force offline');
+      alert(err.response?.data?.error || 'Failed to reset presence');
     }
   };
 
@@ -298,20 +301,16 @@ const CreatorsPage: React.FC = () => {
             Edit
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); setForceOfflineTarget(row); }}
-            className="px-2 py-1 text-xs bg-yellow-900/30 border border-yellow-800 rounded text-yellow-400 hover:text-yellow-200 transition"
-            disabled={!row.isOnline}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setResetPresenceTarget(row);
+            }}
+            className="px-2 py-1 text-xs bg-sky-900/30 border border-sky-800 rounded text-sky-300 hover:text-sky-100 transition min-h-[36px]"
+            title="Clear stuck on-call state and refresh online/offline from their toggle"
           >
-            {row.isOnline ? 'Offline' : 'Offline'}
+            Reset presence
           </button>
-          {!row.isOnline && (
-            <button
-              disabled
-              className="px-2 py-1 text-xs bg-gray-900/30 border border-gray-800 rounded text-gray-600"
-            >
-              —
-            </button>
-          )}
           <button
             onClick={(e) => { e.stopPropagation(); handleDelete(row.creatorId); }}
             disabled={deletingId === row.creatorId}
@@ -403,15 +402,15 @@ const CreatorsPage: React.FC = () => {
         stackedOnMobile
       />
 
-      {/* ── Force Offline Confirm ──────────────── */}
+      {/* ── Reset Presence Confirm ─────────────── */}
       <ConfirmDialog
-        open={!!forceOfflineTarget}
-        title="Force Creator Offline"
-        message={`This will set ${forceOfflineTarget?.name} as offline and broadcast the change to all connected clients.`}
-        confirmLabel="Force Offline"
-        confirmVariant="danger"
-        onConfirm={handleForceOffline}
-        onCancel={() => setForceOfflineTarget(null)}
+        open={!!resetPresenceTarget}
+        title="Reset creator presence"
+        message={`Clear stuck "On call" state for ${resetPresenceTarget?.name} and broadcast the correct status from their availability toggle (they stay ${resetPresenceTarget?.isOnline ? 'available' : 'offline'} in the app).`}
+        confirmLabel="Reset presence"
+        confirmVariant="primary"
+        onConfirm={handleResetPresence}
+        onCancel={() => setResetPresenceTarget(null)}
       />
 
       {/* ── User Search for Promote ────────────── */}

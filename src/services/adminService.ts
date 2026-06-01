@@ -626,8 +626,11 @@ export const adminService = {
     return res.data.data.creators;
   },
 
-  forceCreatorOffline: async (creatorId: string): Promise<void> => {
-    await api.post(`/admin/creators/${creatorId}/force-offline`);
+  resetCreatorPresence: async (
+    creatorId: string
+  ): Promise<{ presenceStatus: string; isOnline: boolean }> => {
+    const res = await api.post(`/admin/creators/${creatorId}/reset-presence`);
+    return res.data.data;
   },
 
   patchCreatorLinkedUser: async (
