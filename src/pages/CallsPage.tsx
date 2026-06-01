@@ -153,11 +153,21 @@ const CallsPage: React.FC = () => {
     },
     {
       key: 'coinsDeducted',
-      header: 'Coins Spent',
+      header: 'User Spent',
       sortable: true,
       render: (row) => (
         <span className="tabular-nums text-red-400">
           {row.coinsDeducted > 0 ? `−${row.coinsDeducted}` : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'creatorCoinsEarned',
+      header: 'Creator Earned',
+      sortable: true,
+      render: (row) => (
+        <span className="tabular-nums text-emerald-400">
+          {row.creatorCoinsEarned > 0 ? `+${row.creatorCoinsEarned}` : '—'}
         </span>
       ),
     },

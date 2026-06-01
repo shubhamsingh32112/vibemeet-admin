@@ -207,10 +207,27 @@ const CreatorsPage: React.FC = () => {
       ),
     },
     {
-      key: 'earningsPerMinute',
-      header: 'Earn/min',
+      key: 'avgEarningsPerMinute',
+      header: 'Avg Earn/min',
       sortable: true,
-      render: (row) => <span className="tabular-nums">{row.earningsPerMinute}</span>,
+      getValue: (row) => row.avgEarningsPerMinute ?? row.earningsPerMinute,
+      render: (row) => (
+        <span className="tabular-nums" title={`Current rate: ${row.currentEarningsPerMinute ?? '—'} coins/min`}>
+          {(row.avgEarningsPerMinute ?? row.earningsPerMinute).toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      key: 'currentEarningsPerMinute',
+      header: 'Rate/min',
+      sortable: true,
+      render: (row) => (
+        <span className="tabular-nums text-gray-400">
+          {row.currentEarningsPerMinute != null
+            ? row.currentEarningsPerMinute.toFixed(2)
+            : '—'}
+        </span>
+      ),
     },
     {
       key: 'abuseSignals',
@@ -230,8 +247,11 @@ const CreatorsPage: React.FC = () => {
               {s.zeroDuration30d > 0 && <span className="text-red-400 ml-1">· {s.zeroDuration30d} 0dur</span>}
             </span>
             {s.earnDeviation !== 0 && (
-              <span className={`text-[10px] tabular-nums ${Math.abs(s.earnDeviation) > 20 ? 'text-yellow-400' : 'text-gray-500'}`}>
-                earn dev: {s.earnDeviation > 0 ? '+' : ''}{s.earnDeviation}%
+              <span
+                className={`text-[10px] tabular-nums ${Math.abs(s.earnDeviation) > 20 ? 'text-yellow-400' : 'text-gray-500'}`}
+                title="Avg earn/min vs current rate (same basis as creator wallet)"
+              >
+                avg vs rate: {s.earnDeviation > 0 ? '+' : ''}{s.earnDeviation}%
               </span>
             )}
           </div>

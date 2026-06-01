@@ -123,6 +123,11 @@ export interface CreatorPerformance {
   tasksTotal: number;
   tasksCompleted: number;
   tasksClaimed: number;
+  /** Historical average — same as creator `avgEarningsPerMinute` */
+  avgEarningsPerMinute: number;
+  /** Current rate — same as creator `earningsPerMinute` */
+  currentEarningsPerMinute: number;
+  /** @deprecated Use avgEarningsPerMinute */
   earningsPerMinute: number;
   abuseSignals: AbuseSignals;
 }
@@ -299,6 +304,8 @@ export interface AdminCall {
   durationFormatted: string;
   coinsDeducted: number;
   coinsEarned: number;
+  /** Creator-side settlement — matches creator wallet call rows */
+  creatorCoinsEarned: number;
   createdAt: string;
   isZeroDuration: boolean;
   isVeryShort: boolean;
