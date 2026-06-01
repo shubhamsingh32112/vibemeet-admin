@@ -8,6 +8,11 @@ import {
   type GlobalAppUpdate,
   type SystemHealth,
 } from '../services/adminService';
+import {
+  DEFAULT_APP_UPDATE_POINTS,
+  DEFAULT_APP_UPDATE_TITLE,
+  DEFAULT_APP_UPDATE_URL,
+} from '../utils/appUpdateDefaults';
 
 function formatBytes(bytes: number): string {
   const mb = bytes / (1024 * 1024);
@@ -34,9 +39,9 @@ const SystemPage: React.FC = () => {
   const [publishSuccess, setPublishSuccess] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [updateUrl, setUpdateUrl] = useState('');
-  const [points, setPoints] = useState<string[]>(['']);
+  const [title, setTitle] = useState(DEFAULT_APP_UPDATE_TITLE);
+  const [updateUrl, setUpdateUrl] = useState(DEFAULT_APP_UPDATE_URL);
+  const [points, setPoints] = useState<string[]>([...DEFAULT_APP_UPDATE_POINTS]);
 
   const load = useCallback(async () => {
     try {
@@ -117,9 +122,9 @@ const SystemPage: React.FC = () => {
       });
       setCurrentUpdate(published);
       setPublishSuccess('Update published successfully. Users and creators will receive the popup.');
-      setTitle('');
-      setUpdateUrl('');
-      setPoints(['']);
+      setTitle(DEFAULT_APP_UPDATE_TITLE);
+      setUpdateUrl(DEFAULT_APP_UPDATE_URL);
+      setPoints([...DEFAULT_APP_UPDATE_POINTS]);
       setShowPublishConfirm(false);
     } catch (err: any) {
       setPublishError(
