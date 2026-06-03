@@ -112,13 +112,13 @@ const WithdrawalsPage: React.FC = () => {
     try {
       if (actionType === 'approve') {
         await adminService.approveWithdrawal(actionTarget.id, actionNotes || undefined);
-        alert(`Withdrawal approved. ${actionTarget.amount} coins deducted from creator.`);
+        alert('Withdrawal approved. Coins will be deducted when marked as paid.');
       } else if (actionType === 'reject') {
         await adminService.rejectWithdrawal(actionTarget.id, actionNotes);
         alert('Withdrawal rejected.');
       } else if (actionType === 'mark-paid') {
         await adminService.markWithdrawalPaid(actionTarget.id, actionNotes || undefined);
-        alert('Withdrawal marked as paid.');
+        alert(`Withdrawal marked as paid. ${actionTarget.amount.toLocaleString()} coins deducted from creator.`);
       }
       setActionTarget(null);
       setActionType(null);
@@ -414,18 +414,18 @@ const WithdrawalsPage: React.FC = () => {
         message={
           actionTarget
             ? actionType === 'approve'
-              ? `Approve withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName}? This will deduct coins from the creator's balance.`
+              ? `Approve withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName}? Coins are not deducted until you mark it as paid.`
               : actionType === 'reject'
               ? `Reject withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName}? No coins will be deducted.`
-              : `Mark withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName} as paid? This confirms external payment was completed.`
+              : `Mark withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName} as paid? This will deduct ${actionTarget.amount.toLocaleString()} coins and confirms external payment was completed.`
             : ''
         }
         confirmLabel={
           actionType === 'approve'
-            ? 'Approve & Deduct'
+            ? 'Approve'
             : actionType === 'reject'
             ? 'Reject'
-            : 'Mark Paid'
+            : 'Mark Paid & Deduct'
         }
         confirmVariant={actionType === 'reject' ? 'danger' : 'primary'}
         confirmDisabled={actionLoading || (actionType === 'reject' && actionNotes.trim().length < 3)}
@@ -438,8 +438,8 @@ const WithdrawalsPage: React.FC = () => {
               <p className="text-gray-400">Creator: <span className="text-white">{actionTarget.creatorName}</span></p>
               <p className="text-gray-400">Current Balance: <span className="text-white">{actionTarget.creatorCurrentBalance.toLocaleString()} coins</span></p>
               <p className="text-gray-400">Withdrawal Amount: <span className="text-yellow-300">{actionTarget.amount.toLocaleString()} coins</span></p>
-              {actionType === 'approve' && (
-                <p className="text-gray-400">After Approval: <span className="text-emerald-300">{(actionTarget.creatorCurrentBalance - actionTarget.amount).toLocaleString()} coins</span></p>
+              {actionType === 'mark-paid' && (
+                <p className="text-gray-400">After Mark Paid: <span className="text-emerald-300">{(actionTarget.creatorCurrentBalance - actionTarget.amount).toLocaleString()} coins</span></p>
               )}
               <div className="pt-2 mt-2 border-t border-gray-700">
                 <p className="text-gray-500 font-semibold mb-1">Withdrawal Details:</p>
