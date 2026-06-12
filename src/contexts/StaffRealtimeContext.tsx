@@ -30,6 +30,7 @@ type StaffRealtimeContextValue = {
   connected: boolean;
   lastError: string | null;
   pendingHint: string | null;
+  refreshGeneration: number;
   refreshMode: Record<DashboardSection, RefreshMode>;
   markStale: (sections: DashboardSection[]) => void;
   markFresh: (sections?: DashboardSection[]) => void;
@@ -76,6 +77,7 @@ export const StaffRealtimeProvider: React.FC<ProviderProps> = ({
   const [connected, setConnected] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [pendingHint, setPendingHint] = useState<string | null>(null);
+  const [refreshGeneration, setRefreshGeneration] = useState(0);
   const [refreshMode, setRefreshModeState] = useState<Record<DashboardSection, RefreshMode>>(() => {
     const modes = {} as Record<DashboardSection, RefreshMode>;
     for (const s of Object.keys(FRESH_STALE_MAP) as DashboardSection[]) {
@@ -93,6 +95,7 @@ export const StaffRealtimeProvider: React.FC<ProviderProps> = ({
       for (const s of sections) next[s] = true;
       return next;
     });
+    setRefreshGeneration((g) => g + 1);
   }, []);
 
   const markFresh = useCallback((sections?: DashboardSection[]) => {
@@ -184,6 +187,7 @@ export const StaffRealtimeProvider: React.FC<ProviderProps> = ({
       connected,
       lastError,
       pendingHint,
+      refreshGeneration,
       refreshMode,
       markStale,
       markFresh,
@@ -195,6 +199,7 @@ export const StaffRealtimeProvider: React.FC<ProviderProps> = ({
       connected,
       lastError,
       pendingHint,
+      refreshGeneration,
       refreshMode,
       markStale,
       markFresh,
@@ -216,6 +221,7 @@ export function useStaffRealtime(): StaffRealtimeContextValue {
       connected: false,
       lastError: null,
       pendingHint: null,
+      refreshGeneration: 0,
       refreshMode: Object.fromEntries(
         Object.keys(FRESH_STALE_MAP).map((k) => [k, 'manual' as RefreshMode])
       ) as Record<DashboardSection, RefreshMode>,
@@ -226,10 +232,4 @@ export function useStaffRealtime(): StaffRealtimeContextValue {
     };
   }
   return ctx;
-}
-
-/** @deprecated Use useStaffRealtime */
-export function useAdminRealtime() {
-  const { connected, lastError } = useStaffRealtime();
-  return { refreshGeneration: 0, connected, lastError };
 }

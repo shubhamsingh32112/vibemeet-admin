@@ -106,6 +106,8 @@ export interface CreatorPerformance {
   categories: string[];
   price: number;
   isOnline: boolean;
+  presenceStatus?: 'online' | 'on_call' | 'offline';
+  presenceUpdatedAt?: string | null;
   assignedAgencyId: string | null;
   assignedAgencyLabel: string | null;
   email: string | null;
@@ -306,6 +308,10 @@ export interface AdminCall {
   coinsEarned: number;
   /** Creator-side settlement — matches creator wallet call rows */
   creatorCoinsEarned: number;
+  callStartedAt?: string | null;
+  callEndedAt?: string | null;
+  settledAt?: string | null;
+  billingStatus?: string;
   createdAt: string;
   isZeroDuration: boolean;
   isVeryShort: boolean;
@@ -621,9 +627,42 @@ export const adminService = {
     };
   },
 
+  getCreatorsPerformancePage: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    agencyId?: string;
+    bdId?: string;
+    presenceStatus?: string;
+  }): Promise<{
+    creators: CreatorPerformance[];
+    total: number;
+    page: number;
+    limit: number;
+  }> => {
+    const res = await api.get('/admin/creators/performance', { params });
+    const data = res.data.data;
+    return {
+      creators: data.creators ?? [],
+      total: data.total ?? 0,
+      page: data.page ?? 1,
+      limit: data.limit ?? 50,
+    };
+  },
+
   getCreatorsPerformance: async (): Promise<CreatorPerformance[]> => {
-    const res = await api.get('/admin/creators/performance');
-    return res.data.data.creators;
+    const limit = 100;
+    let page = 1;
+    let total = Infinity;
+    const all: CreatorPerformance[] = [];
+    while (all.length < total) {
+      const data = await adminService.getCreatorsPerformancePage({ page, limit });
+      all.push(...data.creators);
+      total = data.total;
+      if (!data.creators.length || data.creators.length < limit) break;
+      page += 1;
+    }
+    return all;
   },
 
   resetCreatorPresence: async (
@@ -717,7 +756,15 @@ export const adminService = {
     referrerAgencyId?: string;
     from?: string;
     to?: string;
-  }): Promise<{ users: UserAnalytics[]; total: number }> => {
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    users: UserAnalytics[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> => {
     const searchParams = new URLSearchParams();
     if (params?.query) searchParams.append('query', params.query);
     if (params?.role) searchParams.append('role', params.role);
@@ -725,11 +772,76 @@ export const adminService = {
     if (params?.referrerAgencyId) searchParams.append('referrerAgencyId', params.referrerAgencyId);
     if (params?.from) searchParams.append('from', params.from);
     if (params?.to) searchParams.append('to', params.to);
+    if (params?.page) searchParams.append('page', String(params.page));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
     const res = await api.get(`/admin/users/analytics?${searchParams.toString()}`);
+    const d = res.data.data;
     return {
-      users: res.data.data.users,
-      total: Number(res.data.data.total ?? res.data.data.users?.length ?? 0),
+      users: d.users,
+      total: Number(d.total ?? 0),
+      page: d.page ?? 1,
+      limit: d.limit ?? 50,
+      totalPages: d.totalPages ?? 1,
     };
+  },
+
+  getUsersSummary: async () => {
+    const res = await api.get('/admin/analytics/users/summary');
+    return res.data.data as {
+      totalUsers: number;
+      signupsToday: number;
+      signups7d: number;
+      signups30d: number;
+      onboardedUsers: number;
+      generatedAt: string;
+    };
+  },
+
+  getMomentsPaidUsers: async (params?: { page?: number; limit?: number }) => {
+    const res = await api.get('/admin/analytics/moments/paid-users', { params });
+    return res.data.data;
+  },
+
+  getVipPaidUsers: async (params?: { page?: number; limit?: number }) => {
+    const res = await api.get('/admin/analytics/vip/paid-users', { params });
+    return res.data.data;
+  },
+
+  getRevenueAnalyticsSummary: async (period: 'today' | '7d' | '30d' = '30d') => {
+    const res = await api.get('/admin/analytics/revenue/summary', { params: { period } });
+    return res.data.data;
+  },
+
+  getWalletTransactions: async (params?: {
+    page?: number;
+    limit?: number;
+    source?: string;
+    from?: string;
+    to?: string;
+  }) => {
+    const res = await api.get('/admin/wallet/transactions', { params });
+    return res.data.data;
+  },
+
+  getFinancePayments: async (params?: {
+    page?: number;
+    limit?: number;
+    source: string;
+    from?: string;
+    to?: string;
+  }) => {
+    const res = await api.get('/admin/finance/payments', { params });
+    return res.data.data;
+  },
+
+  getFinancePayoutsSummary: async (period: 'today' | '7d' | '30d' = '30d') => {
+    const res = await api.get('/admin/finance/payouts/summary', { params: { period } });
+    return res.data.data;
+  },
+
+  getFinanceSettlements: async (params?: { page?: number; limit?: number }) => {
+    const res = await api.get('/admin/finance/settlements', { params });
+    return res.data.data;
   },
 
   listAgenciesBrief: async (): Promise<AdminAgencyBrief[]> => {
@@ -991,8 +1103,13 @@ export const adminService = {
     period?: LeaderboardPeriod;
     sort?: HostLeaderboardSort;
     limit?: number;
+    cached?: boolean;
   }): Promise<HostLeaderboardResponse> => {
-    const res = await api.get('/admin/leaderboards/hosts', { params });
+    const endpoint = params?.cached
+      ? '/admin/leaderboards/hosts/cached'
+      : '/admin/leaderboards/hosts';
+    const { cached: _c, ...rest } = params ?? {};
+    const res = await api.get(endpoint, { params: rest });
     return res.data.data;
   },
 
@@ -1002,6 +1119,17 @@ export const adminService = {
     limit?: number;
   }): Promise<UserLeaderboardResponse> => {
     const res = await api.get('/admin/leaderboards/users', { params });
+    return res.data.data;
+  },
+
+  getIntegrityChecks: async (): Promise<{
+    overallHealthy: boolean;
+    checks: {
+      videoCalls: { unsettledCount: number; status: string };
+      balanceIntegrity: { mismatchCount: number; status: string };
+    };
+  }> => {
+    const res = await api.get('/admin/integrity-checks');
     return res.data.data;
   },
 };

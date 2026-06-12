@@ -13,6 +13,11 @@ const CreatorsPage: React.FC = () => {
   const [creators, setCreators] = useState<CreatorPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [presenceFilter, setPresenceFilter] = useState('');
 
   // Modals
   const [resetPresenceTarget, setResetPresenceTarget] = useState<CreatorPerformance | null>(null);
@@ -33,14 +38,21 @@ const CreatorsPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await adminService.getCreatorsPerformance();
-      setCreators(data);
+      const data = await adminService.getCreatorsPerformancePage({
+        page,
+        limit: 50,
+        search: search || undefined,
+        presenceStatus: presenceFilter || undefined,
+      });
+      setCreators(data.creators);
+      setTotal(data.total);
+      setTotalPages(Math.max(1, Math.ceil(data.total / data.limit)));
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, search, presenceFilter]);
 
   useEffect(() => {
     load();
@@ -143,15 +155,16 @@ const CreatorsPage: React.FC = () => {
       ),
     },
     {
-      key: 'isOnline',
+      key: 'presenceStatus',
       header: 'Status',
-      render: (row) => (
-        <StatusBadge
-          variant={row.isOnline ? 'online' : 'offline'}
-          label={row.isOnline ? 'Online' : 'Offline'}
-          dot
-        />
-      ),
+      render: (row) => {
+        const ps = row.presenceStatus ?? (row.isOnline ? 'online' : 'offline');
+        const variant =
+          ps === 'online' ? 'online' : ps === 'on_call' ? 'warning' : 'offline';
+        const label =
+          ps === 'on_call' ? 'On call' : ps === 'online' ? 'Online' : 'Offline';
+        return <StatusBadge variant={variant} label={label} dot />;
+      },
     },
     {
       key: 'price',
@@ -284,7 +297,7 @@ const CreatorsPage: React.FC = () => {
       render: (row) => (
         <div className="flex items-center gap-1 flex-wrap">
           <Link
-            to={`/creators/${row.creatorId}`}
+            to={`/hosts/all/${row.creatorId}`}
             onClick={(e) => e.stopPropagation()}
             className="px-2 py-1 text-xs bg-emerald-900/30 border border-emerald-800 rounded text-emerald-300 hover:text-emerald-100 transition min-h-[36px] inline-flex items-center"
           >
@@ -334,10 +347,16 @@ const CreatorsPage: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">Creators Performance</h1>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-white">All hosts</h1>
+          <p className="text-sm text-zinc-500 mt-1">
+            {total.toLocaleString()} hosts · live status from Redis
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => {
               setShowUserSearch(true);
               setSearchQuery('');
@@ -350,6 +369,7 @@ const CreatorsPage: React.FC = () => {
             + Promote to host
           </button>
           <button
+            type="button"
             onClick={load}
             className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
           >
@@ -357,8 +377,32 @@ const CreatorsPage: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Quick stats */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <input
+          type="search"
+          placeholder="Search by name…"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="px-3 py-2 rounded-lg bg-admin-surface border border-admin-border text-sm text-white min-w-[200px]"
+        />
+        <select
+          value={presenceFilter}
+          onChange={(e) => {
+            setPresenceFilter(e.target.value);
+            setPage(1);
+          }}
+          className="px-3 py-2 rounded-lg bg-admin-surface border border-admin-border text-sm text-white"
+        >
+          <option value="">All presence</option>
+          <option value="online">Online</option>
+          <option value="on_call">On call</option>
+          <option value="offline">Offline</option>
+        </select>
+      </div>
+      {/* Quick stats (current page) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
           <p className="text-[10px] text-gray-500 uppercase">Total</p>
@@ -367,7 +411,7 @@ const CreatorsPage: React.FC = () => {
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
           <p className="text-[10px] text-gray-500 uppercase">Online</p>
           <p className="text-lg font-bold text-emerald-400">
-            {creators.filter((c) => c.isOnline).length}
+            {creators.filter((c) => (c.presenceStatus ?? '') === 'online').length}
           </p>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
@@ -396,11 +440,17 @@ const CreatorsPage: React.FC = () => {
         columns={columns}
         data={creators}
         keyField="creatorId"
-        searchFields={['name', 'username', 'email', 'phone'] as any}
-        searchPlaceholder="Search creators…"
         compact
         stackedOnMobile
       />
+
+      {totalPages > 1 && (
+        <div className="flex gap-2 justify-center mt-4">
+          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1 rounded border border-white/10 text-sm disabled:opacity-40">Previous</button>
+          <span className="text-sm text-zinc-400 self-center">Page {page} / {totalPages}</span>
+          <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1 rounded border border-white/10 text-sm disabled:opacity-40">Next</button>
+        </div>
+      )}
 
       {/* ── Reset Presence Confirm ─────────────── */}
       <ConfirmDialog

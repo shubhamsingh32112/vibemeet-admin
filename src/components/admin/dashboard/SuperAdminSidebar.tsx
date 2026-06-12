@@ -2,25 +2,19 @@ import * as React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Activity,
-  AlertTriangle,
-  ArrowRightLeft,
   Building2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Gift,
+  Crown,
   Headphones,
-  LifeBuoy,
   LayoutDashboard,
   LineChart,
   ListOrdered,
-  Percent,
   Phone,
-  PieChart,
   Receipt,
-  ScrollText,
   Settings,
-  ShieldCheck,
+  Sparkles,
   Trophy,
   UserX,
   Users,
@@ -48,60 +42,57 @@ const SECTIONS: NavSection[] = [
     id: 'user-management',
     title: 'User management',
     items: [
-      { to: '/agencies', label: 'Agencies', icon: Building2 },
-      { to: '/bds', label: 'BDs', icon: Users },
-      { to: '/creators', label: 'Hosts', icon: Users },
-      { to: '/blocked-hosts', label: 'Blocked Hosts', icon: UserX },
-      { to: '/kyc', label: 'KYC Verification', icon: ShieldCheck },
+      { to: '/users/analytics', label: 'User analytics', icon: Activity },
+      { to: '/users/totals', label: 'Total users', icon: Users },
+      { to: '/users/calls', label: 'Call analytics / logs', icon: Phone },
+      { to: '/users/moments-paid', label: 'Paid users (moments)', icon: Sparkles },
+      { to: '/users/vip-paid', label: 'Paid users (VIP)', icon: Crown },
     ],
   },
   {
-    id: 'analytics',
-    title: 'Analytics',
+    id: 'host-management',
+    title: 'Host management',
     items: [
-      { to: '/analytics/revenue', label: 'Revenue Analytics', icon: LineChart },
-      { to: '/calls', label: 'Call Analytics', icon: Phone },
-      { to: '/users', label: 'User Activity', icon: Activity },
-      { to: '/leaderboards', label: 'Leaderboards', icon: Trophy },
+      { to: '/hosts/bds', label: 'BDs', icon: Users },
+      { to: '/hosts/agencies', label: 'Agencies', icon: Building2 },
+      { to: '/hosts/all', label: 'All hosts', icon: Users },
+      { to: '/hosts/blocked', label: 'Blocked hosts', icon: UserX },
+      { to: '/hosts/leaderboard', label: 'Leaderboard', icon: Trophy },
     ],
   },
   {
     id: 'finance',
     title: 'Finance',
     items: [
-      { to: '/withdrawals', label: 'Payout Requests', icon: Wallet },
-      { to: '/settlements', label: 'Settlements', icon: ArrowRightLeft },
-      { to: '/coins', label: 'Wallet Transactions', icon: Receipt },
-      { to: '/revenue-split', label: 'Revenue Split', icon: PieChart },
+      { to: '/finance/payouts', label: 'Payouts / settlements', icon: Wallet },
+      { to: '/finance/wallet', label: 'Wallet transactions', icon: Receipt },
+      { to: '/finance/payments/calls', label: 'Payments — calls', icon: Video },
+      { to: '/finance/payments/vip', label: 'Payments — VIP', icon: Crown },
+      { to: '/finance/payments/moments', label: 'Payments — moments', icon: Sparkles },
     ],
+  },
+  {
+    id: 'revenue-analytics',
+    title: 'Revenue analytics',
+    items: [{ to: '/revenue', label: 'Revenue overview', icon: LineChart }],
+  },
+  {
+    id: 'incentives',
+    title: 'Incentive rules',
+    items: [{ to: '/incentives', label: 'Coming soon', icon: ListOrdered }],
   },
   {
     id: 'monitoring',
     title: 'Monitoring',
     items: [
-      { to: '/support', label: 'Support', icon: LifeBuoy },
-      { to: '/calls', label: 'Live Calls', icon: Video },
-      { to: '/call-logs', label: 'Call Logs', icon: ScrollText },
-      { to: '/fraud', label: 'Fraud Detection', icon: AlertTriangle },
-      { to: '/quality', label: 'Quality Monitoring', icon: Headphones },
-    ],
-  },
-  {
-    id: 'incentives',
-    title: 'Incentives',
-    items: [
-      { to: '/incentives/rules', label: 'Incentive Rules', icon: ListOrdered },
-      { to: '/incentives/tracking', label: 'Incentive Tracking', icon: Gift },
+      { to: '/monitoring/support', label: 'Support', icon: Headphones },
+      { to: '/monitoring/health', label: 'System health', icon: Activity },
     ],
   },
   {
     id: 'settings',
     title: 'Settings',
-    items: [
-      { to: '/system', label: 'Platform Settings', icon: Settings },
-      { to: '/commission', label: 'Commission Settings', icon: Percent },
-      { to: '/system-logs', label: 'System Logs', icon: ScrollText },
-    ],
+    items: [{ to: '/settings', label: 'Platform config', icon: Settings }],
   },
 ];
 
@@ -113,7 +104,7 @@ const DASHBOARD_ITEM: NavItem = {
   live: true,
 };
 
-const SECTIONS_STORAGE_KEY = 'mv_admin_sidebar_sections_open';
+const SECTIONS_STORAGE_KEY = 'mv_admin_sidebar_v2_sections_open';
 
 function isItemActive(pathname: string, item: NavItem): boolean {
   if (item.end) {

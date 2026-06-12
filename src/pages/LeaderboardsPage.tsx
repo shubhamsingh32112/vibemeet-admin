@@ -288,6 +288,7 @@ const LeaderboardsPage: React.FC = () => {
           period,
           sort: hostSort,
           limit: 100,
+          cached: true,
         });
         setHostRows(data.rows);
         setNote(data.note ?? '');
@@ -311,6 +312,8 @@ const LeaderboardsPage: React.FC = () => {
 
   useEffect(() => {
     load();
+    const id = window.setInterval(load, 1_800_000);
+    return () => window.clearInterval(id);
   }, [load]);
 
   return (
@@ -323,6 +326,7 @@ const LeaderboardsPage: React.FC = () => {
           </h1>
           <p className="text-sm text-zinc-500 mt-1 max-w-2xl">
             Rank hosts and end-users by calls, talk time, revenue, messages, and wallet activity.
+            Host rankings refresh every 30 minutes.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

@@ -45,6 +45,9 @@ const CallsPage: React.FC = () => {
   const [refundPreview, setRefundPreview] = useState<RefundPreview | null>(null);
   const [refundReason, setRefundReason] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [integrity, setIntegrity] = useState<Awaited<
+    ReturnType<typeof adminService.getIntegrityChecks>
+  > | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -74,6 +77,10 @@ const CallsPage: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    void adminService.getIntegrityChecks().then(setIntegrity).catch(() => setIntegrity(null));
+  }, []);
 
   // Load refund preview when target changes
   const openRefundModal = async (call: AdminCall) => {
@@ -137,6 +144,24 @@ const CallsPage: React.FC = () => {
       header: 'Creator',
       render: (row) => (
         <span className="text-sm text-gray-300">{row.otherName}</span>
+      ),
+    },
+    {
+      key: 'callStartedAt',
+      header: 'Started',
+      render: (row) => (
+        <span className="text-xs text-zinc-400">
+          {row.callStartedAt ? formatDateTime(row.callStartedAt) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'callEndedAt',
+      header: 'Ended',
+      render: (row) => (
+        <span className="text-xs text-zinc-400">
+          {row.callEndedAt ? formatDateTime(row.callEndedAt) : '—'}
+        </span>
       ),
     },
     {
@@ -258,6 +283,19 @@ const CallsPage: React.FC = () => {
           />
           Anomalies only
         </label>
+        {integrity && (
+          <div
+            className={`text-xs px-3 py-1.5 rounded border ${
+              integrity.overallHealthy
+                ? 'border-emerald-800 bg-emerald-900/20 text-emerald-300'
+                : 'border-amber-800 bg-amber-900/20 text-amber-300'
+            }`}
+            title="30-day billing integrity sample"
+          >
+            Integrity: {integrity.checks.videoCalls.unsettledCount} unsettled calls ·{' '}
+            {integrity.checks.balanceIntegrity.mismatchCount} balance mismatches
+          </div>
+        )}
         <span className="text-xs text-gray-500 ml-auto">
           {total} calls total · Page {page}/{totalPages}
         </span>

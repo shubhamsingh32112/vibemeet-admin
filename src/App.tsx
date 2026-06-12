@@ -13,14 +13,10 @@ import Login from './components/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
 import BdDashboardLayout from './components/layout/BdDashboardLayout';
 import AgencyDashboardLayout from './components/layout/AgencyDashboardLayout';
-import OverviewPage from './pages/OverviewPage';
 import CreatorsPage from './pages/CreatorsPage';
 import UsersPage from './pages/UsersPage';
-import CoinsPage from './pages/CoinsPage';
 import CallsPage from './pages/CallsPage';
-import WithdrawalsPage from './pages/WithdrawalsPage';
 import SupportPage from './pages/SupportPage';
-import SystemPage from './pages/SystemPage';
 import AgenciesManagePage from './pages/AgenciesManagePage';
 import BdsManagePage from './pages/BdsManagePage';
 import BdDetailPage from './pages/BdDetailPage';
@@ -30,6 +26,15 @@ import StubPage from './pages/StubPage';
 import BlockedHostsPage from './pages/BlockedHostsPage';
 import RevenueSplitPage from './pages/RevenueSplitPage';
 import LeaderboardsPage from './pages/LeaderboardsPage';
+import UserTotalsPage from './pages/users/UserTotalsPage';
+import MomentsPaidUsersPage from './pages/users/MomentsPaidUsersPage';
+import VipPaidUsersPage from './pages/users/VipPaidUsersPage';
+import WalletTransactionsPage from './pages/finance/WalletTransactionsPage';
+import FinancePaymentsPage from './pages/finance/FinancePaymentsPage';
+import FinancePayoutsPage from './pages/finance/FinancePayoutsPage';
+import RevenueAnalyticsPage from './pages/revenue/RevenueAnalyticsPage';
+import SystemHealthPage from './pages/monitoring/SystemHealthPage';
+import SettingsPage from './pages/settings/SettingsPage';
 import AdminCreatorViewPage from './pages/AdminCreatorViewPage';
 import BdHostDetailPage from './pages/bd/BdHostDetailPage';
 import BdLoginPage from './pages/bd/BdLoginPage';
@@ -293,64 +298,61 @@ const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<SuperAdminDashboardPage />} />
-        <Route path="overview" element={<OverviewPage />} />
         <Route path="dashboard" element={<SuperAdminDashboardPage />} />
-        <Route path="creators" element={<CreatorsPage />} />
+        {/* User management */}
+        <Route path="users/analytics" element={<UsersPage />} />
+        <Route path="users/totals" element={<UserTotalsPage />} />
+        <Route path="users/calls" element={<CallsPage />} />
+        <Route path="users/moments-paid" element={<MomentsPaidUsersPage />} />
+        <Route path="users/vip-paid" element={<VipPaidUsersPage />} />
+        {/* Host management */}
+        <Route path="hosts/bds" element={<BdsManagePage />} />
+        <Route path="hosts/bds/:bdId" element={<BdDetailPage />} />
+        <Route path="hosts/agencies" element={<AgenciesManagePage />} />
+        <Route path="hosts/agencies/:agencyId" element={<AgencyDetailPage />} />
+        <Route path="hosts/all" element={<CreatorsPage />} />
+        <Route path="hosts/all/:creatorId" element={<AdminCreatorViewPage />} />
+        <Route path="hosts/blocked" element={<BlockedHostsPage />} />
+        <Route path="hosts/leaderboard" element={<LeaderboardsPage />} />
+        {/* Finance */}
+        <Route path="finance/payouts" element={<FinancePayoutsPage />} />
+        <Route path="finance/wallet" element={<WalletTransactionsPage />} />
+        <Route path="finance/payments/:kind" element={<FinancePaymentsPage />} />
+        {/* Revenue */}
+        <Route path="revenue" element={<RevenueAnalyticsPage />} />
+        <Route path="incentives" element={<StubPage title="Incentive rules" description="Coming soon." />} />
+        {/* Monitoring */}
+        <Route path="monitoring/support" element={<SupportPage />} />
+        <Route path="monitoring/health" element={<SystemHealthPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        {/* Legacy redirects */}
+        <Route path="overview" element={<Navigate to="/users/analytics" replace />} />
+        <Route path="users" element={<Navigate to="/users/analytics" replace />} />
+        <Route path="creators" element={<Navigate to="/hosts/all" replace />} />
         <Route path="creators/:creatorId" element={<AdminCreatorViewPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="coins" element={<CoinsPage />} />
-        <Route path="calls" element={<CallsPage />} />
-        <Route path="withdrawals" element={<WithdrawalsPage />} />
-        <Route path="support" element={<SupportPage />} />
-        <Route path="system" element={<SystemPage />} />
-        <Route path="bds" element={<BdsManagePage />} />
+        <Route path="coins" element={<Navigate to="/finance/wallet" replace />} />
+        <Route path="calls" element={<Navigate to="/users/calls" replace />} />
+        <Route path="call-logs" element={<Navigate to="/users/calls" replace />} />
+        <Route path="withdrawals" element={<Navigate to="/finance/payouts" replace />} />
+        <Route path="settlements" element={<Navigate to="/finance/payouts" replace />} />
+        <Route path="support" element={<Navigate to="/monitoring/support" replace />} />
+        <Route path="system" element={<Navigate to="/monitoring/health" replace />} />
+        <Route path="bds" element={<Navigate to="/hosts/bds" replace />} />
         <Route path="bds/:bdId" element={<BdDetailPage />} />
-        <Route path="agencies" element={<AgenciesManagePage />} />
+        <Route path="agencies" element={<Navigate to="/hosts/agencies" replace />} />
         <Route path="agencies/:agencyId" element={<AgencyDetailPage />} />
-        <Route path="blocked-users" element={<Navigate to="/blocked-hosts" replace />} />
-        <Route path="blocked-hosts" element={<BlockedHostsPage />} />
-        <Route
-          path="kyc"
-          element={<StubPage title="KYC verification" relatedTo={{ label: 'Open hosts (creators)', href: '/creators' }} />}
-        />
-        <Route
-          path="analytics/revenue"
-          element={<StubPage title="Revenue analytics" relatedTo={{ label: 'Coins & economy', href: '/coins' }} />}
-        />
-        <Route path="leaderboards" element={<LeaderboardsPage />} />
-        <Route
-          path="settlements"
-          element={<StubPage title="Settlements" relatedTo={{ label: 'Withdrawals', href: '/withdrawals' }} />}
-        />
+        <Route path="blocked-hosts" element={<Navigate to="/hosts/blocked" replace />} />
+        <Route path="blocked-users" element={<Navigate to="/hosts/blocked" replace />} />
+        <Route path="leaderboards" element={<Navigate to="/hosts/leaderboard" replace />} />
         <Route path="revenue-split" element={<RevenueSplitPage />} />
-        <Route path="call-logs" element={<CallsPage />} />
-        <Route
-          path="fraud"
-          element={
-            <StubPage
-              title="Fraud detection"
-              description="Use system health and support for investigations."
-              relatedTo={{ label: 'System health', href: '/system' }}
-            />
-          }
-        />
-        <Route
-          path="quality"
-          element={<StubPage title="Quality monitoring" relatedTo={{ label: 'Support tickets', href: '/support' }} />}
-        />
-        <Route
-          path="incentives/rules"
-          element={<StubPage title="Incentive rules" />}
-        />
-        <Route
-          path="incentives/tracking"
-          element={<StubPage title="Incentive tracking" />}
-        />
-        <Route
-          path="commission"
-          element={<StubPage title="Commission settings" relatedTo={{ label: 'System / platform', href: '/system' }} />}
-        />
-        <Route path="system-logs" element={<SystemPage />} />
+        <Route path="analytics/revenue" element={<Navigate to="/revenue" replace />} />
+        <Route path="incentives/rules" element={<Navigate to="/incentives" replace />} />
+        <Route path="incentives/tracking" element={<Navigate to="/incentives" replace />} />
+        <Route path="commission" element={<Navigate to="/settings" replace />} />
+        <Route path="system-logs" element={<Navigate to="/monitoring/health" replace />} />
+        <Route path="fraud" element={<Navigate to="/monitoring/health" replace />} />
+        <Route path="quality" element={<Navigate to="/monitoring/support" replace />} />
+        <Route path="kyc" element={<Navigate to="/hosts/all" replace />} />
       </Route>
       <Route path="*" element={<UnknownRouteRedirect />} />
     </Routes>

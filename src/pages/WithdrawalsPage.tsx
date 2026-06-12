@@ -25,7 +25,11 @@ const statusVariant = (s: string) => {
   }
 };
 
-const WithdrawalsPage: React.FC = () => {
+type WithdrawalsPageProps = {
+  embedded?: boolean;
+};
+
+const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) => {
   const { markFresh } = useStaffRealtime();
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
   const [summary, setSummary] = useState<WithdrawalSummary | null>(null);
@@ -266,22 +270,22 @@ const WithdrawalsPage: React.FC = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-white">💸 Withdrawals</h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Manage creator withdrawal requests
-          </p>
+      {!embedded && (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-white">Withdrawals</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Manage creator withdrawal requests</p>
+          </div>
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition disabled:opacity-50"
+          >
+            {loading ? '…' : '↻ Refresh'}
+          </button>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition disabled:opacity-50"
-        >
-          {loading ? '…' : '↻ Refresh'}
-        </button>
-      </div>
+      )}
 
       {/* Summary Metrics */}
       {summary && (

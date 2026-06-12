@@ -23,6 +23,8 @@ const UsersPage: React.FC = () => {
   const [referrerAgencyId, setReferrerAgencyId] = useState('');
   const [agencies, setAgencies] = useState<AdminAgencyBrief[]>([]);
   const [sortBy, setSortBy] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
 
   // Ledger drill-down
@@ -46,15 +48,18 @@ const UsersPage: React.FC = () => {
         referrerAgencyId: referrerAgencyId || undefined,
         from: dateRange.from,
         to: dateRange.to,
+        page,
+        limit: 50,
       });
       setUsers(data.users);
       setTotalUsers(data.total);
+      setTotalPages(data.totalPages);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter, sortBy, referrerAgencyId, dateRange.from, dateRange.to]);
+  }, [search, roleFilter, sortBy, referrerAgencyId, dateRange.from, dateRange.to, page]);
 
   useEffect(() => {
     let ok = true;
@@ -280,21 +285,33 @@ const UsersPage: React.FC = () => {
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <DateRangeFilter
           value={dateRange}
-          onPresetChange={setPreset}
-          onCustomChange={setCustom}
+          onPresetChange={(p) => {
+            setPreset(p);
+            setPage(1);
+          }}
+          onCustomChange={(from, to) => {
+            setCustom(from, to);
+            setPage(1);
+          }}
           className="mr-2"
         />
         <input
           type="text"
           placeholder="Search name / email / phone"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           onKeyDown={(e) => e.key === 'Enter' && load()}
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
         />
         <select
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          onChange={(e) => {
+            setRoleFilter(e.target.value);
+            setPage(1);
+          }}
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none"
         >
           <option value="all">All Roles</option>
@@ -304,7 +321,10 @@ const UsersPage: React.FC = () => {
         </select>
         <select
           value={referrerAgencyId}
-          onChange={(e) => setReferrerAgencyId(e.target.value)}
+          onChange={(e) => {
+            setReferrerAgencyId(e.target.value);
+            setPage(1);
+          }}
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none max-w-[220px]"
           title="Show only users referred by this agency"
         >
@@ -317,7 +337,10 @@ const UsersPage: React.FC = () => {
         </select>
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          onChange={(e) => {
+            setSortBy(e.target.value);
+            setPage(1);
+          }}
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none"
         >
           <option value="">Sort: Recent</option>
@@ -342,13 +365,22 @@ const UsersPage: React.FC = () => {
       ) : error ? (
         <div className="py-8 text-center text-red-400">{error}</div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={users}
-          keyField="id"
-          compact
-          maxHeight="calc(100vh - 250px)"
-        />
+        <>
+          <DataTable
+            columns={columns}
+            data={users}
+            keyField="id"
+            compact
+            maxHeight="calc(100vh - 250px)"
+          />
+          {totalPages > 1 && (
+            <div className="flex gap-2 justify-center mt-4">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1 rounded border border-white/10 text-sm disabled:opacity-40">Previous</button>
+              <span className="text-sm text-zinc-400 self-center">Page {page} / {totalPages}</span>
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1 rounded border border-white/10 text-sm disabled:opacity-40">Next</button>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Ledger Modal ──────────────────────── */}
