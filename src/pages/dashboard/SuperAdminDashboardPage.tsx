@@ -13,16 +13,14 @@ import {
 import { motion } from 'framer-motion';
 import { useAdminRealtime } from '../../contexts/AdminRealtimeContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
+import { adminDateRangeQueryParams, dateRangePresetLabel } from '../../utils/dateRange';
 import {
   fetchDashboardAlerts,
   fetchDashboardCallAnalytics,
-  fetchDashboardGeo,
-  fetchDashboardHeatmap,
   fetchDashboardLiveCalls,
   fetchDashboardOverview,
   fetchDashboardPayouts,
   fetchDashboardRazorpayBalance,
-  fetchDashboardRealtime,
   fetchDashboardRevenue,
   fetchDashboardTopAgencies,
   fetchDashboardTopBds,
@@ -31,13 +29,12 @@ import {
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
 import RevenueChart from '../../components/admin/dashboard/RevenueChart';
 import LiveCallsFeed from '../../components/admin/dashboard/LiveCallsFeed';
-import ActivityMap from '../../components/admin/dashboard/ActivityMap';
 import RankingLeaderboardCard from '../../components/admin/dashboard/RankingLeaderboardCard';
 import AlertsPanel from '../../components/admin/dashboard/AlertsPanel';
-import HeatmapChart from '../../components/admin/dashboard/HeatmapChart';
 import CallAnalyticsBlock from '../../components/admin/dashboard/CallAnalyticsBlock';
 import PayoutTable from '../../components/admin/dashboard/PayoutTable';
 import RazorpayBalancePanel from '../../components/admin/dashboard/RazorpayBalancePanel';
+import RevenueDailyBalanceModal from '../../components/admin/dashboard/RevenueDailyBalanceModal';
 
 const DASH = 'dashboard' as const;
 
@@ -45,10 +42,12 @@ const SuperAdminDashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { refreshGeneration } = useAdminRealtime();
   const { dateRange } = useAdminDateRange('today');
+  const [revenueHistoryOpen, setRevenueHistoryOpen] = React.useState(false);
   const dashboardDateParams = React.useMemo(
-    () => ({ from: dateRange.from, to: dateRange.to }),
-    [dateRange.from, dateRange.to]
+    () => adminDateRangeQueryParams(dateRange),
+    [dateRange.preset, dateRange.from, dateRange.to]
   );
+  const headerRangeLabel = dateRangePresetLabel(dateRange.preset);
 
   React.useEffect(() => {
     if (refreshGeneration === 0) return;
@@ -56,12 +55,12 @@ const SuperAdminDashboardPage: React.FC = () => {
   }, [refreshGeneration, queryClient]);
 
   const overview = useQuery({
-    queryKey: [DASH, 'overview', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'overview', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardOverview(dashboardDateParams),
     staleTime: 20_000,
   });
   const revenue = useQuery({
-    queryKey: [DASH, 'revenue', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'revenue', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardRevenue(14, dashboardDateParams),
     staleTime: 60_000,
   });
@@ -70,36 +69,29 @@ const SuperAdminDashboardPage: React.FC = () => {
     queryFn: fetchDashboardLiveCalls,
     refetchInterval: 30_000,
   });
-  const realtime = useQuery({
-    queryKey: [DASH, 'realtime'],
-    queryFn: fetchDashboardRealtime,
-    refetchInterval: 15_000,
-  });
-  const geo = useQuery({ queryKey: [DASH, 'geo'], queryFn: fetchDashboardGeo, staleTime: 120_000 });
   const topHosts = useQuery({
-    queryKey: [DASH, 'top-hosts', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'top-hosts', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardTopHosts(dashboardDateParams),
     staleTime: 60_000,
   });
   const topBds = useQuery({
-    queryKey: [DASH, 'top-bds', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'top-bds', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardTopBds(dashboardDateParams),
     staleTime: 60_000,
   });
   const topAgencies = useQuery({
-    queryKey: [DASH, 'top-agencies', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'top-agencies', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardTopAgencies(dashboardDateParams),
     staleTime: 60_000,
   });
   const alerts = useQuery({ queryKey: [DASH, 'alerts'], queryFn: fetchDashboardAlerts, staleTime: 30_000 });
-  const heatmap = useQuery({ queryKey: [DASH, 'heatmap'], queryFn: fetchDashboardHeatmap, staleTime: 120_000 });
   const callAn = useQuery({
-    queryKey: [DASH, 'call-analytics', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'call-analytics', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardCallAnalytics(dashboardDateParams),
     staleTime: 45_000,
   });
   const payouts = useQuery({
-    queryKey: [DASH, 'payouts', dashboardDateParams.from, dashboardDateParams.to],
+    queryKey: [DASH, 'payouts', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
     queryFn: () => fetchDashboardPayouts(dashboardDateParams),
     staleTime: 30_000,
   });
@@ -111,22 +103,19 @@ const SuperAdminDashboardPage: React.FC = () => {
   });
 
   const ov = overview.data;
-  const spark = (revenue.data?.points ?? []).slice(-8).map((p: { revenueCoins: number }) => p.revenueCoins);
+  const walletFlowPoints = ov?.walletFlowSeries?.points ?? [];
+  const spark = walletFlowPoints.slice(-8).map((p) => p.netCoins);
 
-  const activityStats = React.useMemo(() => {
-    const g = geo.data?.stats;
-    const r = realtime.data as
-      | { onlineCreators?: number; activeCalls?: number; activeBillingSessions?: number }
-      | undefined;
-    const liveCalls = r?.activeCalls ?? g?.liveCalls ?? 0;
-    const onlineHosts = r?.onlineCreators ?? g?.onlineHosts ?? 0;
-    return {
-      onlineHosts,
-      liveCalls,
-      callsPerMinute: Math.round(((r?.activeCalls ?? 0) / 5) * 10) / 10,
-      revenuePerMinute: g?.revenuePerMinute ?? 0,
-    };
-  }, [geo.data, realtime.data]);
+  const revenueRangeLabel = React.useMemo(() => {
+    if (ov?.walletFlowSeries?.selectedRange) {
+      const { from, to } = ov.walletFlowSeries.selectedRange;
+      return `${from.slice(0, 10)} → ${to.slice(0, 10)}`;
+    }
+    if (dateRange.from && dateRange.to) {
+      return `${dateRange.from.slice(0, 10)} → ${dateRange.to.slice(0, 10)}`;
+    }
+    return 'last 90 days';
+  }, [ov?.walletFlowSeries?.selectedRange, dateRange.from, dateRange.to]);
 
   const errs = [overview, revenue, live, alerts].find((q) => q.isError);
   if (errs?.isError) {
@@ -154,12 +143,13 @@ const SuperAdminDashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-3">
         <KPIStatCard
-          title="Revenue (net wallet flow)"
-          value={ov?.revenueCoinsToday ?? 0}
+          title="Revenue daily balance"
+          value={ov?.revenueDailyBalance ?? 0}
           icon={<Coins className="h-5 w-5" />}
           sparkline={spark.length > 1 ? spark : undefined}
-          footnote={ov?.revenueCoinsTodayNote}
+          footnote={ov?.revenueDailyBalanceNote ?? 'Today (UTC) · Tap for daily history'}
           accent="violet"
+          onClick={() => setRevenueHistoryOpen(true)}
         />
         <KPIStatCard
           title="Live calls (5m proxy)"
@@ -170,9 +160,18 @@ const SuperAdminDashboardPage: React.FC = () => {
         <KPIStatCard title="Online hosts" value={ov?.onlineHosts ?? 0} icon={<Radio className="h-5 w-5" />} accent="green" />
         <KPIStatCard title="Agencies" value={ov?.totalAgencies ?? 0} icon={<Building2 className="h-5 w-5" />} accent="blue" />
         <KPIStatCard title="BDs" value={ov?.totalBds ?? 0} icon={<Users className="h-5 w-5" />} accent="amber" />
-        <KPIStatCard title="Pending payouts" value={ov?.pendingPayouts ?? 0} icon={<Wallet className="h-5 w-5" />} accent="amber" />
+        <KPIStatCard title="Pending payouts" value={ov?.pendingPayouts ?? 0} icon={<Wallet className="h-5 w-5" />} accent="amber" footnote={ov?.pendingPayoutsNote} />
         <KPIStatCard title="Call minutes (selected range)" value={ov?.totalCallMinutesToday ?? 0} icon={<Clock className="h-5 w-5" />} accent="blue" />
       </div>
+
+      <RevenueDailyBalanceModal
+        open={revenueHistoryOpen}
+        onClose={() => setRevenueHistoryOpen(false)}
+        todayBalance={ov?.revenueDailyBalance ?? 0}
+        points={walletFlowPoints}
+        rangeLabel={revenueRangeLabel}
+        note={ov?.walletFlowSeries?.note}
+      />
 
       <PayoutTable rows={payouts.data?.rows ?? []} loading={payouts.isLoading} />
       <RazorpayBalancePanel
@@ -188,8 +187,6 @@ const SuperAdminDashboardPage: React.FC = () => {
         <LiveCallsFeed calls={live.data?.calls ?? []} loading={live.isLoading} />
       </div>
 
-      <ActivityMap stats={activityStats} countries={geo.data?.topCountries ?? []} isDemo={geo.data?.isDemo} />
-
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-stretch">
         <RankingLeaderboardCard
           variant="hosts"
@@ -198,6 +195,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           rows={topHosts.data?.rows ?? []}
           loading={topHosts.isLoading}
           footnote={topHosts.data?.note}
+          rangeLabel={headerRangeLabel}
         />
         <RankingLeaderboardCard
           variant="bds"
@@ -206,6 +204,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           rows={topBds.data?.rows ?? []}
           loading={topBds.isLoading}
           footnote={topBds.data?.note}
+          rangeLabel={headerRangeLabel}
         />
         <RankingLeaderboardCard
           variant="agencies"
@@ -214,21 +213,19 @@ const SuperAdminDashboardPage: React.FC = () => {
           rows={topAgencies.data?.rows ?? []}
           loading={topAgencies.isLoading}
           footnote={topAgencies.data?.note}
+          rangeLabel={headerRangeLabel}
         />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <div className="xl:col-span-5">
-          <HeatmapChart cells={heatmap.data?.cells ?? []} isDemo={heatmap.data?.isDemo} />
-        </div>
-        <div className="xl:col-span-4">
+        <div className="xl:col-span-7">
           {callAn.data ? (
             <CallAnalyticsBlock today={callAn.data.today} dailyVolume={callAn.data.dailyVolume} />
           ) : (
             <div className="glass-panel rounded-2xl p-6 text-sm text-zinc-500">Loading call analytics…</div>
           )}
         </div>
-        <div className="xl:col-span-3">
+        <div className="xl:col-span-5">
           <AlertsPanel alerts={alerts.data?.alerts ?? []} />
         </div>
       </div>

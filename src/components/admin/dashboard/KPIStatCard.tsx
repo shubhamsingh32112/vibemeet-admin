@@ -11,6 +11,7 @@ export type KPIStatCardProps = {
   sparkline?: number[];
   footnote?: string;
   accent?: 'violet' | 'pink' | 'blue' | 'green' | 'amber';
+  onClick?: () => void;
 };
 
 const accentRing: Record<NonNullable<KPIStatCardProps['accent']>, string> = {
@@ -34,19 +35,36 @@ export const KPIStatCard: React.FC<KPIStatCardProps> = ({
   sparkline,
   footnote,
   accent = 'violet',
+  onClick,
 }) => {
   const gid = React.useId().replace(/:/g, '');
   const display = formatVal(value, format);
 
   const chartData = (sparkline ?? []).map((y, i) => ({ i, y }));
 
+  const interactive = typeof onClick === 'function';
+
   return (
     <motion.div
       layout
       whileHover={{ y: -2 }}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
         'relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white/[0.06] to-transparent p-4 transition-shadow duration-300',
-        accentRing[accent]
+        accentRing[accent],
+        interactive && 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60'
       )}
     >
       <div className="flex items-start justify-between gap-2">

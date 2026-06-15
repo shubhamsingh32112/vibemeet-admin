@@ -9,6 +9,7 @@ export type LiveCallRow = {
   callId: string;
   hostName: string;
   hostId: string | null;
+  callerName: string;
   durationSeconds: number;
   revenueCoins: number;
   startedAt: string;
@@ -51,7 +52,7 @@ export const LiveCallsFeed: React.FC<LiveCallsFeedProps> = ({ calls, loading, cl
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-white truncate">{c.hostName}</p>
                 <p className="text-[11px] text-zinc-500 truncate">
-                  {c.durationSeconds}s · {c.revenueCoins} coins
+                  Caller: {c.callerName} · {c.durationSeconds}s · {c.revenueCoins} coins
                 </p>
               </div>
               <span className="text-[10px] text-zinc-500 whitespace-nowrap">

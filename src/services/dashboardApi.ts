@@ -3,15 +3,28 @@ import api from '../config/api';
 export type DashboardOverview = {
   revenueCoinsToday: number;
   revenueCoinsTodayNote?: string;
+  revenueDailyBalance: number;
+  revenueDailyBalanceNote?: string;
   liveCallsProxy: number;
   activeUnsettledUserCalls: number;
   onlineHosts: number;
   totalAgencies: number;
   totalBds: number;
   pendingPayouts: number;
+  pendingPayoutsNote?: string;
   totalCallMinutesToday: number;
   totalCallsToday: number;
   coinsSpentOnCallsToday: number;
+  walletFlowSeries?: {
+    points: Array<{
+      date: string;
+      creditCoins: number;
+      debitCoins: number;
+      netCoins: number;
+    }>;
+    note?: string;
+    selectedRange?: { from: string; to: string };
+  };
   growthPlaceholder: { revenuePct: number | null; callsPct: number | null; hostsPct: number | null };
   selectedRange?: { from: string; to: string };
   metricContract?: Record<
@@ -91,6 +104,7 @@ export async function fetchDashboardLiveCalls() {
       callId: string;
       hostName: string;
       hostId: string | null;
+      callerName: string;
       durationSeconds: number;
       revenueCoins: number;
       startedAt: string;

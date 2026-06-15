@@ -21,7 +21,10 @@ type RevenueChartProps = {
 export const RevenueChart: React.FC<RevenueChartProps> = ({ points, className }) => (
   <div className={cn('glass-panel rounded-2xl p-4', className)}>
     <div className="mb-3 flex items-center justify-between">
-      <h3 className="text-sm font-semibold text-white">Revenue overview</h3>
+      <div>
+        <h3 className="text-sm font-semibold text-white">Call spend overview</h3>
+        <p className="text-[10px] text-zinc-500 mt-0.5">Coins deducted on calls — separate from net wallet flow KPI</p>
+      </div>
       <span className="text-[10px] uppercase tracking-wider text-zinc-500">Coins · UTC day</span>
     </div>
     <div className="h-[280px] w-full min-h-0 min-w-0">
@@ -49,7 +52,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ points, className })
             }}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Area type="monotone" dataKey="revenueCoins" name="Revenue" stroke="#a78bfa" fill="url(#revFill)" strokeWidth={2} />
+          <Area type="monotone" dataKey="revenueCoins" name="Call spend" stroke="#a78bfa" fill="url(#revFill)" strokeWidth={2} />
           <Area type="monotone" dataKey="commissionCoins" name="Commission" stroke="#f472b6" fill="url(#comFill)" strokeWidth={2} />
         </AreaChart>
       </ResponsiveContainer>
