@@ -131,6 +131,8 @@ export interface CreatorPerformance {
   currentEarningsPerMinute: number;
   /** @deprecated Use avgEarningsPerMinute */
   earningsPerMinute: number;
+  /** Seconds available online in current daily period (23:59 reset); matches creator home. */
+  onlineTodaySeconds?: number;
   abuseSignals: AbuseSignals;
 }
 
@@ -793,6 +795,23 @@ export const adminService = {
       signups7d: number;
       signups30d: number;
       onboardedUsers: number;
+      generatedAt: string;
+    };
+  },
+
+  getUsersLoginSeries: async (granularity: 'daily' | 'weekly' | 'monthly' = 'daily') => {
+    const res = await api.get('/admin/analytics/users/login-series', { params: { granularity } });
+    return res.data.data as {
+      granularity: 'daily' | 'weekly' | 'monthly';
+      from: string;
+      to: string;
+      points: Array<{
+        label: string;
+        startDate: string;
+        uniqueLogins: number;
+        loginEvents: number;
+      }>;
+      note?: string;
       generatedAt: string;
     };
   },

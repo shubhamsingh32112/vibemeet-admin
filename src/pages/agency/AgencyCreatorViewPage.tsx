@@ -179,8 +179,8 @@ const AgencyCreatorViewPage: React.FC = () => {
           <p className="text-zinc-300 mt-1">
             {pendingWithdrawal.amount} coins · requested {new Date(pendingWithdrawal.requestedAt).toLocaleString()}
           </p>
-          <Link to="/agency/withdrawals" className="text-emerald-400 text-sm mt-2 inline-block hover:underline">
-            Go to withdrawals →
+          <Link to="/agency/withdrawals" className="text-violet-400 text-sm mt-2 inline-block hover:underline">
+            View withdrawal details →
           </Link>
         </div>
       )}

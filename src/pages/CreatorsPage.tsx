@@ -167,32 +167,39 @@ const CreatorsPage: React.FC = () => {
       },
     },
     {
+      key: 'onlineTodaySeconds',
+      header: 'Online mins today',
+      sortable: true,
+      getValue: (row) => Math.floor((row.onlineTodaySeconds ?? 0) / 60),
+      render: (row) => {
+        const seconds = row.onlineTodaySeconds ?? 0;
+        const minutes = Math.floor(seconds / 60);
+        const remainder = seconds % 60;
+        return (
+          <span
+            className="tabular-nums text-sky-300"
+            title={
+              remainder > 0
+                ? `${minutes} min ${remainder} sec (available online; resets 23:59 server time)`
+                : 'Available online time; resets 23:59 server time'
+            }
+          >
+            {minutes}
+          </span>
+        );
+      },
+    },
+    {
       key: 'price',
       header: 'Price/min',
       sortable: true,
       render: (row) => <span className="tabular-nums">{row.price}</span>,
     },
     {
-      key: 'calls30d',
-      header: 'Calls (30d)',
-      sortable: true,
-      render: (row) => <span className="tabular-nums">{row.calls30d}</span>,
-    },
-    {
       key: 'minutes30d',
       header: 'Mins (30d)',
       sortable: true,
       render: (row) => <span className="tabular-nums">{row.minutes30d}</span>,
-    },
-    {
-      key: 'earned30d',
-      header: 'Earned (30d)',
-      sortable: true,
-      render: (row) => (
-        <span className="tabular-nums text-emerald-400 font-medium">
-          {row.earned30d.toLocaleString()}
-        </span>
-      ),
     },
     {
       key: 'totalCalls',
@@ -207,80 +214,6 @@ const CreatorsPage: React.FC = () => {
       render: (row) => (
         <span className="tabular-nums text-emerald-400">
           {row.totalEarned.toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      key: 'avgCallDurationSec',
-      header: 'Avg Duration',
-      sortable: true,
-      render: (row) => (
-        <span className="tabular-nums">
-          {row.avgCallDurationSec >= 60
-            ? `${Math.floor(row.avgCallDurationSec / 60)}m ${Math.round(row.avgCallDurationSec % 60)}s`
-            : `${Math.round(row.avgCallDurationSec)}s`}
-        </span>
-      ),
-    },
-    {
-      key: 'avgEarningsPerMinute',
-      header: 'Avg Earn/min',
-      sortable: true,
-      getValue: (row) => row.avgEarningsPerMinute ?? row.earningsPerMinute,
-      render: (row) => (
-        <span className="tabular-nums" title={`Current rate: ${row.currentEarningsPerMinute ?? '—'} coins/min`}>
-          {(row.avgEarningsPerMinute ?? row.earningsPerMinute).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      key: 'currentEarningsPerMinute',
-      header: 'Rate/min',
-      sortable: true,
-      render: (row) => (
-        <span className="tabular-nums text-gray-400">
-          {row.currentEarningsPerMinute != null
-            ? row.currentEarningsPerMinute.toFixed(2)
-            : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'abuseSignals',
-      header: 'Abuse',
-      width: '160px',
-      render: (row) => {
-        const s = row.abuseSignals;
-        if (!s) return <span className="text-gray-600">—</span>;
-        return (
-          <div className="flex flex-col gap-0.5">
-            {s.isFlagged && (
-              <StatusBadge variant="danger" label="Flagged" />
-            )}
-            <span className="text-[10px] tabular-nums text-gray-400" title="Short call % / Refunds / 0-dur">
-              {s.shortCallPct}% short
-              {s.refundCount > 0 && <span className="text-yellow-400 ml-1">· {s.refundCount} refund{s.refundCount !== 1 ? 's' : ''}</span>}
-              {s.zeroDuration30d > 0 && <span className="text-red-400 ml-1">· {s.zeroDuration30d} 0dur</span>}
-            </span>
-            {s.earnDeviation !== 0 && (
-              <span
-                className={`text-[10px] tabular-nums ${Math.abs(s.earnDeviation) > 20 ? 'text-yellow-400' : 'text-gray-500'}`}
-                title="Avg earn/min vs current rate (same basis as creator wallet)"
-              >
-                avg vs rate: {s.earnDeviation > 0 ? '+' : ''}{s.earnDeviation}%
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'tasks',
-      header: 'Tasks',
-      render: (row) => (
-        <span className="text-xs tabular-nums">
-          {row.tasksClaimed}/{row.tasksCompleted}/{row.tasksTotal}
-          <span className="text-gray-500 ml-1">c/d/t</span>
         </span>
       ),
     },
@@ -403,7 +336,7 @@ const CreatorsPage: React.FC = () => {
         </select>
       </div>
       {/* Quick stats (current page) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
           <p className="text-[10px] text-gray-500 uppercase">Total</p>
           <p className="text-lg font-bold text-white">{creators.length}</p>
@@ -415,23 +348,9 @@ const CreatorsPage: React.FC = () => {
           </p>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
-          <p className="text-[10px] text-gray-500 uppercase">Avg Earned (30d)</p>
-          <p className="text-lg font-bold text-white">
-            {creators.length > 0
-              ? Math.round(creators.reduce((s, c) => s + c.earned30d, 0) / creators.length)
-              : 0}
-          </p>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
           <p className="text-[10px] text-gray-500 uppercase">Zero-call creators</p>
           <p className="text-lg font-bold text-yellow-400">
             {creators.filter((c) => c.totalCalls === 0).length}
-          </p>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
-          <p className="text-[10px] text-gray-500 uppercase">Flagged</p>
-          <p className="text-lg font-bold text-red-400">
-            {creators.filter((c) => c.abuseSignals?.isFlagged).length}
           </p>
         </div>
       </div>

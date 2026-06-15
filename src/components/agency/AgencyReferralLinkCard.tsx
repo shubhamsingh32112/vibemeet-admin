@@ -86,7 +86,7 @@ const AgencyReferralLinkCard: React.FC<Props> = ({
           readOnly
           value={joinUrl}
           className="min-w-0 flex-1 bg-transparent text-xs font-mono text-zinc-200 outline-none"
-          aria-label="Referral join link"
+          aria-label="Play Store download link"
           onFocus={(e) => e.target.select()}
         />
         <button

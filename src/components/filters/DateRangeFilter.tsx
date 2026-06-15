@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
-import type { AdminDateRange, DateRangePreset } from '../../utils/dateRange';
+import { useEffect, useMemo, useState } from 'react';
+import type { AdminDateRange, DateRangePresetButton } from '../../utils/dateRange';
 import { fromDatetimeLocal, toDatetimeLocalInputValue, toIsoUtc } from '../../utils/dateRange';
 import { formatDateTime } from '../../utils/dateTime';
 
 type Props = {
   value: AdminDateRange;
-  onPresetChange: (preset: Exclude<DateRangePreset, 'custom'>) => void;
+  onPresetChange: (preset: DateRangePresetButton) => void;
   onCustomChange: (fromIsoUtc?: string, toIsoUtc?: string) => void;
   className?: string;
 };
 
-const PRESETS: Array<{ id: Exclude<DateRangePreset, 'custom'>; label: string }> = [
+const PRESETS: Array<{ id: DateRangePresetButton; label: string }> = [
+  { id: 'all', label: 'All time' },
   { id: 'today', label: 'Today' },
   { id: 'yesterday', label: 'Yesterday' },
   { id: 'today_yesterday', label: 'Today + Yesterday' },
@@ -21,12 +22,18 @@ const PRESETS: Array<{ id: Exclude<DateRangePreset, 'custom'>; label: string }> 
 export default function DateRangeFilter({ value, onPresetChange, onCustomChange, className }: Props) {
   const [showCustom, setShowCustom] = useState(value.preset === 'custom');
 
+  useEffect(() => {
+    if (value.preset === 'custom') setShowCustom(true);
+    if (value.preset !== 'custom' && value.preset !== 'all') setShowCustom(false);
+  }, [value.preset]);
+
   const summary = useMemo(() => {
+    if (value.preset === 'all') return 'All time (no date filter)';
     const from = value.from ? new Date(value.from) : null;
     const to = value.to ? new Date(value.to) : null;
     if (!from || !to || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return '—';
     return `${formatDateTime(from)} → ${formatDateTime(to)}`;
-  }, [value.from, value.to]);
+  }, [value.preset, value.from, value.to]);
 
   return (
     <div className={className}>
@@ -106,4 +113,3 @@ export default function DateRangeFilter({ value, onPresetChange, onCustomChange,
     </div>
   );
 }
-

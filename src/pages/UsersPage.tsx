@@ -9,8 +9,8 @@ import {
   type UserAnalytics,
   type UserLedger,
 } from '../services/adminService';
-import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
+import { adminDateRangeQueryParams } from '../utils/dateRange';
 import { formatDateTime } from '../utils/dateTime';
 
 const UsersPage: React.FC = () => {
@@ -25,7 +25,7 @@ const UsersPage: React.FC = () => {
   const [sortBy, setSortBy] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const { dateRange } = useAdminDateRange('today');
 
   // Ledger drill-down
   const [ledger, setLedger] = useState<UserLedger | null>(null);
@@ -46,8 +46,7 @@ const UsersPage: React.FC = () => {
         role: roleFilter !== 'all' ? roleFilter : undefined,
         sort: sortBy || undefined,
         referrerAgencyId: referrerAgencyId || undefined,
-        from: dateRange.from,
-        to: dateRange.to,
+        ...adminDateRangeQueryParams(dateRange),
         page,
         limit: 50,
       });
@@ -59,7 +58,7 @@ const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter, sortBy, referrerAgencyId, dateRange.from, dateRange.to, page]);
+  }, [search, roleFilter, sortBy, referrerAgencyId, dateRange.preset, dateRange.from, dateRange.to, page]);
 
   useEffect(() => {
     let ok = true;
@@ -281,20 +280,8 @@ const UsersPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Filters — date range is in the header bar */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <DateRangeFilter
-          value={dateRange}
-          onPresetChange={(p) => {
-            setPreset(p);
-            setPage(1);
-          }}
-          onCustomChange={(from, to) => {
-            setCustom(from, to);
-            setPage(1);
-          }}
-          className="mr-2"
-        />
         <input
           type="text"
           placeholder="Search name / email / phone"

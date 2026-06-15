@@ -216,21 +216,6 @@ export const agencyPortalService = {
     };
   },
 
-  approveWithdrawal: async (id: string, notes?: string) => {
-    const res = await agencyApi.post(`/agency/withdrawals/${id}/approve`, { notes });
-    return res.data.data;
-  },
-
-  rejectWithdrawal: async (id: string, notes: string) => {
-    const res = await agencyApi.post(`/agency/withdrawals/${id}/reject`, { notes });
-    return res.data.data;
-  },
-
-  markWithdrawalPaid: async (id: string, notes?: string) => {
-    const res = await agencyApi.post(`/agency/withdrawals/${id}/mark-paid`, { notes });
-    return res.data.data;
-  },
-
   updateCreatorProfile: async (
     creatorId: string,
     body: Partial<{

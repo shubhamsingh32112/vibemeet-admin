@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../../lib/utils';
 import { formatDashboardMoneyFromCoins } from '../../../utils/dashboardInr';
@@ -8,18 +7,14 @@ const numInDecimal = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }
 
 export type LeaderboardPeriod = 'month' | '30d' | 'all';
 
-const PERIOD_OPTIONS: { value: LeaderboardPeriod; label: string }[] = [
-  { value: 'month', label: 'This month' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: 'all', label: 'All time' },
-];
-
 type BaseProps = {
   title: string;
   viewAllHref: string;
   loading?: boolean;
   /** Shown under the table when set (e.g. wallet balance disclaimer for BDs). */
   footnote?: string;
+  /** e.g. "Last 7d" from the header date filter */
+  rangeLabel?: string;
   className?: string;
 };
 
@@ -108,8 +103,7 @@ function HostCell({ name, avatarUrl }: { name: string; avatarUrl: string | null 
 }
 
 export function RankingLeaderboardCard(props: RankingLeaderboardCardProps) {
-  const { title, viewAllHref, loading, footnote, className, variant, rows } = props;
-  const [period, setPeriod] = React.useState<LeaderboardPeriod>('month');
+  const { title, viewAllHref, loading, footnote, rangeLabel, className, variant, rows } = props;
 
   return (
     <div
@@ -121,18 +115,11 @@ export function RankingLeaderboardCard(props: RankingLeaderboardCardProps) {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] px-4 py-3">
         <h3 className="text-sm font-semibold tracking-tight text-white">{title}</h3>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as LeaderboardPeriod)}
-            title="Time range (display only until API supports period filters)"
-            className="cursor-pointer rounded-lg border border-white/10 bg-zinc-900/90 px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 outline-none focus:ring-1 focus:ring-violet-500/50"
-          >
-            {PERIOD_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          {rangeLabel ? (
+            <span className="rounded-lg border border-white/10 bg-zinc-900/90 px-2.5 py-1.5 text-[11px] font-medium text-zinc-400">
+              {rangeLabel}
+            </span>
+          ) : null}
           <Link
             to={viewAllHref}
             className="text-[11px] font-semibold text-violet-400 hover:text-violet-300 hover:underline"

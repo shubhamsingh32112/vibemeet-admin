@@ -211,7 +211,8 @@ const BdHomePage: React.FC = () => {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Withdrawal history (BD)</h2>
+        <h2 className="text-lg font-semibold text-white mb-1">Withdrawal history (BD wallet)</h2>
+        <p className="text-xs text-zinc-500 mb-3">View only. Super admin approves and pays BD wallet withdrawals.</p>
         <div className="overflow-x-auto rounded-xl border border-admin-border">
           <table className="w-full text-sm">
             <thead className="bg-admin-elevated text-zinc-400 text-left">

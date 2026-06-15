@@ -1,4 +1,13 @@
-export type DateRangePreset = 'today' | 'yesterday' | 'today_yesterday' | 'last7d' | 'last30d' | 'custom';
+export type DateRangePreset =
+  | 'all'
+  | 'today'
+  | 'yesterday'
+  | 'today_yesterday'
+  | 'last7d'
+  | 'last30d'
+  | 'custom';
+
+export type DateRangePresetButton = Exclude<DateRangePreset, 'custom'>;
 
 export type AdminDateRange = {
   preset: DateRangePreset;
@@ -7,6 +16,47 @@ export type AdminDateRange = {
   /** ISO string in UTC; exclusive upper bound */
   to?: string;
 };
+
+const PRESET_BUTTON_IDS: DateRangePresetButton[] = [
+  'all',
+  'today',
+  'yesterday',
+  'today_yesterday',
+  'last7d',
+  'last30d',
+];
+
+export function isDateRangePresetButton(value: string | null | undefined): value is DateRangePresetButton {
+  return typeof value === 'string' && PRESET_BUTTON_IDS.includes(value as DateRangePresetButton);
+}
+
+export function normalizeDateRangePreset(
+  raw: string | null | undefined,
+  fallback: DateRangePresetButton
+): DateRangePresetButton {
+  return isDateRangePresetButton(raw) ? raw : fallback;
+}
+
+/** Query params for admin APIs — omit bounds when "All time" is selected. */
+export function adminDateRangeQueryParams(range: AdminDateRange): { from?: string; to?: string } {
+  if (range.preset === 'all') return {};
+  if (range.from && range.to) return { from: range.from, to: range.to };
+  return {};
+}
+
+export const DATE_RANGE_PRESET_LABELS: Record<DateRangePresetButton, string> = {
+  all: 'All time',
+  today: 'Today',
+  yesterday: 'Yesterday',
+  today_yesterday: 'Today + Yesterday',
+  last7d: 'Last 7d',
+  last30d: 'Last 30d',
+};
+
+export function dateRangePresetLabel(preset: DateRangePreset): string {
+  if (preset === 'custom') return 'Custom range';
+  return DATE_RANGE_PRESET_LABELS[preset];
+}
 
 function startOfLocalDay(d: Date): Date {
   const x = new Date(d);
@@ -20,7 +70,7 @@ function addLocalDays(d: Date, days: number): Date {
   return x;
 }
 
-export function computePresetRange(preset: Exclude<DateRangePreset, 'custom'>, now = new Date()): {
+export function computePresetRange(preset: Exclude<DateRangePreset, 'custom' | 'all'>, now = new Date()): {
   from: Date;
   to: Date;
 } {

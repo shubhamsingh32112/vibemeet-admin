@@ -45,7 +45,6 @@ export const HeaderBar: React.FC = () => {
   const { user, logout } = useAuth();
   const { connected, lastError } = useAdminRealtime();
   const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
-  const showDate = pathname === '/' || pathname === '/dashboard' || pathname.startsWith('/overview');
 
   const { alerts, isLoading, isError, refetchOnOpen } = useAdminNotifications();
 
@@ -108,12 +107,10 @@ export const HeaderBar: React.FC = () => {
         </div>
       </div>
 
-      {showDate ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-zinc-500 hidden sm:block" />
-          <DateRangeFilter value={dateRange} onPresetChange={setPreset} onCustomChange={setCustom} className="" />
-        </div>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <CalendarDays className="h-4 w-4 text-zinc-500 hidden sm:block" />
+        <DateRangeFilter value={dateRange} onPresetChange={setPreset} onCustomChange={setCustom} className="" />
+      </div>
     </header>
   );
 };

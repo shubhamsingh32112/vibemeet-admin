@@ -79,7 +79,7 @@ const AgencyHomePage: React.FC = () => {
           />
         </Link>
         <Link to="/agency/withdrawals" className="block">
-          <MetricCard label="Pending withdrawals" value={s?.pendingWithdrawals ?? 0} subtitle="Needs action" />
+          <MetricCard label="Pending withdrawals" value={s?.pendingWithdrawals ?? 0} subtitle="View only · super admin processes" />
         </Link>
         <MetricCard label="Creators" value={total} subtitle={`${online} online`} />
         <MetricCard

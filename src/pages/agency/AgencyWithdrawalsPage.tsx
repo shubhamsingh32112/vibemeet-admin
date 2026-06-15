@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { agencyPortalService, type AgencyWithdrawalRow } from '../../services/agencyPortalService';
+import { formatDateTime } from '../../utils/dateTime';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -32,12 +32,6 @@ const AgencyWithdrawalsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [action, setAction] = useState<{
-    w: AgencyWithdrawalRow;
-    type: 'approve' | 'reject' | 'mark-paid';
-  } | null>(null);
-  const [notes, setNotes] = useState('');
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,31 +55,6 @@ const AgencyWithdrawalsPage: React.FC = () => {
     load();
   }, [load]);
 
-  const runAction = async () => {
-    if (!action) return;
-    if (action.type === 'reject' && notes.trim().length < 3) {
-      alert('Reason min 3 characters');
-      return;
-    }
-    setBusy(true);
-    try {
-      if (action.type === 'approve') {
-        await agencyPortalService.approveWithdrawal(action.w.id, notes || undefined);
-      } else if (action.type === 'reject') {
-        await agencyPortalService.rejectWithdrawal(action.w.id, notes.trim());
-      } else {
-        await agencyPortalService.markWithdrawalPaid(action.w.id, notes || undefined);
-      }
-      setAction(null);
-      setNotes('');
-      await load();
-    } catch {
-      alert('Action failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (loading && rows.length === 0) {
     return (
       <div className="flex justify-center py-24">
@@ -97,7 +66,10 @@ const AgencyWithdrawalsPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-white">Withdrawals</h1>
-      <p className="text-sm text-zinc-500">Only payouts for creators assigned to you.</p>
+      <p className="text-sm text-zinc-500">
+        View-only list for creators assigned to your agency. Approve, reject, and payout actions are handled by super
+        admin.
+      </p>
       {err && <p className="text-red-400 text-sm">{err}</p>}
       <select
         value={statusFilter}
@@ -124,33 +96,11 @@ const AgencyWithdrawalsPage: React.FC = () => {
             <p className="text-sm text-zinc-400">{w.amount} coins</p>
             <p className="text-xs text-zinc-500">{payoutDetails(w)}</p>
             <p className="text-xs text-zinc-500">Name: {w.name ?? 'N/A'} | Phone: {w.number ?? 'N/A'}</p>
-            {w.status === 'pending' && (
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setAction({ w, type: 'approve' })}
-                  className="flex-1 rounded-lg bg-emerald-600/90 text-white text-sm py-2"
-                >
-                  Approve
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAction({ w, type: 'reject' })}
-                  className="flex-1 rounded-lg border border-red-500/50 text-red-400 text-sm py-2"
-                >
-                  Reject
-                </button>
-              </div>
-            )}
-            {w.status === 'approved' && (
-              <button
-                type="button"
-                onClick={() => setAction({ w, type: 'mark-paid' })}
-                className="w-full rounded-lg bg-blue-600/90 text-white text-sm py-2"
-              >
-                Mark paid
-              </button>
-            )}
+            <p className="text-xs text-zinc-500">Requested: {formatDateTime(w.requestedAt)}</p>
+            {w.processedAt ? (
+              <p className="text-xs text-zinc-500">Processed: {formatDateTime(w.processedAt)}</p>
+            ) : null}
+            {w.notes ? <p className="text-xs text-zinc-500">Notes: {w.notes}</p> : null}
           </div>
         ))}
       </div>
@@ -163,8 +113,9 @@ const AgencyWithdrawalsPage: React.FC = () => {
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Requested</th>
-              <th className="px-4 py-3">Payout Details</th>
-              <th className="px-4 py-3 w-56">Actions</th>
+              <th className="px-4 py-3">Processed</th>
+              <th className="px-4 py-3">Payout details</th>
+              <th className="px-4 py-3">Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -175,48 +126,25 @@ const AgencyWithdrawalsPage: React.FC = () => {
                 <td className="px-4 py-3">
                   <StatusBadge label={w.status.toUpperCase()} variant={statusVariant(w.status)} />
                 </td>
+                <td className="px-4 py-3 text-zinc-500 text-xs">{formatDateTime(w.requestedAt)}</td>
                 <td className="px-4 py-3 text-zinc-500 text-xs">
-                  {new Date(w.requestedAt).toLocaleString()}
+                  {w.processedAt ? formatDateTime(w.processedAt) : '—'}
                 </td>
                 <td className="px-4 py-3 text-xs text-zinc-400">
                   <div>{payoutDetails(w)}</div>
                   <div>Name: {w.name ?? 'N/A'}</div>
                   <div>Phone: {w.number ?? 'N/A'}</div>
                 </td>
-                <td className="px-4 py-3">
-                  {w.status === 'pending' && (
-                    <div className="flex gap-1 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setAction({ w, type: 'approve' })}
-                        className="rounded bg-emerald-600/90 text-white text-xs px-2 py-1"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAction({ w, type: 'reject' })}
-                        className="rounded border border-red-500/50 text-red-400 text-xs px-2 py-1"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                  {w.status === 'approved' && (
-                    <button
-                      type="button"
-                      onClick={() => setAction({ w, type: 'mark-paid' })}
-                      className="rounded bg-blue-600/90 text-white text-xs px-2 py-1"
-                    >
-                      Mark paid
-                    </button>
-                  )}
-                </td>
+                <td className="px-4 py-3 text-xs text-zinc-500">{w.notes ?? '—'}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {rows.length === 0 && !loading ? (
+        <p className="text-sm text-zinc-500 text-center py-8">No withdrawal requests for your creators.</p>
+      ) : null}
 
       {totalPages > 1 && (
         <div className="flex gap-2 justify-center">
@@ -241,40 +169,6 @@ const AgencyWithdrawalsPage: React.FC = () => {
           </button>
         </div>
       )}
-
-      <ConfirmDialog
-        open={!!action}
-        title={
-          action?.type === 'approve'
-            ? 'Approve withdrawal?'
-            : action?.type === 'reject'
-              ? 'Reject withdrawal?'
-              : 'Mark as paid?'
-        }
-        message={
-          action?.type === 'approve'
-            ? 'Coins will be debited from the creator.'
-            : action?.type === 'reject'
-              ? 'Provide a reason (min 3 characters).'
-              : 'Record external payout completed.'
-        }
-        confirmLabel={action?.type === 'approve' ? 'Approve' : action?.type === 'reject' ? 'Reject' : 'Confirm'}
-        confirmVariant={action?.type === 'reject' ? 'danger' : 'primary'}
-        confirmDisabled={busy}
-        onCancel={() => {
-          setAction(null);
-          setNotes('');
-        }}
-        onConfirm={runAction}
-      >
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notes (required for reject)"
-          className="w-full rounded-lg bg-admin-base border border-admin-border px-3 py-2 text-sm text-white"
-          rows={3}
-        />
-      </ConfirmDialog>
     </div>
   );
 };
