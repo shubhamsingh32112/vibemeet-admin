@@ -23,6 +23,10 @@ const CreatorsPage: React.FC = () => {
   const [resetPresenceTarget, setResetPresenceTarget] = useState<CreatorPerformance | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<CreatorPerformance | null>(null);
+  const [adjustTarget, setAdjustTarget] = useState<CreatorPerformance | null>(null);
+  const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [adjusting, setAdjusting] = useState(false);
 
   // Promote flow
   const [showUserSearch, setShowUserSearch] = useState(false);
@@ -82,6 +86,40 @@ const CreatorsPage: React.FC = () => {
       alert(err.response?.data?.error || 'Failed to delete');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleAdjustCoins = async () => {
+    if (!adjustTarget) return;
+    const amount = parseInt(adjustAmount, 10);
+    if (Number.isNaN(amount) || amount === 0) {
+      alert('Enter a valid non-zero amount');
+      return;
+    }
+    if (!adjustReason || adjustReason.trim().length < 5) {
+      alert('Reason must be at least 5 characters');
+      return;
+    }
+    try {
+      setAdjusting(true);
+      const result = await adminService.adjustUserCoins(
+        adjustTarget.userId,
+        amount,
+        adjustReason.trim(),
+      );
+      setCreators((prev) =>
+        prev.map((c) =>
+          c.userId === adjustTarget.userId ? { ...c, coins: result.newBalance } : c,
+        ),
+      );
+      alert(`Coins adjusted: ${result.oldBalance.toLocaleString()} → ${result.newBalance.toLocaleString()}`);
+      setAdjustTarget(null);
+      setAdjustAmount('');
+      setAdjustReason('');
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to adjust coins');
+    } finally {
+      setAdjusting(false);
     }
   };
 
@@ -226,7 +264,7 @@ const CreatorsPage: React.FC = () => {
     {
       key: 'actions',
       header: '',
-      width: '140px',
+      width: '200px',
       render: (row) => (
         <div className="flex items-center gap-1 flex-wrap">
           <Link
@@ -236,6 +274,19 @@ const CreatorsPage: React.FC = () => {
           >
             View
           </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setAdjustTarget(row);
+              setAdjustAmount('');
+              setAdjustReason('');
+            }}
+            className="px-2 py-1 text-xs bg-amber-900/30 border border-amber-700 rounded text-amber-300 hover:text-amber-100 transition min-h-[36px]"
+            title="Add or deduct coins (audited)"
+          >
+            Coins
+          </button>
           <button
             type="button"
             onClick={(e) => {
@@ -481,6 +532,49 @@ const CreatorsPage: React.FC = () => {
           onSaved={() => load()}
         />
       )}
+
+      <ConfirmDialog
+        open={!!adjustTarget}
+        title="Adjust host coins"
+        message={`Adjust coins for ${adjustTarget?.name || 'host'}. Current balance: ${(adjustTarget?.coins ?? 0).toLocaleString()}`}
+        confirmLabel={adjusting ? 'Applying…' : 'Apply'}
+        confirmVariant="primary"
+        confirmDisabled={adjusting}
+        onConfirm={handleAdjustCoins}
+        onCancel={() => {
+          if (adjusting) return;
+          setAdjustTarget(null);
+          setAdjustAmount('');
+          setAdjustReason('');
+        }}
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Amount (positive = add coins, negative = deduct)
+            </label>
+            <input
+              type="number"
+              value={adjustAmount}
+              onChange={(e) => setAdjustAmount(e.target.value)}
+              placeholder="e.g. 500"
+              className="w-full px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Reason (required, min 5 chars)
+            </label>
+            <input
+              type="text"
+              value={adjustReason}
+              onChange={(e) => setAdjustReason(e.target.value)}
+              placeholder="e.g. Bonus for top performer"
+              className="w-full px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+          </div>
+        </div>
+      </ConfirmDialog>
 
     </div>
   );
