@@ -45,9 +45,9 @@ const SECTIONS: NavSection[] = [
       { to: '/users/analytics', label: 'User analytics', icon: Activity },
       { to: '/users/totals', label: 'Total users', icon: Users },
       { to: '/users/calls', label: 'Call analytics / logs', icon: Phone },
-      { to: '/users/moments-paid', label: 'Paid users (moments)', icon: Sparkles },
-      { to: '/users/coins-paid', label: 'Paid users (coins)', icon: Wallet },
-      { to: '/users/vip-paid', label: 'Paid users (VIP)', icon: Crown },
+      { to: '/finance/payments/calls', label: 'Payment call logs', icon: Video },
+      { to: '/finance/payments/vip', label: 'Payment VIP logs', icon: Crown },
+      { to: '/finance/payments/moments', label: 'Payment moments logs', icon: Sparkles },
     ],
   },
   {
@@ -67,9 +67,12 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: '/finance/payouts', label: 'Payouts / settlements', icon: Wallet },
       { to: '/finance/wallet', label: 'Wallet transactions', icon: Receipt },
-      { to: '/finance/payments/calls', label: 'Payments — calls', icon: Video },
-      { to: '/finance/payments/vip', label: 'Payments — VIP', icon: Crown },
-      { to: '/finance/payments/moments', label: 'Payments — moments', icon: Sparkles },
+      { to: '/finance/paid-users/coins', label: 'Paid users (coins)', icon: Wallet },
+      { to: '/finance/paid-users/moments', label: 'Paid users (moments)', icon: Sparkles },
+      { to: '/finance/paid-users/vip', label: 'Paid users (VIP)', icon: Crown },
+      { to: '/finance/payments/calls', label: 'Payment call logs', icon: Video },
+      { to: '/finance/payments/vip', label: 'Payment VIP logs', icon: Crown },
+      { to: '/finance/payments/moments', label: 'Payment moments logs', icon: Sparkles },
     ],
   },
   {

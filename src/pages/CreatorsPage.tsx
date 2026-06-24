@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -10,6 +10,7 @@ import { userService, type User } from '../services/userService';
 import CreatorEditModal from '../components/CreatorEditModal';
 
 const CreatorsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [creators, setCreators] = useState<CreatorPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,7 +18,9 @@ const CreatorsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [presenceFilter, setPresenceFilter] = useState('');
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [presenceCounts, setPresenceCounts] = useState<{
     online: number;
     on_call: number;
@@ -51,7 +54,7 @@ const CreatorsPage: React.FC = () => {
       const data = await adminService.getCreatorsPerformancePage({
         page,
         limit: 50,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         presenceStatus: presenceFilter || undefined,
       });
       setCreators(data.creators);
@@ -62,8 +65,22 @@ const CreatorsPage: React.FC = () => {
       setError(err.response?.data?.error || err.message || 'Failed to load');
     } finally {
       setLoading(false);
+      setHasLoadedOnce(true);
     }
-  }, [page, search, presenceFilter]);
+  }, [page, debouncedSearch, presenceFilter]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const presence = searchParams.get('presence');
+    if (presence && ['online', 'on_call', 'offline'].includes(presence)) {
+      setPresenceFilter(presence);
+      setPage(1);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     load();
@@ -365,8 +382,8 @@ const CreatorsPage: React.FC = () => {
     },
   ];
 
-  if (loading) return <LoadingSpinner label="Loading creator performance…" />;
-  if (error)
+  if (!hasLoadedOnce && loading) return <LoadingSpinner label="Loading creator performance…" />;
+  if (error && !hasLoadedOnce)
     return (
       <div className="py-12 text-center">
         <p className="text-red-400 mb-4">{error}</p>
@@ -451,13 +468,19 @@ const CreatorsPage: React.FC = () => {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={creators}
-        keyField="creatorId"
-        compact
-        stackedOnMobile
-      />
+      {error && (
+        <p className="text-sm text-red-400 mb-3">{error}</p>
+      )}
+
+      <div className={loading ? 'opacity-60 pointer-events-none' : undefined}>
+        <DataTable
+          columns={columns}
+          data={creators}
+          keyField="creatorId"
+          compact
+          stackedOnMobile
+        />
+      </div>
 
       {totalPages > 1 && (
         <div className="flex gap-2 justify-center mt-4">

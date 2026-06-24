@@ -304,9 +304,6 @@ const AppRoutes: React.FC = () => {
         <Route path="users/analytics" element={<UsersPage />} />
         <Route path="users/totals" element={<UserTotalsPage />} />
         <Route path="users/calls" element={<CallsPage />} />
-        <Route path="users/moments-paid" element={<MomentsPaidUsersPage />} />
-        <Route path="users/coins-paid" element={<CoinsPaidUsersPage />} />
-        <Route path="users/vip-paid" element={<VipPaidUsersPage />} />
         {/* Host management */}
         <Route path="hosts/bds" element={<BdsManagePage />} />
         <Route path="hosts/bds/:bdId" element={<BdDetailPage />} />
@@ -319,6 +316,9 @@ const AppRoutes: React.FC = () => {
         {/* Finance */}
         <Route path="finance/payouts" element={<FinancePayoutsPage />} />
         <Route path="finance/wallet" element={<WalletTransactionsPage />} />
+        <Route path="finance/paid-users/coins" element={<CoinsPaidUsersPage />} />
+        <Route path="finance/paid-users/moments" element={<MomentsPaidUsersPage />} />
+        <Route path="finance/paid-users/vip" element={<VipPaidUsersPage />} />
         <Route path="finance/payments/:kind" element={<FinancePaymentsPage />} />
         {/* Revenue */}
         <Route path="revenue" element={<RevenueAnalyticsPage />} />
@@ -330,6 +330,9 @@ const AppRoutes: React.FC = () => {
         {/* Legacy redirects */}
         <Route path="overview" element={<Navigate to="/users/analytics" replace />} />
         <Route path="users" element={<Navigate to="/users/analytics" replace />} />
+        <Route path="users/moments-paid" element={<Navigate to="/finance/paid-users/moments" replace />} />
+        <Route path="users/coins-paid" element={<Navigate to="/finance/paid-users/coins" replace />} />
+        <Route path="users/vip-paid" element={<Navigate to="/finance/paid-users/vip" replace />} />
         <Route path="creators" element={<Navigate to="/hosts/all" replace />} />
         <Route path="creators/:creatorId" element={<AdminCreatorViewPage />} />
         <Route path="coins" element={<Navigate to="/finance/wallet" replace />} />

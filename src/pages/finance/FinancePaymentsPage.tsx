@@ -13,9 +13,9 @@ const SOURCE_MAP: Record<string, string> = {
 };
 
 const TITLE_MAP: Record<string, string> = {
-  calls: 'Payments — video calls',
-  vip: 'Payments — VIP',
-  moments: 'Payments — moments',
+  calls: 'Payment call logs',
+  vip: 'Payment VIP logs',
+  moments: 'Payment moments logs',
 };
 
 type Tx = {

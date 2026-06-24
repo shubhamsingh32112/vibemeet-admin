@@ -34,6 +34,9 @@ import CallAnalyticsBlock from '../../components/admin/dashboard/CallAnalyticsBl
 import PayoutTable from '../../components/admin/dashboard/PayoutTable';
 import RazorpayBalancePanel from '../../components/admin/dashboard/RazorpayBalancePanel';
 import RevenueDailyBalanceModal from '../../components/admin/dashboard/RevenueDailyBalanceModal';
+import CommandCenterKpiModal, {
+  type CommandCenterKpiKind,
+} from '../../components/admin/dashboard/CommandCenterKpiModal';
 
 const DASH = 'dashboard' as const;
 
@@ -42,6 +45,7 @@ const SuperAdminDashboardPage: React.FC = () => {
   const { refreshGeneration } = useAdminRealtime();
   const { dateRange } = useAdminDateRange('today');
   const [revenueHistoryOpen, setRevenueHistoryOpen] = React.useState(false);
+  const [kpiDrilldown, setKpiDrilldown] = React.useState<CommandCenterKpiKind | null>(null);
   const dashboardDateParams = React.useMemo(
     () => adminDateRangeQueryParams(dateRange),
     [dateRange.preset, dateRange.from, dateRange.to]
@@ -159,31 +163,84 @@ const SuperAdminDashboardPage: React.FC = () => {
           value={ov?.liveCallsProxy ?? 0}
           icon={<PhoneCall className="h-5 w-5" />}
           accent="pink"
+          footnote="Tap to see recent sessions"
+          onClick={() => setKpiDrilldown('live_calls')}
         />
         <KPIStatCard
           title="Hosts online"
           value={ov?.hostsOnline ?? ov?.onlineHosts ?? 0}
           icon={<Radio className="h-5 w-5" />}
           accent="green"
-          footnote={ov?.presenceNote ? 'Available for calls' : undefined}
+          footnote="Tap to list online hosts"
+          onClick={() => setKpiDrilldown('hosts_online')}
         />
         <KPIStatCard
           title="Hosts on call"
           value={ov?.hostsOnCall ?? 0}
           icon={<PhoneCall className="h-5 w-5" />}
           accent="amber"
+          footnote="Tap to see who is on a call"
+          onClick={() => setKpiDrilldown('hosts_on_call')}
         />
         <KPIStatCard
           title="Hosts offline"
           value={ov?.hostsOffline ?? 0}
           icon={<Radio className="h-5 w-5 opacity-50" />}
           accent="blue"
+          footnote="Tap to list offline hosts"
+          onClick={() => setKpiDrilldown('hosts_offline')}
         />
-        <KPIStatCard title="Agencies" value={ov?.totalAgencies ?? 0} icon={<Building2 className="h-5 w-5" />} accent="blue" />
-        <KPIStatCard title="BDs" value={ov?.totalBds ?? 0} icon={<Users className="h-5 w-5" />} accent="amber" />
-        <KPIStatCard title="Pending payouts" value={ov?.pendingPayouts ?? 0} icon={<Wallet className="h-5 w-5" />} accent="amber" footnote={ov?.pendingPayoutsNote} />
-        <KPIStatCard title="Call minutes (selected range)" value={ov?.totalCallMinutesToday ?? 0} icon={<Clock className="h-5 w-5" />} accent="blue" />
+        <KPIStatCard
+          title="Agencies"
+          value={ov?.totalAgencies ?? 0}
+          icon={<Building2 className="h-5 w-5" />}
+          accent="blue"
+          footnote="Tap to view agencies"
+          onClick={() => setKpiDrilldown('agencies')}
+        />
+        <KPIStatCard
+          title="BDs"
+          value={ov?.totalBds ?? 0}
+          icon={<Users className="h-5 w-5" />}
+          accent="amber"
+          footnote="Tap to view BDs"
+          onClick={() => setKpiDrilldown('bds')}
+        />
+        <KPIStatCard
+          title="Pending payouts"
+          value={ov?.pendingPayouts ?? 0}
+          icon={<Wallet className="h-5 w-5" />}
+          accent="amber"
+          footnote={ov?.pendingPayoutsNote ?? 'Tap to view pending requests'}
+          onClick={() => setKpiDrilldown('pending_payouts')}
+        />
+        <KPIStatCard
+          title="Call minutes (selected range)"
+          value={ov?.totalCallMinutesToday ?? 0}
+          icon={<Clock className="h-5 w-5" />}
+          accent="blue"
+          footnote="Tap for call breakdown"
+          onClick={() => setKpiDrilldown('call_minutes')}
+        />
       </div>
+
+      <CommandCenterKpiModal
+        open={kpiDrilldown !== null}
+        kind={kpiDrilldown}
+        onClose={() => setKpiDrilldown(null)}
+        overview={ov ?? null}
+        payoutRows={payouts.data?.rows ?? []}
+        callAnalytics={
+          callAn.data
+            ? {
+                ...callAn.data.today,
+                totalMinutes: ov?.totalCallMinutesToday,
+                dailyVolume: callAn.data.dailyVolume,
+              }
+            : null
+        }
+        rangeLabel={headerRangeLabel}
+      />
 
       <RevenueDailyBalanceModal
         open={revenueHistoryOpen}
