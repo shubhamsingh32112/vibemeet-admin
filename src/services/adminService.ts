@@ -106,6 +106,7 @@ export interface CreatorPerformance {
   categories: string[];
   price: number;
   isOnline: boolean;
+  isDisabled?: boolean;
   presenceStatus?: 'online' | 'on_call' | 'offline';
   presenceUpdatedAt?: string | null;
   assignedAgencyId: string | null;
@@ -641,6 +642,7 @@ export const adminService = {
     total: number;
     page: number;
     limit: number;
+    presenceCounts?: { online: number; on_call: number; offline: number; total: number };
   }> => {
     const res = await api.get('/admin/creators/performance', { params });
     const data = res.data.data;
@@ -649,6 +651,7 @@ export const adminService = {
       total: data.total ?? 0,
       page: data.page ?? 1,
       limit: data.limit ?? 50,
+      presenceCounts: data.presenceCounts,
     };
   },
 
@@ -672,6 +675,16 @@ export const adminService = {
   ): Promise<{ presenceStatus: string; isOnline: boolean }> => {
     const res = await api.post(`/admin/creators/${creatorId}/reset-presence`);
     return res.data.data;
+  },
+
+  deactivateCreator: async (creatorId: string) => {
+    const res = await api.post(`/admin/creators/${creatorId}/deactivate`);
+    return res.data;
+  },
+
+  reactivateCreator: async (creatorId: string) => {
+    const res = await api.post(`/admin/creators/${creatorId}/reactivate`);
+    return res.data;
   },
 
   patchCreatorLinkedUser: async (
@@ -811,6 +824,18 @@ export const adminService = {
         uniqueLogins: number;
         loginEvents: number;
       }>;
+      note?: string;
+      generatedAt: string;
+    };
+  },
+
+  getUsersSignupSeries: async (granularity: 'hourly' | 'daily' = 'hourly') => {
+    const res = await api.get('/admin/analytics/users/signup-series', { params: { granularity } });
+    return res.data.data as {
+      granularity: 'hourly' | 'daily';
+      from: string;
+      to: string;
+      points: Array<{ label: string; startDate: string; signups: number }>;
       note?: string;
       generatedAt: string;
     };
@@ -1057,11 +1082,39 @@ export const adminService = {
   },
 
   // ── Support Tickets ────────────────────────────────
+  getCoinsPaidUsers: async (params?: { page?: number; limit?: number }) => {
+    const res = await api.get('/admin/analytics/coins/paid-users', { params });
+    return res.data.data as {
+      summary: {
+        uniqueBuyersAllTime: number;
+        buyersToday: number;
+        buyers7d: number;
+        buyers30d: number;
+        revenueInr30d: number;
+      };
+      rows: Array<{
+        rank: number;
+        userId: string;
+        username: string;
+        email: string | null;
+        phone: string | null;
+        purchaseCount: number;
+        totalRechargeCoins: number;
+        totalRechargeInr: number;
+        lastPurchaseAt: string;
+      }>;
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    };
+  },
+
   getSupportTickets: async (params?: {
     role?: string;
     status?: string;
     priority?: string;
     source?: string;
+    subject?: string;
+    subjectContains?: string;
+    becomeCreatorOnly?: boolean;
     creatorReportsOnly?: boolean;
     staffPortalOnly?: boolean;
     page?: number;
@@ -1074,6 +1127,9 @@ export const adminService = {
     if (params?.status) searchParams.append('status', params.status);
     if (params?.priority) searchParams.append('priority', params.priority);
     if (params?.source) searchParams.append('source', params.source);
+    if (params?.subject) searchParams.append('subject', params.subject);
+    if (params?.subjectContains) searchParams.append('subjectContains', params.subjectContains);
+    if (params?.becomeCreatorOnly) searchParams.append('becomeCreatorOnly', 'true');
     if (params?.creatorReportsOnly) searchParams.append('creatorReports', 'true');
     if (params?.staffPortalOnly) searchParams.append('staffPortal', 'true');
     if (params?.page) searchParams.append('page', String(params.page));
@@ -1082,6 +1138,29 @@ export const adminService = {
     if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/support?${searchParams.toString()}`);
     return res.data.data;
+  },
+
+  exportSupportTicketsCsv: async (params?: {
+    from?: string;
+    to?: string;
+    becomeCreatorOnly?: boolean;
+    subject?: string;
+    subjectContains?: string;
+    role?: string;
+    status?: string;
+  }): Promise<Blob> => {
+    const searchParams = new URLSearchParams();
+    if (params?.from) searchParams.append('from', params.from);
+    if (params?.to) searchParams.append('to', params.to);
+    if (params?.becomeCreatorOnly) searchParams.append('becomeCreatorOnly', 'true');
+    if (params?.subject) searchParams.append('subject', params.subject);
+    if (params?.subjectContains) searchParams.append('subjectContains', params.subjectContains);
+    if (params?.role) searchParams.append('role', params.role);
+    if (params?.status) searchParams.append('status', params.status);
+    const res = await api.get(`/admin/support/export.csv?${searchParams.toString()}`, {
+      responseType: 'blob',
+    });
+    return res.data as Blob;
   },
 
   updateTicketStatus: async (

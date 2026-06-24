@@ -4,12 +4,16 @@ import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
 import UserLoginChart, {
   type UserLoginGranularity,
 } from '../../components/admin/dashboard/UserLoginChart';
+import UserSignupChart, {
+  type UserSignupGranularity,
+} from '../../components/admin/dashboard/UserSignupChart';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { adminService } from '../../services/adminService';
 import { Users } from 'lucide-react';
 
 const UserTotalsPage: React.FC = () => {
   const [granularity, setGranularity] = useState<UserLoginGranularity>('daily');
+  const [signupGranularity, setSignupGranularity] = useState<UserSignupGranularity>('hourly');
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof adminService.getUsersSummary>> | null>(
     null
   );
@@ -40,6 +44,12 @@ const UserTotalsPage: React.FC = () => {
     staleTime: 60_000,
   });
 
+  const signupSeries = useQuery({
+    queryKey: ['users', 'signup-series', signupGranularity],
+    queryFn: () => adminService.getUsersSignupSeries(signupGranularity),
+    staleTime: 60_000,
+  });
+
   if (summaryLoading) return <LoadingSpinner />;
   if (summaryError || !summary) {
     return <p className="text-red-400 text-sm">{summaryError || 'No data'}</p>;
@@ -60,6 +70,14 @@ const UserTotalsPage: React.FC = () => {
         <KPIStatCard title="Last 7 days" value={summary.signups7d} icon={<Users className="h-5 w-5" />} />
         <KPIStatCard title="Last 30 days" value={summary.signups30d} icon={<Users className="h-5 w-5" />} />
       </div>
+
+      <UserSignupChart
+        points={signupSeries.data?.points ?? []}
+        granularity={signupGranularity}
+        onGranularityChange={setSignupGranularity}
+        loading={signupSeries.isLoading}
+        note={signupSeries.data?.note}
+      />
 
       <UserLoginChart
         points={loginSeries.data?.points ?? []}

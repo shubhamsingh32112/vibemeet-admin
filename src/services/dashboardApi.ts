@@ -5,9 +5,26 @@ export type DashboardOverview = {
   revenueCoinsTodayNote?: string;
   revenueDailyBalance: number;
   revenueDailyBalanceNote?: string;
+  rechargeCollectionTodayInr?: number;
+  rechargeCollectionYesterdayInr?: number;
+  rechargeDailySeries?: {
+    points: Array<{
+      date: string;
+      rechargeInr: number;
+      rechargeCoins: number;
+      transactionCount: number;
+    }>;
+    note?: string;
+    selectedRange?: { from: string; to: string };
+  };
   liveCallsProxy: number;
   activeUnsettledUserCalls: number;
   onlineHosts: number;
+  hostsOnline?: number;
+  hostsOnCall?: number;
+  hostsOffline?: number;
+  hostsTotal?: number;
+  presenceNote?: string;
   totalAgencies: number;
   totalBds: number;
   pendingPayouts: number;
@@ -18,9 +35,12 @@ export type DashboardOverview = {
   walletFlowSeries?: {
     points: Array<{
       date: string;
-      creditCoins: number;
-      debitCoins: number;
-      netCoins: number;
+      rechargeInr?: number;
+      rechargeCoins?: number;
+      transactionCount?: number;
+      creditCoins?: number;
+      debitCoins?: number;
+      netCoins?: number;
     }>;
     note?: string;
     selectedRange?: { from: string; to: string };

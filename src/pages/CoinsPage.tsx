@@ -9,7 +9,6 @@ import {
   type WalletPricingConfig,
   type WalletPricingPack,
 } from '../services/adminService';
-import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
 
@@ -40,7 +39,7 @@ const CoinsPage: React.FC = () => {
   const [revBdDraft, setRevBdDraft] = useState(500);
   const [revAgencyDraft, setRevAgencyDraft] = useState(1500);
   const [savingRev, setSavingRev] = useState(false);
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('last30d');
+  const { dateRange } = useAdminDateRange('last30d');
 
   const load = async () => {
     try {
@@ -174,13 +173,6 @@ const CoinsPage: React.FC = () => {
           ↻ Refresh
         </button>
       </div>
-
-      <DateRangeFilter
-        value={dateRange}
-        onPresetChange={setPreset}
-        onCustomChange={setCustom}
-        className="mb-4"
-      />
 
       {/* ── Wallet Pricing Management ───────────────────────────────────── */}
       <div className="mb-6 rounded-lg border border-gray-800 bg-gray-900 p-4">

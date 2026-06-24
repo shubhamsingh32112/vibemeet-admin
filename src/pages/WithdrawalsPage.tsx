@@ -11,7 +11,6 @@ import {
   type WithdrawalSummary,
 } from '../services/adminService';
 import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
-import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
 
@@ -38,7 +37,7 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const { dateRange } = useAdminDateRange('today');
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
   const statusFilter = searchParams.get('status') ?? '';
 
@@ -315,17 +314,6 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <DateRangeFilter
-          value={dateRange}
-          onPresetChange={(p) => {
-            setPreset(p);
-            updateListQuery({ page: 1 });
-          }}
-          onCustomChange={(from, to) => {
-            setCustom(from, to);
-            updateListQuery({ page: 1 });
-          }}
-        />
         <label className="text-xs text-gray-400">Status:</label>
         <select
           value={statusFilter}

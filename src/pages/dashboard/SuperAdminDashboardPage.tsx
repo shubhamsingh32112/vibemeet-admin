@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   Clock,
-  Coins,
   PhoneCall,
   Radio,
   Users,
@@ -103,8 +102,11 @@ const SuperAdminDashboardPage: React.FC = () => {
   });
 
   const ov = overview.data;
-  const walletFlowPoints = ov?.walletFlowSeries?.points ?? [];
-  const spark = walletFlowPoints.slice(-8).map((p) => p.netCoins);
+  const rechargePoints = ov?.rechargeDailySeries?.points ?? ov?.walletFlowSeries?.points ?? [];
+  const rechargeSpark = rechargePoints
+    .slice(-8)
+    .map((p) => p.rechargeInr ?? 0)
+    .filter((n) => typeof n === 'number');
 
   const revenueRangeLabel = React.useMemo(() => {
     if (ov?.walletFlowSeries?.selectedRange) {
@@ -143,10 +145,11 @@ const SuperAdminDashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-3">
         <KPIStatCard
-          title="Revenue daily balance"
-          value={ov?.revenueDailyBalance ?? 0}
-          icon={<Coins className="h-5 w-5" />}
-          sparkline={spark.length > 1 ? spark : undefined}
+          title="Recharge collection (today)"
+          value={ov?.rechargeCollectionTodayInr ?? ov?.revenueDailyBalance ?? 0}
+          format="inr"
+          icon={<Wallet className="h-5 w-5" />}
+          sparkline={rechargeSpark.length > 1 ? rechargeSpark : undefined}
           footnote={ov?.revenueDailyBalanceNote ?? 'Today (UTC) · Tap for daily history'}
           accent="violet"
           onClick={() => setRevenueHistoryOpen(true)}
@@ -157,7 +160,25 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<PhoneCall className="h-5 w-5" />}
           accent="pink"
         />
-        <KPIStatCard title="Online hosts" value={ov?.onlineHosts ?? 0} icon={<Radio className="h-5 w-5" />} accent="green" />
+        <KPIStatCard
+          title="Hosts online"
+          value={ov?.hostsOnline ?? ov?.onlineHosts ?? 0}
+          icon={<Radio className="h-5 w-5" />}
+          accent="green"
+          footnote={ov?.presenceNote ? 'Available for calls' : undefined}
+        />
+        <KPIStatCard
+          title="Hosts on call"
+          value={ov?.hostsOnCall ?? 0}
+          icon={<PhoneCall className="h-5 w-5" />}
+          accent="amber"
+        />
+        <KPIStatCard
+          title="Hosts offline"
+          value={ov?.hostsOffline ?? 0}
+          icon={<Radio className="h-5 w-5 opacity-50" />}
+          accent="blue"
+        />
         <KPIStatCard title="Agencies" value={ov?.totalAgencies ?? 0} icon={<Building2 className="h-5 w-5" />} accent="blue" />
         <KPIStatCard title="BDs" value={ov?.totalBds ?? 0} icon={<Users className="h-5 w-5" />} accent="amber" />
         <KPIStatCard title="Pending payouts" value={ov?.pendingPayouts ?? 0} icon={<Wallet className="h-5 w-5" />} accent="amber" footnote={ov?.pendingPayoutsNote} />
@@ -167,10 +188,16 @@ const SuperAdminDashboardPage: React.FC = () => {
       <RevenueDailyBalanceModal
         open={revenueHistoryOpen}
         onClose={() => setRevenueHistoryOpen(false)}
-        todayBalance={ov?.revenueDailyBalance ?? 0}
-        points={walletFlowPoints}
+        todayInr={ov?.rechargeCollectionTodayInr ?? ov?.revenueDailyBalance ?? 0}
+        yesterdayInr={ov?.rechargeCollectionYesterdayInr}
+        points={(ov?.rechargeDailySeries?.points ?? ov?.walletFlowSeries?.points ?? []).map((p) => ({
+          date: p.date,
+          rechargeInr: p.rechargeInr ?? 0,
+          rechargeCoins: p.rechargeCoins ?? 0,
+          transactionCount: p.transactionCount ?? 0,
+        }))}
         rangeLabel={revenueRangeLabel}
-        note={ov?.walletFlowSeries?.note}
+        note={ov?.rechargeDailySeries?.note ?? ov?.walletFlowSeries?.note}
       />
 
       <PayoutTable rows={payouts.data?.rows ?? []} loading={payouts.isLoading} />

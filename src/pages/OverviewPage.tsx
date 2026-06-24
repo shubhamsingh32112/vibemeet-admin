@@ -3,7 +3,6 @@ import MetricCard from '../components/ui/MetricCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type OverviewData } from '../services/adminService';
 import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
-import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
 import GlobalStaleBanner from '../components/dashboard/GlobalStaleBanner';
@@ -20,7 +19,7 @@ const OverviewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { stale, connected, lastError, pendingHint, markFresh } = useStaffRealtime();
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const { dateRange } = useAdminDateRange('today');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,13 +97,6 @@ const OverviewPage: React.FC = () => {
         </div>
         <RefreshButton onRefresh={load} stale={overviewStale} loading={loading} />
       </div>
-
-      <DateRangeFilter
-        value={dateRange}
-        onPresetChange={setPreset}
-        onCustomChange={setCustom}
-        className="mb-4"
-      />
 
       <SectionHeader title="Queues" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

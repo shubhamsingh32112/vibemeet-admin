@@ -29,6 +29,7 @@ import LeaderboardsPage from './pages/LeaderboardsPage';
 import UserTotalsPage from './pages/users/UserTotalsPage';
 import MomentsPaidUsersPage from './pages/users/MomentsPaidUsersPage';
 import VipPaidUsersPage from './pages/users/VipPaidUsersPage';
+import CoinsPaidUsersPage from './pages/users/CoinsPaidUsersPage';
 import WalletTransactionsPage from './pages/finance/WalletTransactionsPage';
 import FinancePaymentsPage from './pages/finance/FinancePaymentsPage';
 import FinancePayoutsPage from './pages/finance/FinancePayoutsPage';
@@ -304,6 +305,7 @@ const AppRoutes: React.FC = () => {
         <Route path="users/totals" element={<UserTotalsPage />} />
         <Route path="users/calls" element={<CallsPage />} />
         <Route path="users/moments-paid" element={<MomentsPaidUsersPage />} />
+        <Route path="users/coins-paid" element={<CoinsPaidUsersPage />} />
         <Route path="users/vip-paid" element={<VipPaidUsersPage />} />
         {/* Host management */}
         <Route path="hosts/bds" element={<BdsManagePage />} />

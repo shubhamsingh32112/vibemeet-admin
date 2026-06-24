@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import DateRangeFilter from '../../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
@@ -38,7 +37,7 @@ const FinancePaymentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('last30d');
+  const { dateRange } = useAdminDateRange('last30d');
 
   const load = useCallback(async () => {
     try {
@@ -74,11 +73,6 @@ const FinancePaymentsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-xl font-semibold text-white">{title}</h1>
-        <DateRangeFilter
-          value={dateRange}
-          onPresetChange={setPreset}
-          onCustomChange={(from, to) => setCustom(from, to)}
-        />
       </div>
       {loading ? <LoadingSpinner /> : <DataTable columns={columns} data={rows} keyField="id" />}
       {totalPages > 1 && (

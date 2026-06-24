@@ -18,6 +18,12 @@ const CreatorsPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [presenceFilter, setPresenceFilter] = useState('');
+  const [presenceCounts, setPresenceCounts] = useState<{
+    online: number;
+    on_call: number;
+    offline: number;
+    total: number;
+  } | null>(null);
 
   // Modals
   const [resetPresenceTarget, setResetPresenceTarget] = useState<CreatorPerformance | null>(null);
@@ -50,6 +56,7 @@ const CreatorsPage: React.FC = () => {
       });
       setCreators(data.creators);
       setTotal(data.total);
+      setPresenceCounts(data.presenceCounts ?? null);
       setTotalPages(Math.max(1, Math.ceil(data.total / data.limit)));
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load');
@@ -77,7 +84,7 @@ const CreatorsPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this creator?')) return;
+    if (!confirm('Are you sure you want to permanently delete this host? This cannot be undone.')) return;
     try {
       setDeletingId(id);
       await creatorService.delete(id);
@@ -86,6 +93,26 @@ const CreatorsPage: React.FC = () => {
       alert(err.response?.data?.error || 'Failed to delete');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleDeactivate = async (row: CreatorPerformance) => {
+    if (!confirm(`Deactivate ${row.name}? They will be hidden from the app but their profile remains.`)) return;
+    try {
+      await adminService.deactivateCreator(row.creatorId);
+      load();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to deactivate');
+    }
+  };
+
+  const handleReactivate = async (row: CreatorPerformance) => {
+    if (!confirm(`Reactivate ${row.name}?`)) return;
+    try {
+      await adminService.reactivateCreator(row.creatorId);
+      load();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to reactivate');
     }
   };
 
@@ -196,6 +223,9 @@ const CreatorsPage: React.FC = () => {
       key: 'presenceStatus',
       header: 'Status',
       render: (row) => {
+        if (row.isDisabled) {
+          return <StatusBadge variant="offline" label="Deactivated" dot />;
+        }
         const ps = row.presenceStatus ?? (row.isOnline ? 'online' : 'offline');
         const variant =
           ps === 'online' ? 'online' : ps === 'on_call' ? 'warning' : 'offline';
@@ -309,6 +339,21 @@ const CreatorsPage: React.FC = () => {
             Reset presence
           </button>
           <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (row.isDisabled) void handleReactivate(row);
+              else void handleDeactivate(row);
+            }}
+            className={`px-2 py-1 text-xs border rounded transition min-h-[36px] ${
+              row.isDisabled
+                ? 'bg-emerald-900/30 border-emerald-800 text-emerald-300'
+                : 'bg-orange-900/30 border-orange-800 text-orange-300'
+            }`}
+          >
+            {row.isDisabled ? 'Reactivate' : 'Deactivate'}
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); handleDelete(row.creatorId); }}
             disabled={deletingId === row.creatorId}
             className="px-2 py-1 text-xs bg-red-900/30 border border-red-800 rounded text-red-400 hover:text-red-200 transition disabled:opacity-50"
@@ -386,23 +431,23 @@ const CreatorsPage: React.FC = () => {
           <option value="offline">Offline</option>
         </select>
       </div>
-      {/* Quick stats (current page) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+      {/* Live presence (platform-wide from Redis) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
-          <p className="text-[10px] text-gray-500 uppercase">Total</p>
-          <p className="text-lg font-bold text-white">{creators.length}</p>
+          <p className="text-[10px] text-gray-500 uppercase">Total hosts</p>
+          <p className="text-lg font-bold text-white">{presenceCounts?.total ?? total}</p>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
           <p className="text-[10px] text-gray-500 uppercase">Online</p>
-          <p className="text-lg font-bold text-emerald-400">
-            {creators.filter((c) => (c.presenceStatus ?? '') === 'online').length}
-          </p>
+          <p className="text-lg font-bold text-emerald-400">{presenceCounts?.online ?? '—'}</p>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
-          <p className="text-[10px] text-gray-500 uppercase">Zero-call creators</p>
-          <p className="text-lg font-bold text-yellow-400">
-            {creators.filter((c) => c.totalCalls === 0).length}
-          </p>
+          <p className="text-[10px] text-gray-500 uppercase">On call</p>
+          <p className="text-lg font-bold text-amber-400">{presenceCounts?.on_call ?? '—'}</p>
+        </div>
+        <div className="bg-gray-900 border border-gray-800 rounded px-3 py-2">
+          <p className="text-[10px] text-gray-500 uppercase">Offline</p>
+          <p className="text-lg font-bold text-zinc-400">{presenceCounts?.offline ?? '—'}</p>
         </div>
       </div>
 

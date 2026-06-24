@@ -5,7 +5,6 @@ import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type AdminCall, type RefundPreview } from '../services/adminService';
-import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
 
@@ -16,7 +15,7 @@ const CallsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const { dateRange } = useAdminDateRange('today');
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
   const anomalyOnly = searchParams.get('anomaly') === '1';
 
@@ -261,17 +260,6 @@ const CallsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <DateRangeFilter
-          value={dateRange}
-          onPresetChange={(p) => {
-            setPreset(p);
-            updateListQuery({ page: 1 });
-          }}
-          onCustomChange={(from, to) => {
-            setCustom(from, to);
-            updateListQuery({ page: 1 });
-          }}
-        />
         <label className="flex items-center gap-2 text-sm text-gray-300">
           <input
             type="checkbox"

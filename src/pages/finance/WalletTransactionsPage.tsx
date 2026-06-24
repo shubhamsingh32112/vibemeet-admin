@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import DateRangeFilter from '../../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
@@ -24,7 +23,7 @@ const WalletTransactionsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('last30d');
+  const { dateRange } = useAdminDateRange('last30d');
 
   const load = useCallback(async () => {
     try {
@@ -74,11 +73,6 @@ const WalletTransactionsPage: React.FC = () => {
           <h1 className="text-xl font-semibold text-white">Wallet transactions</h1>
           <p className="text-sm text-zinc-500 mt-1">All completed and pending coin ledger entries.</p>
         </div>
-        <DateRangeFilter
-          value={dateRange}
-          onPresetChange={setPreset}
-          onCustomChange={(from, to) => setCustom(from, to)}
-        />
       </div>
       {loading ? <LoadingSpinner /> : null}
       {error && <p className="text-red-400 text-sm">{error}</p>}

@@ -11,7 +11,6 @@ import {
   type SupportSummary,
 } from '../services/adminService';
 import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
-import DateRangeFilter from '../components/filters/DateRangeFilter';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
 
@@ -36,7 +35,7 @@ const priorityVariant = (p: string) => {
 };
 
 const SupportPage: React.FC = () => {
-  type QuickTab = 'all' | 'creator_reports';
+  type QuickTab = 'all' | 'creator_reports' | 'become_creator';
   const { markFresh, stale } = useStaffRealtime();
   const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
   const [summary, setSummary] = useState<SupportSummary | null>(null);
@@ -52,8 +51,15 @@ const SupportPage: React.FC = () => {
   const statusFilter = searchParams.get('status') ?? '';
   const priorityFilter = searchParams.get('priority') ?? '';
   const sourceFilter = searchParams.get('source') ?? '';
-  const quickTab = (searchParams.get('tab') === 'creator_reports' ? 'creator_reports' : 'all') as QuickTab;
-  const { dateRange, setPreset, setCustom } = useAdminDateRange('today');
+  const subjectFilter = searchParams.get('subject') ?? '';
+  const tabParam = searchParams.get('tab');
+  const quickTab: QuickTab =
+    tabParam === 'creator_reports'
+      ? 'creator_reports'
+      : tabParam === 'become_creator'
+        ? 'become_creator'
+        : 'all';
+  const { dateRange, setPreset } = useAdminDateRange('today');
 
   const updateListQuery = useCallback(
     (updates: {
@@ -62,6 +68,7 @@ const SupportPage: React.FC = () => {
       status?: string;
       priority?: string;
       source?: string;
+      subject?: string;
       tab?: QuickTab;
     }) => {
       setSearchParams(
@@ -86,9 +93,13 @@ const SupportPage: React.FC = () => {
             if (updates.source.trim()) next.set('source', updates.source);
             else next.delete('source');
           }
+          if (typeof updates.subject === 'string') {
+            if (updates.subject.trim()) next.set('subject', updates.subject);
+            else next.delete('subject');
+          }
           if (updates.tab) {
-            if (updates.tab === 'creator_reports') next.set('tab', updates.tab);
-            else next.delete('tab');
+            if (updates.tab === 'all') next.delete('tab');
+            else next.set('tab', updates.tab);
           }
           return next;
         },
@@ -116,6 +127,8 @@ const SupportPage: React.FC = () => {
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
         source: sourceFilter || undefined,
+        subject: subjectFilter || undefined,
+        becomeCreatorOnly: quickTab === 'become_creator',
         creatorReportsOnly: quickTab === 'creator_reports',
         page,
         limit: 50,
@@ -142,6 +155,7 @@ const SupportPage: React.FC = () => {
     statusFilter,
     priorityFilter,
     sourceFilter,
+    subjectFilter,
     quickTab,
     dateRange.from,
     dateRange.to,
@@ -158,6 +172,36 @@ const SupportPage: React.FC = () => {
       void load();
     }
   }, [stale.support, load]);
+
+  useEffect(() => {
+    if (quickTab === 'become_creator' && dateRange.preset === 'today') {
+      setPreset('last30d');
+    }
+  }, [quickTab, dateRange.preset, setPreset]);
+
+  const handleDownloadCsv = async () => {
+    try {
+      setActionLoading(true);
+      const blob = await adminService.exportSupportTicketsCsv({
+        from: dateRange.from,
+        to: dateRange.to,
+        becomeCreatorOnly: quickTab === 'become_creator',
+        subject: subjectFilter || undefined,
+        role: roleFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `become-a-creator-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Failed to download CSV');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const openStatusModal = (ticket: AdminSupportTicket) => {
     setStatusTarget(ticket);
@@ -349,6 +393,28 @@ const SupportPage: React.FC = () => {
         >
           Creator Reports
         </button>
+        <button
+          onClick={() => {
+            updateListQuery({ tab: 'become_creator', page: 1, subject: '' });
+          }}
+          className={`px-3 py-1.5 text-xs rounded border transition ${
+            quickTab === 'become_creator'
+              ? 'bg-violet-900/40 border-violet-700 text-violet-200'
+              : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          Become a Creator
+        </button>
+        {quickTab === 'become_creator' && (
+          <button
+            type="button"
+            onClick={() => void handleDownloadCsv()}
+            disabled={actionLoading}
+            className="px-3 py-1.5 text-xs rounded border border-emerald-800 bg-emerald-900/30 text-emerald-200 disabled:opacity-50"
+          >
+            Download CSV
+          </button>
+        )}
       </div>
 
       {/* Summary Metrics */}
@@ -386,17 +452,16 @@ const SupportPage: React.FC = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <DateRangeFilter
-          value={dateRange}
-          onPresetChange={(p) => {
-            setPreset(p);
-            updateListQuery({ page: 1 });
-          }}
-          onCustomChange={(from, to) => {
-            setCustom(from, to);
-            updateListQuery({ page: 1 });
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-400">Subject:</label>
+          <input
+            type="search"
+            value={subjectFilter}
+            onChange={(e) => updateListQuery({ subject: e.target.value, page: 1 })}
+            placeholder="Filter by subject…"
+            className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 min-w-[180px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-400">Role:</label>
           <select

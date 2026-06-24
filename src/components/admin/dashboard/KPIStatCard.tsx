@@ -6,7 +6,7 @@ import { cn } from '../../../lib/utils';
 export type KPIStatCardProps = {
   title: string;
   value: number;
-  format?: 'number' | 'compact';
+  format?: 'number' | 'compact' | 'inr';
   icon: React.ReactNode;
   sparkline?: number[];
   footnote?: string;
@@ -23,6 +23,13 @@ const accentRing: Record<NonNullable<KPIStatCardProps['accent']>, string> = {
 };
 
 function formatVal(n: number, mode: KPIStatCardProps['format']) {
+  if (mode === 'inr') {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(n);
+  }
   if (mode === 'compact' && n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return new Intl.NumberFormat().format(Math.round(n));
 }
