@@ -36,6 +36,7 @@ import FinancePayoutsPage from './pages/finance/FinancePayoutsPage';
 import RevenueAnalyticsPage from './pages/revenue/RevenueAnalyticsPage';
 import SystemHealthPage from './pages/monitoring/SystemHealthPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import MomentsFreePreviewPage from './pages/moments/MomentsFreePreviewPage';
 import AdminCreatorViewPage from './pages/AdminCreatorViewPage';
 import BdHostDetailPage from './pages/bd/BdHostDetailPage';
 import BdLoginPage from './pages/bd/BdLoginPage';
@@ -326,6 +327,7 @@ const AppRoutes: React.FC = () => {
         {/* Monitoring */}
         <Route path="monitoring/support" element={<SupportPage />} />
         <Route path="monitoring/health" element={<SystemHealthPage />} />
+        <Route path="moments/free-previews" element={<MomentsFreePreviewPage />} />
         <Route path="settings" element={<SettingsPage />} />
         {/* Legacy redirects */}
         <Route path="overview" element={<Navigate to="/users/analytics" replace />} />

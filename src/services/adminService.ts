@@ -1230,4 +1230,93 @@ export const adminService = {
     const res = await api.get('/admin/integrity-checks');
     return res.data.data;
   },
+
+  getMomentsAdminConfig: async (): Promise<{
+    momentsEnabled: boolean;
+    freePreviewLimit: number;
+  }> => {
+    const res = await api.get('/admin/moments/config');
+    return res.data.data;
+  },
+
+  getMomentsFreePreviews: async (): Promise<{
+    listVersion: number;
+    items: MomentsFreePreviewRow[];
+  }> => {
+    const res = await api.get('/admin/moments/free-previews');
+    return res.data.data;
+  },
+
+  reorderMomentsFreePreviews: async (body: {
+    orderedMomentIds: string[];
+    expectedVersion: number;
+  }): Promise<{ listVersion: number }> => {
+    const res = await api.put('/admin/moments/free-previews/reorder', body);
+    return res.data.data;
+  },
+
+  addMomentsFreePreview: async (body: {
+    momentId: string;
+    enabled?: boolean;
+  }): Promise<{ listVersion: number }> => {
+    const res = await api.post('/admin/moments/free-previews', body);
+    return res.data.data;
+  },
+
+  removeMomentsFreePreview: async (
+    momentId: string,
+  ): Promise<{ listVersion: number }> => {
+    const res = await api.delete(`/admin/moments/free-previews/${momentId}`);
+    return res.data.data;
+  },
+
+  browseMomentsForAdmin: async (params?: {
+    q?: string;
+    type?: 'photo' | 'video';
+    hasPreview?: 'yes' | 'no';
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ items: MomentsBrowseRow[]; nextCursor?: string }> => {
+    const res = await api.get('/admin/moments/browse', { params });
+    return res.data.data;
+  },
 };
+
+export interface MomentsFreePreviewRow {
+  momentId: string;
+  order: number;
+  enabled: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+  caption?: string | null;
+  type: 'photo' | 'video';
+  viewsCount: number;
+  processingStatus: string;
+  moderationStatus: string;
+  createdAt: string;
+  thumbnailUrl?: string;
+  creator: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    verified: boolean;
+  };
+}
+
+export interface MomentsBrowseRow {
+  momentId: string;
+  caption?: string | null;
+  type: 'photo' | 'video';
+  viewsCount: number;
+  processingStatus: string;
+  moderationStatus: string;
+  createdAt: string;
+  thumbnailUrl?: string;
+  inFreePreview?: boolean;
+  creator: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    verified: boolean;
+  };
+}

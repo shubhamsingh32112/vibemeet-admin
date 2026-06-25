@@ -83,6 +83,13 @@ const SECTIONS: NavSection[] = [
     items: [{ to: '/incentives', label: 'Coming soon', icon: ListOrdered }],
   },
   {
+    id: 'content',
+    title: 'Content',
+    items: [
+      { to: '/moments/free-previews', label: 'Moments free previews', icon: Sparkles },
+    ],
+  },
+  {
     id: 'monitoring',
     title: 'Monitoring',
     items: [
