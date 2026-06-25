@@ -70,9 +70,6 @@ const SECTIONS: NavSection[] = [
       { to: '/finance/paid-users/coins', label: 'Paid users (coins)', icon: Wallet },
       { to: '/finance/paid-users/moments', label: 'Paid users (moments)', icon: Sparkles },
       { to: '/finance/paid-users/vip', label: 'Paid users (VIP)', icon: Crown },
-      { to: '/finance/payments/calls', label: 'Payment call logs', icon: Video },
-      { to: '/finance/payments/vip', label: 'Payment VIP logs', icon: Crown },
-      { to: '/finance/payments/moments', label: 'Payment moments logs', icon: Sparkles },
     ],
   },
   {
