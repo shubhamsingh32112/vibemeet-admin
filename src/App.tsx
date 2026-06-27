@@ -32,6 +32,7 @@ import VipPaidUsersPage from './pages/users/VipPaidUsersPage';
 import CoinsPaidUsersPage from './pages/users/CoinsPaidUsersPage';
 import WalletTransactionsPage from './pages/finance/WalletTransactionsPage';
 import FinancePaymentsPage from './pages/finance/FinancePaymentsPage';
+import MomentsPremiumUsersPage from './pages/finance/MomentsPremiumUsersPage';
 import FinancePayoutsPage from './pages/finance/FinancePayoutsPage';
 import RevenueAnalyticsPage from './pages/revenue/RevenueAnalyticsPage';
 import SystemHealthPage from './pages/monitoring/SystemHealthPage';
@@ -320,6 +321,7 @@ const AppRoutes: React.FC = () => {
         <Route path="finance/paid-users/coins" element={<CoinsPaidUsersPage />} />
         <Route path="finance/paid-users/moments" element={<MomentsPaidUsersPage />} />
         <Route path="finance/paid-users/vip" element={<VipPaidUsersPage />} />
+        <Route path="finance/payments/moments" element={<MomentsPremiumUsersPage />} />
         <Route path="finance/payments/:kind" element={<FinancePaymentsPage />} />
         {/* Revenue */}
         <Route path="revenue" element={<RevenueAnalyticsPage />} />

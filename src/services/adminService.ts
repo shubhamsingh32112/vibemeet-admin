@@ -846,6 +846,11 @@ export const adminService = {
     return res.data.data;
   },
 
+  getMomentsPremiumUsers: async (params?: { page?: number; limit?: number }) => {
+    const res = await api.get('/admin/analytics/moments/premium-users', { params });
+    return res.data.data;
+  },
+
   getVipPaidUsers: async (params?: { page?: number; limit?: number }) => {
     const res = await api.get('/admin/analytics/vip/paid-users', { params });
     return res.data.data;

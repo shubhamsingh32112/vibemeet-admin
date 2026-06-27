@@ -9,13 +9,11 @@ import { formatDateTime } from '../../utils/dateTime';
 const SOURCE_MAP: Record<string, string> = {
   calls: 'video_call',
   vip: 'vip_membership',
-  moments: 'moment_purchase',
 };
 
 const TITLE_MAP: Record<string, string> = {
   calls: 'Payment call logs',
   vip: 'Payment VIP logs',
-  moments: 'Payment moments logs',
 };
 
 type Tx = {

@@ -47,7 +47,7 @@ const SECTIONS: NavSection[] = [
       { to: '/users/calls', label: 'Call analytics / logs', icon: Phone },
       { to: '/finance/payments/calls', label: 'Payment call logs', icon: Video },
       { to: '/finance/payments/vip', label: 'Payment VIP logs', icon: Crown },
-      { to: '/finance/payments/moments', label: 'Payment moments logs', icon: Sparkles },
+      { to: '/finance/payments/moments', label: 'Moments premium users', icon: Sparkles },
     ],
   },
   {
