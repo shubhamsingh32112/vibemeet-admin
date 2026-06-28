@@ -50,6 +50,7 @@ const SupportPage: React.FC = () => {
   const roleFilter = searchParams.get('role') ?? '';
   const statusFilter = searchParams.get('status') ?? '';
   const priorityFilter = searchParams.get('priority') ?? '';
+  const membershipFilter = searchParams.get('membership') ?? '';
   const sourceFilter = searchParams.get('source') ?? '';
   const subjectFilter = searchParams.get('subject') ?? '';
   const tabParam = searchParams.get('tab');
@@ -67,6 +68,7 @@ const SupportPage: React.FC = () => {
       role?: string;
       status?: string;
       priority?: string;
+      membership?: string;
       source?: string;
       subject?: string;
       tab?: QuickTab;
@@ -88,6 +90,10 @@ const SupportPage: React.FC = () => {
           if (typeof updates.priority === 'string') {
             if (updates.priority.trim()) next.set('priority', updates.priority);
             else next.delete('priority');
+          }
+          if (typeof updates.membership === 'string') {
+            if (updates.membership.trim()) next.set('membership', updates.membership);
+            else next.delete('membership');
           }
           if (typeof updates.source === 'string') {
             if (updates.source.trim()) next.set('source', updates.source);
@@ -126,6 +132,7 @@ const SupportPage: React.FC = () => {
         role: roleFilter || undefined,
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
+        membership: membershipFilter || undefined,
         source: sourceFilter || undefined,
         subject: subjectFilter || undefined,
         becomeCreatorOnly: quickTab === 'become_creator',
@@ -154,6 +161,7 @@ const SupportPage: React.FC = () => {
     roleFilter,
     statusFilter,
     priorityFilter,
+    membershipFilter,
     sourceFilter,
     subjectFilter,
     quickTab,
@@ -283,7 +291,12 @@ const SupportPage: React.FC = () => {
       header: 'Priority',
       sortable: true,
       render: (row) => (
-        <StatusBadge variant={priorityVariant(row.priority)} label={row.priority.toUpperCase()} />
+        <div className="flex items-center gap-1">
+          {row.submitterMembershipTier === 'VIP' ? (
+            <span title="VIP member">👑</span>
+          ) : null}
+          <StatusBadge variant={priorityVariant(row.priority)} label={row.priority.toUpperCase()} />
+        </div>
       ),
     },
     {
@@ -506,6 +519,20 @@ const SupportPage: React.FC = () => {
             <option value="medium">Medium</option>
             <option value="high">High</option>
             <option value="urgent">Urgent</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-400">Membership:</label>
+          <select
+            value={membershipFilter}
+            onChange={(e) => {
+              updateListQuery({ membership: e.target.value, page: 1 });
+            }}
+            className="px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">All</option>
+            <option value="VIP">VIP</option>
+            <option value="NONE">Non-VIP</option>
           </select>
         </div>
         <div className="flex items-center gap-2">

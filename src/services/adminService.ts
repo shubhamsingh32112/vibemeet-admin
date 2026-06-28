@@ -460,6 +460,7 @@ export interface AdminSupportTicket {
   attachments?: AdminSupportTicketAttachment[];
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  submitterMembershipTier?: 'NONE' | 'VIP';
   assignedAdminId: string | null;
   adminNotes: string | null;
   source?: 'chat' | 'post_call' | 'other' | 'staff_portal';
@@ -851,7 +852,11 @@ export const adminService = {
     return res.data.data;
   },
 
-  getVipPaidUsers: async (params?: { page?: number; limit?: number }) => {
+  getVipPaidUsers: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: 'active' | 'expired' | 'all';
+  }) => {
     const res = await api.get('/admin/analytics/vip/paid-users', { params });
     return res.data.data;
   },
@@ -1116,6 +1121,7 @@ export const adminService = {
     role?: string;
     status?: string;
     priority?: string;
+    membership?: string;
     source?: string;
     subject?: string;
     subjectContains?: string;
@@ -1131,6 +1137,7 @@ export const adminService = {
     if (params?.role) searchParams.append('role', params.role);
     if (params?.status) searchParams.append('status', params.status);
     if (params?.priority) searchParams.append('priority', params.priority);
+    if (params?.membership) searchParams.append('membership', params.membership);
     if (params?.source) searchParams.append('source', params.source);
     if (params?.subject) searchParams.append('subject', params.subject);
     if (params?.subjectContains) searchParams.append('subjectContains', params.subjectContains);
@@ -1279,10 +1286,21 @@ export const adminService = {
     q?: string;
     type?: 'photo' | 'video';
     hasPreview?: 'yes' | 'no';
+    visibilityTier?: 'PUBLIC' | 'VIP';
     limit?: number;
     cursor?: string;
   }): Promise<{ items: MomentsBrowseRow[]; nextCursor?: string }> => {
     const res = await api.get('/admin/moments/browse', { params });
+    return res.data.data;
+  },
+
+  patchMomentVisibilityTier: async (
+    momentId: string,
+    visibilityTier: 'PUBLIC' | 'VIP',
+  ): Promise<{ momentId: string; visibilityTier: 'PUBLIC' | 'VIP' }> => {
+    const res = await api.patch(`/admin/moments/${momentId}/visibility-tier`, {
+      visibilityTier,
+    });
     return res.data.data;
   },
 };
@@ -1298,6 +1316,7 @@ export interface MomentsFreePreviewRow {
   viewsCount: number;
   processingStatus: string;
   moderationStatus: string;
+  visibilityTier?: 'PUBLIC' | 'VIP';
   createdAt: string;
   thumbnailUrl?: string;
   creator: {
@@ -1315,6 +1334,7 @@ export interface MomentsBrowseRow {
   viewsCount: number;
   processingStatus: string;
   moderationStatus: string;
+  visibilityTier?: 'PUBLIC' | 'VIP';
   createdAt: string;
   thumbnailUrl?: string;
   inFreePreview?: boolean;

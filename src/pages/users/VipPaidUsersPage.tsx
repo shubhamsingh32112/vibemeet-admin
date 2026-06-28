@@ -13,30 +13,38 @@ type Row = {
   username: string;
   status: string;
   planId: string;
+  daysRemaining: number;
   startedAt: string;
   expiresAt: string;
   coinsPaid: number;
   paidAt: string;
 };
 
+type StatusFilter = 'all' | 'active' | 'expired';
+
 const VipPaidUsersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [data, setData] = useState<Awaited<ReturnType<typeof adminService.getVipPaidUsers>> | null>(null);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await adminService.getVipPaidUsers({ page, limit: 50 });
+      const res = await adminService.getVipPaidUsers({
+        page,
+        limit: 50,
+        status: statusFilter,
+      });
       setData(res);
     } catch {
       setError('Failed to load VIP paid users');
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, statusFilter]);
 
   useEffect(() => {
     void load();
@@ -56,6 +64,19 @@ const VipPaidUsersPage: React.FC = () => {
       ),
     },
     { key: 'planId', header: 'Plan', render: (r) => r.planId },
+    {
+      key: 'daysRemaining',
+      header: 'Days left',
+      render: (r) =>
+        r.status === 'active' ? (
+          <StatusBadge
+            variant={r.daysRemaining <= 7 ? 'warning' : 'info'}
+            label={String(r.daysRemaining)}
+          />
+        ) : (
+          '—'
+        ),
+    },
     { key: 'coinsPaid', header: 'Coins paid', render: (r) => r.coinsPaid },
     { key: 'startedAt', header: 'Started', render: (r) => formatDateTime(r.startedAt) },
     { key: 'expiresAt', header: 'Expires', render: (r) => formatDateTime(r.expiresAt) },
@@ -68,6 +89,25 @@ const VipPaidUsersPage: React.FC = () => {
       <div>
         <h1 className="text-xl font-semibold text-white">Paid users — VIP</h1>
         <p className="text-sm text-zinc-500 mt-1">VIP memberships and purchase ledger.</p>
+      </div>
+      <div className="flex gap-2">
+        {(['all', 'active', 'expired'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => {
+              setPage(1);
+              setStatusFilter(tab);
+            }}
+            className={`px-3 py-1 rounded border text-sm ${
+              statusFilter === tab
+                ? 'border-amber-400 text-amber-300'
+                : 'border-white/10 text-zinc-400'
+            }`}
+          >
+            {tab === 'all' ? 'All' : tab === 'active' ? 'Active' : 'Expired'}
+          </button>
+        ))}
       </div>
       {data?.summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

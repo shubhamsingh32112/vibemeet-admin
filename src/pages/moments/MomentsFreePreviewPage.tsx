@@ -18,6 +18,7 @@ const MomentsFreePreviewPage: React.FC = () => {
   const [limit, setLimit] = useState(12);
   const [browseQ, setBrowseQ] = useState('');
   const [browseHasPreview, setBrowseHasPreview] = useState<'yes' | 'no' | ''>('');
+  const [browseVisibility, setBrowseVisibility] = useState<'PUBLIC' | 'VIP' | ''>('');
   const [browseItems, setBrowseItems] = useState<MomentsBrowseRow[]>([]);
   const [browseLoading, setBrowseLoading] = useState(false);
 
@@ -45,13 +46,14 @@ const MomentsFreePreviewPage: React.FC = () => {
       const data = await adminService.browseMomentsForAdmin({
         q: browseQ.trim() || undefined,
         hasPreview: browseHasPreview || undefined,
+        visibilityTier: browseVisibility || undefined,
         limit: 30,
       });
       setBrowseItems(data.items);
     } finally {
       setBrowseLoading(false);
     }
-  }, [browseQ, browseHasPreview]);
+  }, [browseQ, browseHasPreview, browseVisibility]);
 
   useEffect(() => {
     void loadPreviews();
@@ -130,6 +132,21 @@ const MomentsFreePreviewPage: React.FC = () => {
     }
   };
 
+  const setVisibility = async (momentId: string, visibilityTier: 'PUBLIC' | 'VIP') => {
+    setSaving(true);
+    setMsg('');
+    try {
+      await adminService.patchMomentVisibilityTier(momentId, visibilityTier);
+      await loadBrowse();
+      await loadPreviews();
+      setMsg(`Visibility set to ${visibilityTier}.`);
+    } catch {
+      setMsg('Failed to update visibility.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const previewColumns: Column<MomentsFreePreviewRow>[] = [
     {
       key: 'thumb',
@@ -163,6 +180,23 @@ const MomentsFreePreviewPage: React.FC = () => {
       key: 'moderation',
       header: 'Moderation',
       render: (r) => <StatusBadge label={r.moderationStatus} variant="success" />,
+    },
+    {
+      key: 'visibility',
+      header: 'Visibility',
+      render: (r) => (
+        <select
+          className="rounded border px-2 py-1 text-xs"
+          value={r.visibilityTier ?? 'PUBLIC'}
+          disabled={saving}
+          onChange={(e) =>
+            void setVisibility(r.momentId, e.target.value as 'PUBLIC' | 'VIP')
+          }
+        >
+          <option value="PUBLIC">PUBLIC</option>
+          <option value="VIP">VIP</option>
+        </select>
+      ),
     },
     {
       key: 'order',
@@ -227,6 +261,23 @@ const MomentsFreePreviewPage: React.FC = () => {
     },
     { key: 'views', header: 'Views', render: (r) => r.viewsCount },
     {
+      key: 'visibility',
+      header: 'Visibility',
+      render: (r) => (
+        <select
+          className="rounded border px-2 py-1 text-xs"
+          value={r.visibilityTier ?? 'PUBLIC'}
+          disabled={saving}
+          onChange={(e) =>
+            void setVisibility(r.momentId, e.target.value as 'PUBLIC' | 'VIP')
+          }
+        >
+          <option value="PUBLIC">PUBLIC</option>
+          <option value="VIP">VIP</option>
+        </select>
+      ),
+    },
+    {
       key: 'add',
       header: '',
       render: (r) => {
@@ -279,6 +330,15 @@ const MomentsFreePreviewPage: React.FC = () => {
             <option value="">Has preview: any</option>
             <option value="no">Not in preview</option>
             <option value="yes">Already in preview</option>
+          </select>
+          <select
+            className="rounded border px-3 py-2 text-sm"
+            value={browseVisibility}
+            onChange={(e) => setBrowseVisibility(e.target.value as 'PUBLIC' | 'VIP' | '')}
+          >
+            <option value="">Visibility: all</option>
+            <option value="PUBLIC">PUBLIC</option>
+            <option value="VIP">VIP</option>
           </select>
           <button
             type="button"
