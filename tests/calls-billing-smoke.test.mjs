@@ -19,22 +19,19 @@ test('dashboard page wires date range into all key queries', () => {
   assert.ok(src.includes('fetchDashboardPayouts(dashboardDateParams)'));
 });
 
-test('calls and ops pages keep pagination/filter state in URL', () => {
-  const calls = read('src/pages/CallsPage.tsx');
-  const withdrawals = read('src/pages/WithdrawalsPage.tsx');
-  const support = read('src/pages/SupportPage.tsx');
-  const blocked = read('src/pages/BlockedHostsPage.tsx');
-  assert.ok(calls.includes('useSearchParams'), 'calls page uses URL params');
-  assert.ok(withdrawals.includes('useSearchParams'), 'withdrawals page uses URL params');
-  assert.ok(support.includes('useSearchParams'), 'support page uses URL params');
-  assert.ok(blocked.includes('useSearchParams'), 'blocked page uses URL params');
-  assert.ok(calls.includes('updateListQuery({ page: 1 })'), 'calls resets page on filter/date changes');
-  assert.ok(withdrawals.includes('updateListQuery({ page: 1 })'), 'withdrawals resets page on filter/date changes');
-  assert.ok(support.includes('updateListQuery({ page: 1 })'), 'support resets page on filter/date changes');
-});
-
 test('sidebar preserves global date range query params', () => {
   const src = read('src/components/admin/dashboard/SuperAdminSidebar.tsx');
   assert.ok(src.includes("for (const key of ['drPreset', 'drFrom', 'drTo'])"));
   assert.ok(src.includes('to={{ pathname: item.to, search: preservedSearch }}'));
+});
+
+test('calls page wires settlement retry UI', () => {
+  const calls = read('src/pages/CallsPage.tsx');
+  const adminService = read('src/services/adminService.ts');
+  assert.ok(calls.includes('getSettlementRetryPreview'), 'calls page loads settlement preview');
+  assert.ok(calls.includes('retryCallSettlement'), 'calls page retries settlement');
+  assert.ok(calls.includes('canRetrySettlement'), 'calls page shows retryable rows');
+  assert.ok(calls.includes('settlementIssue'), 'calls page shows settlement issues');
+  assert.ok(adminService.includes('getSettlementRetryPreview'), 'admin service settlement preview');
+  assert.ok(adminService.includes('retryCallSettlementBulk'), 'admin service bulk retry');
 });

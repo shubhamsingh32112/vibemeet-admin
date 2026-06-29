@@ -320,6 +320,44 @@ export interface AdminCall {
   isVeryShort: boolean;
   isSuspicious: boolean;
   isRefunded: boolean;
+  canRetrySettlement?: boolean;
+  settlementIssue?:
+    | 'zero_duration_with_billing'
+    | 'unsettled_ledger'
+    | 'failed_recovery'
+    | 'stuck_settling'
+    | null;
+  authoritativeCoinsDeducted?: number | null;
+}
+
+export interface SettlementRetryPreview {
+  callId: string;
+  eligible: boolean;
+  skipReason?: string;
+  settlementIssue:
+    | 'zero_duration_with_billing'
+    | 'unsettled_ledger'
+    | 'failed_recovery'
+    | 'stuck_settling'
+    | null;
+  billingStatus: string;
+  callHistory: {
+    durationSeconds: number;
+    coinsDeducted: number;
+    coinsEarned: number;
+    settlementStatus?: string;
+  } | null;
+  authoritativeTotals: {
+    totalDeductedMicros: number;
+    totalEarnedMicros: number;
+    billingSequence: number;
+    source: string;
+  };
+  authoritativeCoinsDeducted: number;
+  proposedDurationSeconds: number;
+  proposedCoinsDeducted: number;
+  deadLetterPresent: boolean;
+  hasVideoCallDebitTxn: boolean;
 }
 
 export interface RefundPreview {
@@ -1003,6 +1041,32 @@ export const adminService = {
   getRefundPreview: async (callId: string): Promise<RefundPreview> => {
     const res = await api.get(`/admin/calls/${callId}/refund-preview`);
     return res.data.data;
+  },
+
+  getSettlementRetryPreview: async (callId: string): Promise<SettlementRetryPreview> => {
+    const res = await api.get(`/admin/calls/${callId}/settlement-retry-preview`);
+    return res.data.data;
+  },
+
+  retryCallSettlement: async (
+    callId: string,
+    opts?: { force?: boolean }
+  ): Promise<{ status: string; message: string }> => {
+    const res = await api.post(`/admin/calls/${callId}/retry-settlement`, {
+      force: opts?.force === true,
+    });
+    return res.data.data;
+  },
+
+  retryCallSettlementBulk: async (
+    callIds: string[],
+    opts?: { force?: boolean }
+  ): Promise<Array<{ callId: string; status: string; message: string }>> => {
+    const res = await api.post('/admin/calls/retry-settlement-bulk', {
+      callIds,
+      force: opts?.force === true,
+    });
+    return res.data.data.results;
   },
 
   // ── System Health ────────────────────────────────────
