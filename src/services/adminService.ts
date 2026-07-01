@@ -1367,6 +1367,39 @@ export const adminService = {
     });
     return res.data.data;
   },
+
+  getUploadRewardsConfig: async (): Promise<{
+    photoRewardCoins: number;
+    videoRewardCoins: number;
+  }> => {
+    const res = await api.get('/admin/moments/upload-rewards/config');
+    return res.data.data;
+  },
+
+  getPendingUploadRewards: async (): Promise<{ items: MomentUploadRewardRow[] }> => {
+    const res = await api.get('/admin/moments/upload-rewards/pending');
+    return res.data.data;
+  },
+
+  approveUploadReward: async (
+    id: string,
+  ): Promise<{
+    id: string;
+    uploadRewardStatus: string;
+    coinsCredited: number;
+    newBalance: number;
+    rewardCoins: number;
+  }> => {
+    const res = await api.post('/admin/moments/upload-rewards/approve', { id });
+    return res.data.data;
+  },
+
+  rejectUploadReward: async (
+    id: string,
+  ): Promise<{ id: string; uploadRewardStatus: string }> => {
+    const res = await api.post('/admin/moments/upload-rewards/reject', { id });
+    return res.data.data;
+  },
 };
 
 export interface MomentsFreePreviewRow {
@@ -1408,4 +1441,17 @@ export interface MomentsBrowseRow {
     avatarUrl?: string;
     verified: boolean;
   };
+}
+
+export interface MomentUploadRewardRow {
+  id: string;
+  creatorId: string;
+  creatorName: string;
+  creatorAvatarUrl?: string;
+  type: 'photo' | 'video';
+  caption?: string | null;
+  createdAt: string;
+  thumbnailUrl?: string;
+  uploadRewardStatus: string;
+  rewardCoins: number;
 }

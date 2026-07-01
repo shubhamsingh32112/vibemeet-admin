@@ -20,6 +20,7 @@ import {
   Users,
   Video,
   Wallet,
+  Coins,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -87,6 +88,7 @@ const SECTIONS: NavSection[] = [
     title: 'Content',
     items: [
       { to: '/moments/free-previews', label: 'Moments free previews', icon: Sparkles },
+      { to: '/moments/upload-rewards', label: 'Moment upload rewards', icon: Coins },
     ],
   },
   {
