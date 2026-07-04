@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '../../../lib/utils';
 import StatusBadge from '../../ui/StatusBadge';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 
 export type PayoutRow = {
   id: string;
@@ -23,12 +24,21 @@ function payoutBadge(status: string) {
 type PayoutTableProps = {
   rows: PayoutRow[];
   loading?: boolean;
+  helpKey?: string;
   className?: string;
 };
 
-export const PayoutTable: React.FC<PayoutTableProps> = ({ rows, loading, className }) => (
+export const PayoutTable: React.FC<PayoutTableProps> = ({
+  rows,
+  loading,
+  helpKey = 'dashboard.payouts_table',
+  className,
+}) => (
   <div className={cn('glass-panel rounded-2xl p-4', className)}>
-    <h3 className="text-sm font-semibold text-white mb-3">Recent payout requests</h3>
+    <h3 className="text-sm font-semibold text-white mb-3 inline-flex items-center gap-1">
+      Recent payout requests
+      <MetricHelpButton helpKey={helpKey} />
+    </h3>
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs">
         <thead>

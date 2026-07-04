@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import MetricCard from '../../ui/MetricCard';
+import { SectionHeading } from '../help/SectionHeading';
 import StatusBadge from '../../ui/StatusBadge';
 import LoadingSpinner from '../../ui/LoadingSpinner';
 import { adminService, type SystemHealth } from '../../../services/adminService';
@@ -63,7 +64,7 @@ const SystemHealthPanel: React.FC = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-white">System Health</h1>
+          <SectionHeading title="System Health" helpKey="monitoring.system_health" level={1} />
           <StatusBadge
             variant={allOk ? 'success' : 'danger'}
             label={allOk ? 'All Systems Operational' : 'Issues Detected'}

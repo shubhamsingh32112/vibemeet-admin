@@ -1,4 +1,6 @@
 import React from 'react';
+import { MetricHelpButton } from '../admin/help/MetricHelpButton';
+import type { MetricHelpContent } from '../../content/superadminMetricHelp';
 
 interface MetricCardProps {
   label: string;
@@ -8,6 +10,8 @@ interface MetricCardProps {
   icon?: React.ReactNode;
   onClick?: () => void;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  help?: MetricHelpContent;
+  helpKey?: string;
 }
 
 const variantStyles: Record<string, string> = {
@@ -26,6 +30,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   icon,
   onClick,
   variant = 'default',
+  help,
+  helpKey,
 }) => {
   return (
     <div
@@ -36,8 +42,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider truncate">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider truncate inline-flex items-center gap-1">
             {label}
+            <MetricHelpButton help={help} helpKey={helpKey} />
           </p>
           <p className="mt-1 text-2xl font-bold text-white tabular-nums">
             {typeof value === 'number' ? value.toLocaleString() : value}

@@ -1,11 +1,13 @@
 import * as React from 'react';
 import { AlertCircle, CheckCircle2, Landmark } from 'lucide-react';
 import type { DashboardRazorpayBalance } from '../../../services/dashboardApi';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 
 type RazorpayBalancePanelProps = {
   data?: DashboardRazorpayBalance;
   loading?: boolean;
   error?: boolean;
+  helpKey?: string;
 };
 
 function formatMoney(subunits: number, currency: string): string {
@@ -21,7 +23,12 @@ function formatMoney(subunits: number, currency: string): string {
   }
 }
 
-const RazorpayBalancePanel: React.FC<RazorpayBalancePanelProps> = ({ data, loading, error }) => {
+const RazorpayBalancePanel: React.FC<RazorpayBalancePanelProps> = ({
+  data,
+  loading,
+  error,
+  helpKey = 'dashboard.razorpay_balance',
+}) => {
   if (loading) {
     return <div className="glass-panel rounded-2xl p-5 text-sm text-zinc-400">Loading Razorpay balances...</div>;
   }
@@ -57,7 +64,10 @@ const RazorpayBalancePanel: React.FC<RazorpayBalancePanelProps> = ({ data, loadi
     <div className="glass-panel rounded-2xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-white">Razorpay Balances</h3>
+          <h3 className="text-sm font-semibold text-white inline-flex items-center gap-1">
+            Razorpay Balances
+            <MetricHelpButton helpKey={helpKey} />
+          </h3>
           <p className="mt-1 text-xs text-zinc-500">
             Available, reserve, and channel-level balances for Superadmin visibility.
           </p>

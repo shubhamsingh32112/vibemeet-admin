@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { HelpColumnHeader } from '../admin/help/HelpColumnHeader';
 
 export interface Column<T> {
   key: string;
@@ -21,6 +22,8 @@ interface DataTableProps<T> {
   compact?: boolean;
   /** Below md: render each row as a card (better touch UX). */
   stackedOnMobile?: boolean;
+  /** Map column key → help registry key for ? tooltips on headers. */
+  columnHelp?: Record<string, string>;
 }
 
 function DataTable<T extends Record<string, any>>({
@@ -34,6 +37,7 @@ function DataTable<T extends Record<string, any>>({
   maxHeight = '600px',
   compact = false,
   stackedOnMobile = false,
+  columnHelp,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -126,8 +130,12 @@ function DataTable<T extends Record<string, any>>({
               >
                 {columns.map((col) => (
                   <div key={col.key} className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-3 text-sm">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 shrink-0">
-                      {col.header || col.key}
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 shrink-0 inline-flex items-center gap-1">
+                      {columnHelp?.[col.key] ? (
+                        <HelpColumnHeader label={col.header || col.key} helpKey={columnHelp[col.key]} />
+                      ) : (
+                        col.header || col.key
+                      )}
                     </span>
                     <div className="text-zinc-200 text-right sm:text-right min-w-0 break-words [&_*]:whitespace-normal">
                       {col.render ? col.render(row) : row[col.key] ?? '—'}
@@ -159,7 +167,11 @@ function DataTable<T extends Record<string, any>>({
                   onClick={() => col.sortable && handleSort(col.key)}
                 >
                   <span className="flex items-center gap-1">
-                    {col.header}
+                    {columnHelp?.[col.key] ? (
+                      <HelpColumnHeader label={col.header} helpKey={columnHelp[col.key]} />
+                    ) : (
+                      col.header
+                    )}
                     {col.sortable && sortKey === col.key && (
                       <span className="text-blue-400">
                         {sortDir === 'asc' ? '↑' : '↓'}

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import MetricCard from '../components/ui/MetricCard';
 import {
   adminService,
@@ -89,7 +90,7 @@ const BlockedHostsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Blocked hosts</h1>
+        <SectionHeading title="Blocked hosts" helpKey="hosts.blocked" level={1} />
         <p className="text-sm text-zinc-500 mt-1 max-w-2xl">
           Hosts blocked by app users (chat / feed) and hosts reported via in-app creator reports.
           Reports also appear under{' '}

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../config/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import {
   BD_LIST_SORT_OPTIONS,
   sortBdRows,
@@ -132,7 +133,7 @@ const BdsManagePage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">BD accounts</h1>
+        <SectionHeading title="BD accounts" helpKey="hosts.bds" level={1} />
         <p className="text-sm text-zinc-500 mt-1">
           Top-tier BD organizations. Hosts = creators assigned to agencies under each BD.
         </p>

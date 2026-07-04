@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
@@ -70,7 +71,7 @@ const FinancePaymentsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-xl font-semibold text-white">{title}</h1>
+        <SectionHeading title={title} helpKey="finance.payments" level={1} />
       </div>
       {loading ? <LoadingSpinner /> : <DataTable columns={columns} data={rows} keyField="id" />}
       {totalPages > 1 && (

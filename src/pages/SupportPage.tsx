@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import MetricCard from '../components/ui/MetricCard';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
@@ -366,7 +367,7 @@ const SupportPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-white">🛟 Support Tickets</h1>
+          <SectionHeading title="Support Tickets" helpKey="monitoring.support" level={1} />
           <p className="text-xs text-gray-500 mt-0.5">
             Manage user and creator support requests
           </p>
@@ -438,27 +439,32 @@ const SupportPage: React.FC = () => {
             value={summary.openUserTickets}
             subtitle="open"
             variant="info"
+            helpKey="monitoring.support"
           />
           <MetricCard
             label="Creator Tickets"
             value={summary.openCreatorTickets}
             subtitle="open"
             variant="info"
+            helpKey="monitoring.support"
           />
           <MetricCard
             label="High Priority"
             value={summary.highPriorityOpen}
             variant={summary.highPriorityOpen > 0 ? 'danger' : 'default'}
+            helpKey="monitoring.support"
           />
           <MetricCard
             label="Unassigned"
             value={summary.unassigned}
             variant={summary.unassigned > 0 ? 'warning' : 'default'}
+            helpKey="monitoring.support"
           />
           <MetricCard
             label="Aging > 24h"
             value={summary.agingOver24h}
             variant={summary.agingOver24h > 0 ? 'warning' : 'default'}
+            helpKey="monitoring.support"
           />
         </div>
       )}

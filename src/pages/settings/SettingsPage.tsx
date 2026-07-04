@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import AppUpdatePanel from '../../components/admin/system/AppUpdatePanel';
 import {
   adminService,
@@ -99,7 +100,7 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-8 max-w-5xl">
       <div>
-        <h1 className="text-xl font-semibold text-white">Platform config</h1>
+        <SectionHeading title="Platform config" helpKey="settings.page" level={1} />
         <p className="text-sm text-zinc-500 mt-1">Wallet pricing, staff commission, and app update publishing.</p>
       </div>
 

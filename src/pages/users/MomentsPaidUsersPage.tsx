@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
 import { Sparkles } from 'lucide-react';
@@ -56,15 +57,15 @@ const MomentsPaidUsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Paid users — moments</h1>
+        <SectionHeading title="Paid users — moments" helpKey="finance.moments_paid_users" level={1} />
         <p className="text-sm text-zinc-500 mt-1">Coin and VIP-discounted moment purchases (excludes refunds).</p>
       </div>
       {data?.summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPIStatCard title="Buyers today" value={data.summary.uniqueBuyersToday} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="Buyers 7d" value={data.summary.uniqueBuyers7d} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="Buyers 30d" value={data.summary.uniqueBuyers30d} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="Revenue (coins)" value={data.summary.totalRevenueCoins} icon={<Sparkles className="h-5 w-5" />} />
+          <KPIStatCard title="Buyers today" value={data.summary.uniqueBuyersToday} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_paid_users" />
+          <KPIStatCard title="Buyers 7d" value={data.summary.uniqueBuyers7d} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_paid_users" />
+          <KPIStatCard title="Buyers 30d" value={data.summary.uniqueBuyers30d} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_paid_users" />
+          <KPIStatCard title="Revenue (coins)" value={data.summary.totalRevenueCoins} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_paid_users" />
         </div>
       )}
       {error && <p className="text-red-400 text-sm">{error}</p>}

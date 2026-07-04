@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
@@ -70,7 +71,7 @@ const WalletTransactionsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-white">Wallet transactions</h1>
+          <SectionHeading title="Wallet transactions" helpKey="finance.wallet_transactions" level={1} />
           <p className="text-sm text-zinc-500 mt-1">All completed and pending coin ledger entries.</p>
         </div>
       </div>

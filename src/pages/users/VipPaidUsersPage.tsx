@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
@@ -87,7 +88,7 @@ const VipPaidUsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Paid users — VIP</h1>
+        <SectionHeading title="Paid users — VIP" helpKey="finance.vip_paid_users" level={1} />
         <p className="text-sm text-zinc-500 mt-1">VIP memberships and purchase ledger.</p>
       </div>
       <div className="flex gap-2">
@@ -111,10 +112,10 @@ const VipPaidUsersPage: React.FC = () => {
       </div>
       {data?.summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPIStatCard title="Active members" value={data.summary.activeMembers} icon={<Crown className="h-5 w-5" />} />
-          <KPIStatCard title="New today" value={data.summary.newPurchasesToday} icon={<Crown className="h-5 w-5" />} />
-          <KPIStatCard title="New 7d" value={data.summary.newPurchases7d} icon={<Crown className="h-5 w-5" />} />
-          <KPIStatCard title="Revenue 30d (coins)" value={data.summary.revenueCoins30d} icon={<Crown className="h-5 w-5" />} />
+          <KPIStatCard title="Active members" value={data.summary.activeMembers} icon={<Crown className="h-5 w-5" />} helpKey="finance.vip_paid_users" />
+          <KPIStatCard title="New today" value={data.summary.newPurchasesToday} icon={<Crown className="h-5 w-5" />} helpKey="finance.vip_paid_users" />
+          <KPIStatCard title="New 7d" value={data.summary.newPurchases7d} icon={<Crown className="h-5 w-5" />} helpKey="finance.vip_paid_users" />
+          <KPIStatCard title="Revenue 30d (coins)" value={data.summary.revenueCoins30d} icon={<Crown className="h-5 w-5" />} helpKey="finance.vip_paid_users" />
         </div>
       )}
       {error && <p className="text-red-400 text-sm">{error}</p>}

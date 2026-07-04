@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import MetricCard from '../components/ui/MetricCard';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
@@ -24,11 +25,67 @@ const statusVariant = (s: string) => {
   }
 };
 
+type WithdrawalsVariant = 'creator' | 'bd' | 'agency';
+
 type WithdrawalsPageProps = {
   embedded?: boolean;
+  /** creator = host payouts (default); bd/agency = staff wallet withdrawals */
+  variant?: WithdrawalsVariant;
 };
 
-const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) => {
+const VARIANT_CONFIG: Record<
+  WithdrawalsVariant,
+  {
+    title: string;
+    subtitle: string;
+    partyLabel: string;
+    type: 'staff' | 'creator';
+    staffRole?: 'bd' | 'agency';
+  }
+> = {
+  creator: {
+    title: 'Host withdrawals',
+    subtitle: 'Approve, reject, and mark paid for creator payout requests',
+    partyLabel: 'Creator',
+    type: 'creator',
+  },
+  bd: {
+    title: 'BD withdrawals',
+    subtitle: 'Approve, reject, and mark paid for BD staff wallet payout requests',
+    partyLabel: 'BD',
+    type: 'staff',
+    staffRole: 'bd',
+  },
+  agency: {
+    title: 'Agency withdrawals',
+    subtitle: 'Approve, reject, and mark paid for agency staff wallet payout requests',
+    partyLabel: 'Agency',
+    type: 'staff',
+    staffRole: 'agency',
+  },
+};
+
+function partyName(row: AdminWithdrawal, variant: WithdrawalsVariant): string {
+  if (variant === 'creator') return row.creatorName;
+  return row.staffDisplayName || row.staffEmail || row.creatorName || 'Staff';
+}
+
+function partyContact(row: AdminWithdrawal, variant: WithdrawalsVariant): string {
+  if (variant !== 'creator') {
+    return row.staffEmail || '—';
+  }
+  return row.creatorEmail || row.creatorPhone || '—';
+}
+
+function partyBalance(row: AdminWithdrawal, variant: WithdrawalsVariant): number {
+  if (variant !== 'creator' && row.staffCurrentBalance != null) {
+    return row.staffCurrentBalance;
+  }
+  return row.creatorCurrentBalance;
+}
+
+const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false, variant = 'creator' }) => {
+  const config = VARIANT_CONFIG[variant];
   const { markFresh } = useStaffRealtime();
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
   const [summary, setSummary] = useState<WithdrawalSummary | null>(null);
@@ -75,6 +132,8 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
         status: statusFilter || undefined,
         page,
         limit: 50,
+        type: config.type,
+        staffRole: config.staffRole,
         from: dateRange.from,
         to: dateRange.to,
       });
@@ -92,7 +151,7 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, dateRange.from, dateRange.to, markFresh, updateListQuery]);
+  }, [page, statusFilter, dateRange.from, dateRange.to, markFresh, updateListQuery, config.type, config.staffRole]);
 
   useEffect(() => {
     load();
@@ -121,7 +180,7 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
         alert('Withdrawal rejected.');
       } else if (actionType === 'mark-paid') {
         await adminService.markWithdrawalPaid(actionTarget.id, actionNotes || undefined);
-        alert(`Withdrawal marked as paid. ${actionTarget.amount.toLocaleString()} coins deducted from creator.`);
+        alert(`Withdrawal marked as paid. ${actionTarget.amount.toLocaleString()} coins deducted from ${config.partyLabel.toLowerCase()}.`);
       }
       setActionTarget(null);
       setActionType(null);
@@ -137,12 +196,15 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
   const columns: Column<AdminWithdrawal>[] = [
     {
       key: 'creatorName',
-      header: 'Creator',
+      header: config.partyLabel,
       sortable: true,
       render: (row) => (
         <div>
-          <p className="text-white font-medium text-sm">{row.creatorName}</p>
-          <p className="text-gray-500 text-xs">{row.creatorEmail || row.creatorPhone || '—'}</p>
+          <p className="text-white font-medium text-sm">{partyName(row, variant)}</p>
+          <p className="text-gray-500 text-xs">{partyContact(row, variant)}</p>
+          {variant !== 'creator' && row.staffRole ? (
+            <p className="text-gray-600 text-[10px] uppercase tracking-wide">{row.staffRole}</p>
+          ) : null}
         </div>
       ),
     },
@@ -159,7 +221,7 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
       header: 'Balance',
       sortable: true,
       render: (row) => (
-        <span className="tabular-nums">{row.creatorCurrentBalance.toLocaleString()}</span>
+        <span className="tabular-nums">{partyBalance(row, variant).toLocaleString()}</span>
       ),
     },
     {
@@ -272,8 +334,8 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
       {!embedded && (
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-white">Withdrawals</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Manage creator withdrawal requests</p>
+            <SectionHeading title={config.title} helpKey="finance.payouts" level={1} />
+            <p className="text-xs text-gray-500 mt-0.5">{config.subtitle}</p>
           </div>
           <button
             type="button"
@@ -293,21 +355,25 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
             label="Pending"
             value={summary.pendingCount}
             variant={summary.pendingCount > 0 ? 'warning' : 'default'}
+            helpKey="finance.payouts"
           />
           <MetricCard
             label="Withdrawn (30d)"
             value={summary.totalWithdrawn30d.toLocaleString()}
             subtitle="coins"
             variant="info"
+            helpKey="finance.payouts"
           />
           <MetricCard
             label="Total Shown"
             value={total}
+            helpKey="finance.payouts"
           />
           <MetricCard
-            label="Top Creator (30d)"
+            label="Top (30d)"
             value={summary.topWithdrawingCreators[0]?.totalWithdrawn?.toLocaleString() || '0'}
             subtitle={summary.topWithdrawingCreators[0]?.name || '—'}
+            helpKey="finance.payouts"
           />
         </div>
       )}
@@ -337,7 +403,11 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
         keyField="id"
         emptyMessage="No withdrawals found"
         searchPlaceholder="Search current page by name, email…"
-        searchFields={['creatorName', 'creatorEmail', 'creatorPhone']}
+        searchFields={
+          variant === 'creator'
+            ? ['creatorName', 'creatorEmail', 'creatorPhone']
+            : ['staffDisplayName', 'staffEmail', 'creatorName', 'creatorEmail']
+        }
         compact
       />
 
@@ -368,7 +438,7 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
       )}
 
       {/* Top Withdrawing Creators */}
-      {summary && summary.topWithdrawingCreators.length > 0 && (
+      {variant === 'creator' && summary && summary.topWithdrawingCreators.length > 0 && (
         <div className="mt-6 bg-gray-900 border border-gray-800 rounded-lg p-4">
           <h4 className="text-xs font-semibold text-gray-400 uppercase mb-3">
             Top Withdrawing Creators (30d)
@@ -406,10 +476,10 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
         message={
           actionTarget
             ? actionType === 'approve'
-              ? `Approve withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName}? Coins are not deducted until you mark it as paid.`
+              ? `Approve withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)}? Coins are not deducted until you mark it as paid.`
               : actionType === 'reject'
-              ? `Reject withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName}? No coins will be deducted.`
-              : `Mark withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${actionTarget.creatorName} as paid? This will deduct ${actionTarget.amount.toLocaleString()} coins and confirms external payment was completed.`
+              ? `Reject withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)}? No coins will be deducted.`
+              : `Mark withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)} as paid? This will deduct ${actionTarget.amount.toLocaleString()} coins and confirms external payment was completed.`
             : ''
         }
         confirmLabel={
@@ -427,11 +497,11 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false }) =
         <div className="space-y-3">
           {actionTarget && (
             <div className="text-xs space-y-1">
-              <p className="text-gray-400">Creator: <span className="text-white">{actionTarget.creatorName}</span></p>
-              <p className="text-gray-400">Current Balance: <span className="text-white">{actionTarget.creatorCurrentBalance.toLocaleString()} coins</span></p>
+              <p className="text-gray-400">{config.partyLabel}: <span className="text-white">{partyName(actionTarget, variant)}</span></p>
+              <p className="text-gray-400">Current Balance: <span className="text-white">{partyBalance(actionTarget, variant).toLocaleString()} coins</span></p>
               <p className="text-gray-400">Withdrawal Amount: <span className="text-yellow-300">{actionTarget.amount.toLocaleString()} coins</span></p>
               {actionType === 'mark-paid' && (
-                <p className="text-gray-400">After Mark Paid: <span className="text-emerald-300">{(actionTarget.creatorCurrentBalance - actionTarget.amount).toLocaleString()} coins</span></p>
+                <p className="text-gray-400">After Mark Paid: <span className="text-emerald-300">{(partyBalance(actionTarget, variant) - actionTarget.amount).toLocaleString()} coins</span></p>
               )}
               <div className="pt-2 mt-2 border-t border-gray-700">
                 <p className="text-gray-500 font-semibold mb-1">Withdrawal Details:</p>

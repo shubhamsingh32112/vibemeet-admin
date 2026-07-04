@@ -14,8 +14,9 @@ export type DashboardOverview = {
       rechargeCoins: number;
       transactionCount: number;
     }>;
+    timezone?: string;
+    historyDays?: number;
     note?: string;
-    selectedRange?: { from: string; to: string };
   };
   liveCallsProxy: number;
   activeUnsettledUserCalls: number;
@@ -251,5 +252,33 @@ export async function fetchDashboardGeo() {
 
 export async function fetchDashboardRazorpayBalance(): Promise<DashboardRazorpayBalance> {
   const res = await api.get('/admin/dashboard/razorpay-balance');
+  return res.data.data;
+}
+
+export type RechargeTransactionRow = {
+  id: string;
+  completedAt: string;
+  completedAtIst: string;
+  userId: string;
+  userLabel: string;
+  inr: number;
+  coins: number;
+  description: string | null;
+  orderId: string | null;
+  paymentId: string | null;
+  transactionId: string;
+};
+
+export type RechargeTransactionsDay = {
+  date: string;
+  timezone: string;
+  totalInr: number;
+  totalCoins: number;
+  transactionCount: number;
+  transactions: RechargeTransactionRow[];
+};
+
+export async function fetchDashboardRechargeTransactions(date: string): Promise<RechargeTransactionsDay> {
+  const res = await api.get('/admin/dashboard/recharge-transactions', { params: { date } });
   return res.data.data;
 }

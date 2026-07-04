@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
 import { Coins } from 'lucide-react';
@@ -76,7 +77,7 @@ const CoinsPaidUsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Paid users — coins</h1>
+        <SectionHeading title="Paid users — coins" helpKey="finance.coins_paid_users" level={1} />
         <p className="text-sm text-zinc-500 mt-1">
           Users who completed wallet recharges from the app (payment_gateway).
         </p>
@@ -87,15 +88,17 @@ const CoinsPaidUsersPage: React.FC = () => {
             title="Unique buyers"
             value={data.summary.uniqueBuyersAllTime}
             icon={<Coins className="h-5 w-5" />}
+            helpKey="finance.coins_paid_users"
           />
-          <KPIStatCard title="Buyers today" value={data.summary.buyersToday} icon={<Coins className="h-5 w-5" />} />
-          <KPIStatCard title="Buyers 7d" value={data.summary.buyers7d} icon={<Coins className="h-5 w-5" />} />
-          <KPIStatCard title="Buyers 30d" value={data.summary.buyers30d} icon={<Coins className="h-5 w-5" />} />
+          <KPIStatCard title="Buyers today" value={data.summary.buyersToday} icon={<Coins className="h-5 w-5" />} helpKey="finance.coins_paid_users" />
+          <KPIStatCard title="Buyers 7d" value={data.summary.buyers7d} icon={<Coins className="h-5 w-5" />} helpKey="finance.coins_paid_users" />
+          <KPIStatCard title="Buyers 30d" value={data.summary.buyers30d} icon={<Coins className="h-5 w-5" />} helpKey="finance.coins_paid_users" />
           <KPIStatCard
             title="INR collected 30d"
             value={data.summary.revenueInr30d}
             format="inr"
             icon={<Coins className="h-5 w-5" />}
+            helpKey="finance.coins_paid_users"
           />
         </div>
       )}

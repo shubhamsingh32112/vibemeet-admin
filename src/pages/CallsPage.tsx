@@ -4,6 +4,7 @@ import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import { adminService, type AdminCall, type RefundPreview, type SettlementRetryPreview } from '../services/adminService';
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { formatDateTime } from '../utils/dateTime';
@@ -374,10 +375,17 @@ const CallsPage: React.FC = () => {
     },
   ];
 
+  const columnHelp: Record<string, string> = {
+    durationFormatted: 'calls.table.duration',
+    coinsDeducted: 'calls.table.coins_deducted',
+    creatorCoinsEarned: 'calls.table.coins_earned',
+    createdAt: 'calls.table.created',
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">Calls & Billing</h1>
+        <SectionHeading title="Calls & Billing" helpKey="calls.page" level={1} />
         <button
           onClick={load}
           className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
@@ -469,6 +477,7 @@ const CallsPage: React.FC = () => {
             keyField="callId"
             compact
             maxHeight="calc(100vh - 320px)"
+            columnHelp={columnHelp}
           />
 
           {/* Pagination */}
@@ -633,8 +642,16 @@ const CallsPage: React.FC = () => {
                 {resettlePreview.deadLetterPresent && (
                   <div className="text-red-400">Dead letter present — will be cleared on retry</div>
                 )}
-                {!resettlePreview.hasVideoCallDebitTxn && (
+                {!resettlePreview.hasVideoCallDebitTxn &&
+                  (resettlePreview.callHistory?.walletCoinsDeducted == null
+                    ? !resettlePreview.hasCreatorCreditTxn
+                    : (resettlePreview.callHistory?.walletCoinsDeducted ?? 0) > 0) && (
                   <div className="text-amber-400">No video_call debit txn in ledger</div>
+                )}
+                {!resettlePreview.hasVideoCallDebitTxn &&
+                  resettlePreview.hasCreatorCreditTxn &&
+                  (resettlePreview.callHistory?.walletCoinsDeducted ?? 0) === 0 && (
+                  <div className="text-gray-400">Intro/welcome promo call — wallet debit txn not expected</div>
                 )}
               </div>
               {!resettlePreview.eligible && (

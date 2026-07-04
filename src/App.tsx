@@ -32,8 +32,11 @@ import VipPaidUsersPage from './pages/users/VipPaidUsersPage';
 import CoinsPaidUsersPage from './pages/users/CoinsPaidUsersPage';
 import WalletTransactionsPage from './pages/finance/WalletTransactionsPage';
 import FinancePaymentsPage from './pages/finance/FinancePaymentsPage';
+import PaymentLogsPage from './pages/finance/PaymentLogsPage';
 import MomentsPremiumUsersPage from './pages/finance/MomentsPremiumUsersPage';
 import FinancePayoutsPage from './pages/finance/FinancePayoutsPage';
+import BdStaffWithdrawalsPage from './pages/finance/BdStaffWithdrawalsPage';
+import AgencyStaffWithdrawalsPage from './pages/finance/AgencyStaffWithdrawalsPage';
 import RevenueAnalyticsPage from './pages/revenue/RevenueAnalyticsPage';
 import SystemHealthPage from './pages/monitoring/SystemHealthPage';
 import SettingsPage from './pages/settings/SettingsPage';
@@ -318,11 +321,15 @@ const AppRoutes: React.FC = () => {
         <Route path="hosts/leaderboard" element={<LeaderboardsPage />} />
         {/* Finance */}
         <Route path="finance/payouts" element={<FinancePayoutsPage />} />
+        <Route path="finance/payouts/bd" element={<BdStaffWithdrawalsPage />} />
+        <Route path="finance/payouts/agency" element={<AgencyStaffWithdrawalsPage />} />
         <Route path="finance/wallet" element={<WalletTransactionsPage />} />
         <Route path="finance/paid-users/coins" element={<CoinsPaidUsersPage />} />
         <Route path="finance/paid-users/moments" element={<MomentsPaidUsersPage />} />
         <Route path="finance/paid-users/vip" element={<VipPaidUsersPage />} />
         <Route path="finance/payments/moments" element={<MomentsPremiumUsersPage />} />
+        <Route path="finance/payments/logs" element={<PaymentLogsPage />} />
+        <Route path="finance/payments/calls" element={<Navigate to="/finance/payments/logs" replace />} />
         <Route path="finance/payments/:kind" element={<FinancePaymentsPage />} />
         {/* Revenue */}
         <Route path="revenue" element={<RevenueAnalyticsPage />} />

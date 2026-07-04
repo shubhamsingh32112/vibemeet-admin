@@ -3,6 +3,7 @@ import WithdrawalsPage from '../WithdrawalsPage';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
 import { Wallet } from 'lucide-react';
@@ -61,15 +62,15 @@ const FinancePayoutsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Payouts & settlements</h1>
+        <SectionHeading title="Payouts & settlements" helpKey="finance.payouts" level={1} />
         <p className="text-sm text-zinc-500 mt-1">Withdrawal requests and completed settlements.</p>
       </div>
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPIStatCard title="Host payouts (30d)" value={summary.hostPayoutsCoins} icon={<Wallet className="h-5 w-5" />} />
-          <KPIStatCard title="BD payouts (30d)" value={summary.bdPayoutsCoins} icon={<Wallet className="h-5 w-5" />} />
-          <KPIStatCard title="Agency payouts (30d)" value={summary.agencyPayoutsCoins} icon={<Wallet className="h-5 w-5" />} />
-          <KPIStatCard title="Total paid (30d)" value={summary.totalPayoutsCoins} icon={<Wallet className="h-5 w-5" />} />
+          <KPIStatCard title="Host payouts (30d)" value={summary.hostPayoutsCoins} icon={<Wallet className="h-5 w-5" />} helpKey="finance.payouts" />
+          <KPIStatCard title="BD payouts (30d)" value={summary.bdPayoutsCoins} icon={<Wallet className="h-5 w-5" />} helpKey="finance.payouts" />
+          <KPIStatCard title="Agency payouts (30d)" value={summary.agencyPayoutsCoins} icon={<Wallet className="h-5 w-5" />} helpKey="finance.payouts" />
+          <KPIStatCard title="Total paid (30d)" value={summary.totalPayoutsCoins} icon={<Wallet className="h-5 w-5" />} helpKey="finance.payouts" />
         </div>
       )}
       <div className="flex gap-2 border-b border-white/10 pb-2">
@@ -78,7 +79,7 @@ const FinancePayoutsPage: React.FC = () => {
           onClick={() => setTab('requests')}
           className={`px-4 py-2 text-sm rounded-lg ${tab === 'requests' ? 'bg-violet-600/30 text-white' : 'text-zinc-400'}`}
         >
-          Payout requests
+          Payout requests (hosts)
         </button>
         <button
           type="button"
@@ -89,7 +90,7 @@ const FinancePayoutsPage: React.FC = () => {
         </button>
       </div>
       {tab === 'requests' ? (
-        <WithdrawalsPage embedded />
+        <WithdrawalsPage embedded variant="creator" />
       ) : loading ? (
         <LoadingSpinner />
       ) : (

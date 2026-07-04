@@ -34,6 +34,7 @@ import CallAnalyticsBlock from '../../components/admin/dashboard/CallAnalyticsBl
 import PayoutTable from '../../components/admin/dashboard/PayoutTable';
 import RazorpayBalancePanel from '../../components/admin/dashboard/RazorpayBalancePanel';
 import RevenueDailyBalanceModal from '../../components/admin/dashboard/RevenueDailyBalanceModal';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import CommandCenterKpiModal, {
   type CommandCenterKpiKind,
 } from '../../components/admin/dashboard/CommandCenterKpiModal';
@@ -112,17 +113,6 @@ const SuperAdminDashboardPage: React.FC = () => {
     .map((p) => p.rechargeInr ?? 0)
     .filter((n) => typeof n === 'number');
 
-  const revenueRangeLabel = React.useMemo(() => {
-    if (ov?.walletFlowSeries?.selectedRange) {
-      const { from, to } = ov.walletFlowSeries.selectedRange;
-      return `${from.slice(0, 10)} → ${to.slice(0, 10)}`;
-    }
-    if (dateRange.from && dateRange.to) {
-      return `${dateRange.from.slice(0, 10)} → ${dateRange.to.slice(0, 10)}`;
-    }
-    return 'last 90 days';
-  }, [ov?.walletFlowSeries?.selectedRange, dateRange.from, dateRange.to]);
-
   const errs = [overview, revenue, live, alerts].find((q) => q.isError);
   if (errs?.isError) {
     return (
@@ -137,9 +127,10 @@ const SuperAdminDashboardPage: React.FC = () => {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">MatchVibe</p>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Command center</h2>
+          <SectionHeading title="Command center" helpKey="dashboard.page" level={2} className="mt-0" />
           <p className="text-xs text-zinc-500 mt-1 max-w-xl">
-            Revenue and call aggregates follow the selected header date range; live call tiles remain realtime proxies.{' '}
+            Call and payout aggregates follow the selected header date range; recharge collection always uses IST
+            calendar days. Live call tiles remain realtime proxies.{' '}
             <Link className="text-violet-400 hover:underline" to="/overview">
               Legacy operations overview
             </Link>
@@ -154,8 +145,9 @@ const SuperAdminDashboardPage: React.FC = () => {
           format="inr"
           icon={<Wallet className="h-5 w-5" />}
           sparkline={rechargeSpark.length > 1 ? rechargeSpark : undefined}
-          footnote={ov?.revenueDailyBalanceNote ?? 'Today (UTC) · Tap for daily history'}
+          footnote={ov?.revenueDailyBalanceNote ?? 'Today (IST) · Tap for daily history'}
           accent="violet"
+          helpKey="dashboard.recharge_collection"
           onClick={() => setRevenueHistoryOpen(true)}
         />
         <KPIStatCard
@@ -164,6 +156,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<PhoneCall className="h-5 w-5" />}
           accent="pink"
           footnote="Tap to see recent sessions"
+          helpKey="dashboard.live_calls_5m"
           onClick={() => setKpiDrilldown('live_calls')}
         />
         <KPIStatCard
@@ -172,6 +165,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<Radio className="h-5 w-5" />}
           accent="green"
           footnote="Tap to list online hosts"
+          helpKey="dashboard.hosts_online"
           onClick={() => setKpiDrilldown('hosts_online')}
         />
         <KPIStatCard
@@ -180,6 +174,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<PhoneCall className="h-5 w-5" />}
           accent="amber"
           footnote="Tap to see who is on a call"
+          helpKey="dashboard.hosts_on_call"
           onClick={() => setKpiDrilldown('hosts_on_call')}
         />
         <KPIStatCard
@@ -188,6 +183,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<Radio className="h-5 w-5 opacity-50" />}
           accent="blue"
           footnote="Tap to list offline hosts"
+          helpKey="dashboard.hosts_offline"
           onClick={() => setKpiDrilldown('hosts_offline')}
         />
         <KPIStatCard
@@ -196,6 +192,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<Building2 className="h-5 w-5" />}
           accent="blue"
           footnote="Tap to view agencies"
+          helpKey="dashboard.total_agencies"
           onClick={() => setKpiDrilldown('agencies')}
         />
         <KPIStatCard
@@ -204,6 +201,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<Users className="h-5 w-5" />}
           accent="amber"
           footnote="Tap to view BDs"
+          helpKey="dashboard.total_bds"
           onClick={() => setKpiDrilldown('bds')}
         />
         <KPIStatCard
@@ -212,6 +210,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<Wallet className="h-5 w-5" />}
           accent="amber"
           footnote={ov?.pendingPayoutsNote ?? 'Tap to view pending requests'}
+          helpKey="dashboard.pending_payouts"
           onClick={() => setKpiDrilldown('pending_payouts')}
         />
         <KPIStatCard
@@ -220,6 +219,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           icon={<Clock className="h-5 w-5" />}
           accent="blue"
           footnote="Tap for call breakdown"
+          helpKey="dashboard.call_minutes"
           onClick={() => setKpiDrilldown('call_minutes')}
         />
       </div>
@@ -253,7 +253,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           rechargeCoins: p.rechargeCoins ?? 0,
           transactionCount: p.transactionCount ?? 0,
         }))}
-        rangeLabel={revenueRangeLabel}
+        historyDays={ov?.rechargeDailySeries?.historyDays ?? 90}
         note={ov?.rechargeDailySeries?.note ?? ov?.walletFlowSeries?.note}
       />
 
@@ -278,8 +278,9 @@ const SuperAdminDashboardPage: React.FC = () => {
           viewAllHref="/leaderboards"
           rows={topHosts.data?.rows ?? []}
           loading={topHosts.isLoading}
-          footnote={topHosts.data?.note}
+          footnote={topHosts.data?.note ?? `Rankings for ${headerRangeLabel} (IST)`}
           rangeLabel={headerRangeLabel}
+          helpKey="dashboard.top_hosts"
         />
         <RankingLeaderboardCard
           variant="bds"
@@ -289,6 +290,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           loading={topBds.isLoading}
           footnote={topBds.data?.note}
           rangeLabel={headerRangeLabel}
+          helpKey="dashboard.top_bds"
         />
         <RankingLeaderboardCard
           variant="agencies"
@@ -298,6 +300,7 @@ const SuperAdminDashboardPage: React.FC = () => {
           loading={topAgencies.isLoading}
           footnote={topAgencies.data?.note}
           rangeLabel={headerRangeLabel}
+          helpKey="dashboard.top_agencies"
         />
       </div>
 

@@ -344,6 +344,7 @@ export interface SettlementRetryPreview {
   callHistory: {
     durationSeconds: number;
     coinsDeducted: number;
+    walletCoinsDeducted?: number | null;
     coinsEarned: number;
     settlementStatus?: string;
   } | null;
@@ -358,6 +359,7 @@ export interface SettlementRetryPreview {
   proposedCoinsDeducted: number;
   deadLetterPresent: boolean;
   hasVideoCallDebitTxn: boolean;
+  hasCreatorCreditTxn: boolean;
 }
 
 export interface RefundPreview {
@@ -847,6 +849,8 @@ export const adminService = {
       signups7d: number;
       signups30d: number;
       onboardedUsers: number;
+      timezone?: string;
+      todayIst?: string;
       generatedAt: string;
     };
   },
@@ -923,6 +927,16 @@ export const adminService = {
     to?: string;
   }) => {
     const res = await api.get('/admin/finance/payments', { params });
+    return res.data.data;
+  },
+
+  getPaymentPurchaseLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    from?: string;
+    to?: string;
+  }) => {
+    const res = await api.get('/admin/finance/payment-logs', { params });
     return res.data.data;
   },
 
@@ -1101,6 +1115,8 @@ export const adminService = {
     hasAssignedAgent?: boolean;
     /** staff = agency/BD wallet; creator = host payouts; all = default */
     type?: 'staff' | 'creator' | 'all';
+    /** When type=staff: filter by bd or agency role */
+    staffRole?: 'bd' | 'agency';
     from?: string;
     to?: string;
   }): Promise<WithdrawalsResponse> => {
@@ -1111,6 +1127,7 @@ export const adminService = {
     if (params?.hasAssignedAgent === true) searchParams.append('hasAssignedAgent', 'true');
     if (params?.hasAssignedAgent === false) searchParams.append('hasAssignedAgent', 'false');
     if (params?.type && params.type !== 'all') searchParams.append('type', params.type);
+    if (params?.staffRole) searchParams.append('staffRole', params.staffRole);
     if (params?.from) searchParams.append('from', params.from);
     if (params?.to) searchParams.append('to', params.to);
     const res = await api.get(`/admin/withdrawals?${searchParams.toString()}`);
@@ -1353,7 +1370,7 @@ export const adminService = {
     visibilityTier?: 'PUBLIC' | 'VIP';
     limit?: number;
     cursor?: string;
-  }): Promise<{ items: MomentsBrowseRow[]; nextCursor?: string }> => {
+  }): Promise<{ items: MomentsBrowseRow[]; nextCursor?: string; total: number }> => {
     const res = await api.get('/admin/moments/browse', { params });
     return res.data.data;
   },

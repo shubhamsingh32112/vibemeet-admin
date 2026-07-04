@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 import { cn } from '../../../lib/utils';
 
 export type UserLoginGranularity = 'daily' | 'weekly' | 'monthly';
@@ -25,6 +26,7 @@ type UserLoginChartProps = {
   onGranularityChange: (g: UserLoginGranularity) => void;
   loading?: boolean;
   note?: string;
+  helpKey?: string;
   className?: string;
 };
 
@@ -42,14 +44,18 @@ export const UserLoginChart: React.FC<UserLoginChartProps> = ({
   onGranularityChange,
   loading,
   note,
+  helpKey = 'users.logins_chart',
   className,
 }) => (
   <div className={cn('glass-panel rounded-2xl p-4', className)}>
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-white">User logins</h3>
+        <h3 className="text-sm font-semibold text-white inline-flex items-center gap-1">
+          User logins
+          <MetricHelpButton helpKey={helpKey} />
+        </h3>
         <p className="text-[10px] text-zinc-500 mt-0.5">
-          Unique end-users (role=user) who logged in per {granularity === 'daily' ? 'day' : granularity === 'weekly' ? 'week' : 'month'}
+          Unique end-users (role=user) who logged in per {granularity === 'daily' ? 'IST day' : granularity === 'weekly' ? 'week' : 'IST month'}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">

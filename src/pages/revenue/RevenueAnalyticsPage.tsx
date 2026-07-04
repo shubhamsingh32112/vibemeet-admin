@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { RevenueSplitPie } from '../../components/admin/dashboard/RevenueSplitPie';
 import { adminService } from '../../services/adminService';
@@ -51,7 +52,7 @@ const RevenueAnalyticsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-white">Revenue analytics</h1>
+          <SectionHeading title="Revenue analytics" helpKey="revenue.analytics" level={1} />
           <p className="text-sm text-zinc-500 mt-1">Settled call revenue, moments, VIP, and payouts.</p>
         </div>
         <div className="flex gap-2">
@@ -74,10 +75,10 @@ const RevenueAnalyticsPage: React.FC = () => {
         <>
           <h2 className="text-sm font-medium text-zinc-300 uppercase tracking-wider">Call revenue</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPIStatCard title="Gross (user spend)" value={c.grossRevenueCoins} icon={<LineChart className="h-5 w-5" />} />
-            <KPIStatCard title="Host earnings" value={c.hostRevenueCoins} icon={<Coins className="h-5 w-5" />} />
-            <KPIStatCard title="Independent hosts" value={c.independentHostRevenueCoins} icon={<Coins className="h-5 w-5" />} />
-            <KPIStatCard title="Staffed hosts" value={c.staffedHostRevenueCoins} icon={<Coins className="h-5 w-5" />} />
+            <KPIStatCard title="Gross (user spend)" value={c.grossRevenueCoins} icon={<LineChart className="h-5 w-5" />} helpKey="revenue.analytics" />
+            <KPIStatCard title="Host earnings" value={c.hostRevenueCoins} icon={<Coins className="h-5 w-5" />} helpKey="revenue.analytics" />
+            <KPIStatCard title="Independent hosts" value={c.independentHostRevenueCoins} icon={<Coins className="h-5 w-5" />} helpKey="revenue.analytics" />
+            <KPIStatCard title="Staffed hosts" value={c.staffedHostRevenueCoins} icon={<Coins className="h-5 w-5" />} helpKey="revenue.analytics" />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-admin-border bg-admin-surface p-4">

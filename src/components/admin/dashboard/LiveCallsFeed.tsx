@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Phone } from 'lucide-react';
 import { ScrollArea } from '../../ui/scroll-area';
 import { Skeleton } from '../../ui/skeleton';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 import { cn } from '../../../lib/utils';
 
 export type LiveCallRow = {
@@ -18,13 +19,22 @@ export type LiveCallRow = {
 type LiveCallsFeedProps = {
   calls: LiveCallRow[];
   loading?: boolean;
+  helpKey?: string;
   className?: string;
 };
 
-export const LiveCallsFeed: React.FC<LiveCallsFeedProps> = ({ calls, loading, className }) => (
+export const LiveCallsFeed: React.FC<LiveCallsFeedProps> = ({
+  calls,
+  loading,
+  helpKey = 'dashboard.live_calls_feed',
+  className,
+}) => (
   <div className={cn('glass-panel rounded-2xl p-4 flex flex-col min-h-[280px]', className)}>
     <div className="mb-3 flex items-center justify-between">
-      <h3 className="text-sm font-semibold text-white">Recent creator calls (30m feed)</h3>
+      <h3 className="text-sm font-semibold text-white inline-flex items-center gap-1">
+        Recent creator calls (30m feed)
+        <MetricHelpButton helpKey={helpKey} />
+      </h3>
       <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400/90 animate-live-pulse">
         Auto-refresh
       </span>

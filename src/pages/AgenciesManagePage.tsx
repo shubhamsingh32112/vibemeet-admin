@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../config/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 
 interface AgencyRow {
   id: string;
@@ -147,7 +148,7 @@ const AgenciesManagePage: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Agencies</h1>
+        <SectionHeading title="Agencies" helpKey="hosts.agencies" level={1} />
         <p className="text-sm text-zinc-500 mt-1">
           Create agency (middle-tier) accounts with referral codes and portal access. Managed under BDs
           when applicable.

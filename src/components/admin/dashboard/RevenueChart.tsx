@@ -10,22 +10,27 @@ import {
   AreaChart,
 } from 'recharts';
 import { cn } from '../../../lib/utils';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 
 export type RevenuePoint = { date: string; revenueCoins: number; commissionCoins: number };
 
 type RevenueChartProps = {
   points: RevenuePoint[];
   className?: string;
+  helpKey?: string;
 };
 
-export const RevenueChart: React.FC<RevenueChartProps> = ({ points, className }) => (
+export const RevenueChart: React.FC<RevenueChartProps> = ({ points, className, helpKey = 'dashboard.revenue_chart' }) => (
   <div className={cn('glass-panel rounded-2xl p-4', className)}>
     <div className="mb-3 flex items-center justify-between">
       <div>
-        <h3 className="text-sm font-semibold text-white">Call spend overview</h3>
+        <h3 className="text-sm font-semibold text-white inline-flex items-center gap-1">
+          Call spend overview
+          <MetricHelpButton helpKey={helpKey} />
+        </h3>
         <p className="text-[10px] text-zinc-500 mt-0.5">Coins deducted on calls — separate from net wallet flow KPI</p>
       </div>
-      <span className="text-[10px] uppercase tracking-wider text-zinc-500">Coins · UTC day</span>
+      <span className="text-[10px] uppercase tracking-wider text-zinc-500">Coins · IST day</span>
     </div>
     <div className="h-[280px] w-full min-h-0 min-w-0">
       <ResponsiveContainer width="100%" height={280}>

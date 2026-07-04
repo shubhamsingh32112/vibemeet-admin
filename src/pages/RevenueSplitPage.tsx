@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import { RevenueSplitPie } from '../components/admin/dashboard/RevenueSplitPie';
 import {
   applyCoinsToSlices,
@@ -128,7 +129,7 @@ const RevenueSplitPage: React.FC = () => {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Revenue split</h1>
+          <SectionHeading title="Revenue split" helpKey="revenue.split" level={1} />
           <p className="text-sm text-zinc-500 mt-1 max-w-3xl">
             Call revenue from user coin spend (last {summary?.rangeDays ?? rangeDays} days). INR uses{' '}
             <strong className="text-zinc-300">₹0.80 per coin</strong> (80 paise).

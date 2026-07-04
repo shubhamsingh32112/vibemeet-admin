@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import {
   adminService,
   type HostLeaderboardRow,
@@ -320,10 +321,10 @@ const LeaderboardsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Trophy className="h-7 w-7 text-amber-400" />
-            Leaderboards
-          </h1>
+        <div className="flex items-center gap-2">
+          <Trophy className="h-7 w-7 text-amber-400 shrink-0" />
+          <SectionHeading title="Leaderboards" helpKey="hosts.leaderboards" level={1} />
+        </div>
           <p className="text-sm text-zinc-500 mt-1 max-w-2xl">
             Rank hosts and end-users by calls, talk time, revenue, messages, and wallet activity.
             Host rankings refresh every 30 minutes.

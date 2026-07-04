@@ -2,6 +2,8 @@ import * as React from 'react';
 import { motion } from 'framer-motion';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { cn } from '../../../lib/utils';
+import { MetricHelpButton } from '../help/MetricHelpButton';
+import type { MetricHelpContent } from '../../../content/superadminMetricHelp';
 
 export type KPIStatCardProps = {
   title: string;
@@ -12,6 +14,8 @@ export type KPIStatCardProps = {
   footnote?: string;
   accent?: 'violet' | 'pink' | 'blue' | 'green' | 'amber';
   onClick?: () => void;
+  help?: MetricHelpContent;
+  helpKey?: string;
 };
 
 const accentRing: Record<NonNullable<KPIStatCardProps['accent']>, string> = {
@@ -43,6 +47,8 @@ export const KPIStatCard: React.FC<KPIStatCardProps> = ({
   footnote,
   accent = 'violet',
   onClick,
+  help,
+  helpKey,
 }) => {
   const gid = React.useId().replace(/:/g, '');
   const display = formatVal(value, format);
@@ -76,7 +82,10 @@ export const KPIStatCard: React.FC<KPIStatCardProps> = ({
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">{title}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 inline-flex items-center gap-1">
+            {title}
+            <MetricHelpButton help={help} helpKey={helpKey} />
+          </p>
           <motion.p
             key={value}
             initial={{ opacity: 0.4, y: 4 }}

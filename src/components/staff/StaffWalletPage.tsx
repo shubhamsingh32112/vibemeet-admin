@@ -249,11 +249,11 @@ const StaffWalletPage: React.FC<Props> = ({ api, basePath, portalLabel }) => {
             <h2 className="text-sm font-semibold text-white">Request withdrawal</h2>
           </div>
           <p className="text-xs text-zinc-500">
-            Minimum 100 coins. One request per 24 hours. Sent to super admin for approval.
+            Minimum 1,000 coins. One request per 24 hours. Sent to super admin for approval.
           </p>
           <input
             type="number"
-            min={100}
+            min={1000}
             value={withdrawAmount}
             onChange={(e) => setWithdrawAmount(e.target.value)}
             placeholder="Amount (coins)"

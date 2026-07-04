@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 import { cn } from '../../../lib/utils';
 
 export type UserSignupGranularity = 'hourly' | 'daily';
@@ -24,6 +25,7 @@ type UserSignupChartProps = {
   onGranularityChange: (g: UserSignupGranularity) => void;
   loading?: boolean;
   note?: string;
+  helpKey?: string;
   className?: string;
 };
 
@@ -40,14 +42,18 @@ export const UserSignupChart: React.FC<UserSignupChartProps> = ({
   onGranularityChange,
   loading,
   note,
+  helpKey = 'users.signups_chart',
   className,
 }) => (
   <div className={cn('glass-panel rounded-2xl p-4', className)}>
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h3 className="text-sm font-semibold text-white">New user signups</h3>
+        <h3 className="text-sm font-semibold text-white inline-flex items-center gap-1">
+          New user signups
+          <MetricHelpButton helpKey={helpKey} />
+        </h3>
         <p className="text-[10px] text-zinc-500 mt-0.5">
-          End-user registrations per {granularity === 'hourly' ? 'UTC hour (last 48h)' : 'UTC day'}
+          End-user registrations per {granularity === 'hourly' ? 'IST hour (last 48h)' : 'IST day'}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">

@@ -1,3 +1,5 @@
+import { computeIstPresetRange, type IstDateRangePreset } from './istTime';
+
 export type DateRangePreset =
   | 'all'
   | 'today'
@@ -11,9 +13,9 @@ export type DateRangePresetButton = Exclude<DateRangePreset, 'custom'>;
 
 export type AdminDateRange = {
   preset: DateRangePreset;
-  /** ISO string in UTC; inclusive lower bound */
+  /** ISO string in UTC; inclusive lower bound (IST preset midnight) */
   from?: string;
-  /** ISO string in UTC; exclusive upper bound */
+  /** ISO string in UTC; exclusive upper bound (IST preset midnight) */
   to?: string;
 };
 
@@ -46,11 +48,11 @@ export function adminDateRangeQueryParams(range: AdminDateRange): { from?: strin
 
 export const DATE_RANGE_PRESET_LABELS: Record<DateRangePresetButton, string> = {
   all: 'All time',
-  today: 'Today',
-  yesterday: 'Yesterday',
-  today_yesterday: 'Today + Yesterday',
-  last7d: 'Last 7d',
-  last30d: 'Last 30d',
+  today: 'Today (IST)',
+  yesterday: 'Yesterday (IST)',
+  today_yesterday: 'Today + Yesterday (IST)',
+  last7d: 'Last 7d (IST)',
+  last30d: 'Last 30d (IST)',
 };
 
 export function dateRangePresetLabel(preset: DateRangePreset): string {
@@ -58,47 +60,12 @@ export function dateRangePresetLabel(preset: DateRangePreset): string {
   return DATE_RANGE_PRESET_LABELS[preset];
 }
 
-function startOfLocalDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function addLocalDays(d: Date, days: number): Date {
-  const x = new Date(d);
-  x.setDate(x.getDate() + days);
-  return x;
-}
-
+/** Preset ranges use Asia/Kolkata calendar days (00:00–23:59 IST). */
 export function computePresetRange(preset: Exclude<DateRangePreset, 'custom' | 'all'>, now = new Date()): {
   from: Date;
   to: Date;
 } {
-  const todayStart = startOfLocalDay(now);
-  switch (preset) {
-    case 'today': {
-      return { from: todayStart, to: addLocalDays(todayStart, 1) };
-    }
-    case 'yesterday': {
-      const y = addLocalDays(todayStart, -1);
-      return { from: y, to: todayStart };
-    }
-    case 'today_yesterday': {
-      const y = addLocalDays(todayStart, -1);
-      return { from: y, to: addLocalDays(todayStart, 1) };
-    }
-    case 'last7d': {
-      const from = addLocalDays(todayStart, -6);
-      return { from, to: addLocalDays(todayStart, 1) };
-    }
-    case 'last30d': {
-      const from = addLocalDays(todayStart, -29);
-      return { from, to: addLocalDays(todayStart, 1) };
-    }
-    default: {
-      return { from: todayStart, to: addLocalDays(todayStart, 1) };
-    }
-  }
+  return computeIstPresetRange(preset as IstDateRangePreset, now);
 }
 
 export function toIsoUtc(d: Date): string {
@@ -118,4 +85,3 @@ export function toDatetimeLocalInputValue(isoUtc?: string): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-

@@ -4,6 +4,7 @@ import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import { adminService, type CreatorPerformance } from '../services/adminService';
 import { creatorService } from '../services/creatorService';
 import { userService, type User } from '../services/userService';
@@ -395,7 +396,7 @@ const CreatorsPage: React.FC = () => {
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">All hosts</h1>
+          <SectionHeading title="All hosts" helpKey="hosts.creators" level={1} />
           <p className="text-sm text-zinc-500 mt-1">
             {total.toLocaleString()} hosts · live status from Redis
           </p>

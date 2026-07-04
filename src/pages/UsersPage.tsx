@@ -12,6 +12,7 @@ import {
 import { useAdminDateRange } from '../hooks/useAdminDateRange';
 import { adminDateRangeQueryParams } from '../utils/dateRange';
 import { formatDateTime } from '../utils/dateTime';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<UserAnalytics[]>([]);
@@ -268,13 +269,30 @@ const UsersPage: React.FC = () => {
     },
   ];
 
+  const columnHelp: Record<string, string> = {
+    username: 'users.table.user',
+    role: 'users.table.role',
+    referral: 'users.table.referral',
+    coins: 'users.table.balance',
+    totalSpent: 'users.table.spent',
+    totalCredited: 'users.table.credited',
+    callCount: 'users.table.calls',
+    createdAt: 'users.table.joined',
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">Users Analytics</h1>
+        <div>
+          <SectionHeading title="Users Analytics" helpKey="users.page" level={1} />
+          <p className="text-xs text-zinc-500 mt-1">
+            Table filters users by join date (<code className="text-zinc-400">createdAt</code>) in the header IST
+            range. Signups vs logins are different metrics — see Total users for charts.
+          </p>
+        </div>
         <button
           onClick={load}
-          className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition"
+          className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white transition shrink-0"
         >
           ↻ Refresh
         </button>
@@ -359,6 +377,7 @@ const UsersPage: React.FC = () => {
             keyField="id"
             compact
             maxHeight="calc(100vh - 250px)"
+            columnHelp={columnHelp}
           />
           {totalPages > 1 && (
             <div className="flex gap-2 justify-center mt-4">

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import MetricCard from '../components/ui/MetricCard';
+import { SectionHeading } from '../components/admin/help/SectionHeading';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { adminService, type OverviewData } from '../services/adminService';
 import { useStaffRealtime } from '../contexts/StaffRealtimeContext';
@@ -77,10 +78,9 @@ const OverviewPage: React.FC = () => {
       )}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            Operations overview
+          <SectionHeading title="Operations overview" helpKey="legacy.overview" level={1}>
             <StaleSectionBadge stale={overviewStale} />
-          </h1>
+          </SectionHeading>
           <p className="text-xs text-gray-500 mt-0.5">
             Last updated: {formatDateTime(data.generatedAt)}
             {connected ? (
@@ -139,11 +139,13 @@ const OverviewPage: React.FC = () => {
               : undefined
           }
           variant={data.selectedRange ? 'info' : 'default'}
+          helpKey="legacy.users_total"
         />
         <MetricCard
           label="Creators"
           value={users.creators}
           subtitle={`${users.onlineCreators} online now`}
+          helpKey="legacy.creators_total"
         />
         <MetricCard
           label={data.selectedRange ? 'Signups (range)' : 'Signups (7d)'}
@@ -181,8 +183,9 @@ const OverviewPage: React.FC = () => {
             data.selectedRange ? (data.rangeMetrics?.calls.totalCoinsSpent ?? 0) : calls.today.totalCoinsSpent
           } coins`}
           variant="info"
+          helpKey="legacy.calls_7d"
         />
-        <MetricCard label="Calls (30d)" value={calls.last30d.totalCalls} />
+        <MetricCard label="Calls (30d)" value={calls.last30d.totalCalls} helpKey="legacy.calls_7d" />
         <MetricCard
           label="Anomalies (30d)"
           value={

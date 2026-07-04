@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import KPIStatCard from '../../components/admin/dashboard/KPIStatCard';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { adminService } from '../../services/adminService';
 import { formatDateTime } from '../../utils/dateTime';
@@ -73,18 +74,18 @@ const MomentsPremiumUsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Moments premium users</h1>
+        <SectionHeading title="Moments premium users" helpKey="finance.moments_premium" level={1} />
         <p className="text-sm text-zinc-500 mt-1">
           Users who purchased Moments Premium and their remaining subscription days.
         </p>
       </div>
       {data?.summary && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <KPIStatCard title="Active members" value={data.summary.activeMembers} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="New today" value={data.summary.newPurchasesToday} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="New 7d" value={data.summary.newPurchases7d} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="New 30d" value={data.summary.newPurchases30d} icon={<Sparkles className="h-5 w-5" />} />
-          <KPIStatCard title="Revenue 30d (₹)" value={data.summary.revenueInr30d} icon={<Sparkles className="h-5 w-5" />} />
+          <KPIStatCard title="Active members" value={data.summary.activeMembers} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_premium" />
+          <KPIStatCard title="New today" value={data.summary.newPurchasesToday} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_premium" />
+          <KPIStatCard title="New 7d" value={data.summary.newPurchases7d} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_premium" />
+          <KPIStatCard title="New 30d" value={data.summary.newPurchases30d} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_premium" />
+          <KPIStatCard title="Revenue 30d (₹)" value={data.summary.revenueInr30d} icon={<Sparkles className="h-5 w-5" />} helpKey="finance.moments_premium" />
         </div>
       )}
       {error && <p className="text-red-400 text-sm">{error}</p>}

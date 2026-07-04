@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 import { cn } from '../../../lib/utils';
 import { formatDashboardMoneyFromCoins } from '../../../utils/dashboardInr';
 
@@ -15,6 +16,7 @@ type BaseProps = {
   footnote?: string;
   /** e.g. "Last 7d" from the header date filter */
   rangeLabel?: string;
+  helpKey?: string;
   className?: string;
 };
 
@@ -103,7 +105,7 @@ function HostCell({ name, avatarUrl }: { name: string; avatarUrl: string | null 
 }
 
 export function RankingLeaderboardCard(props: RankingLeaderboardCardProps) {
-  const { title, viewAllHref, loading, footnote, rangeLabel, className, variant, rows } = props;
+  const { title, viewAllHref, loading, footnote, rangeLabel, helpKey, className, variant, rows } = props;
 
   return (
     <div
@@ -113,7 +115,10 @@ export function RankingLeaderboardCard(props: RankingLeaderboardCardProps) {
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] px-4 py-3">
-        <h3 className="text-sm font-semibold tracking-tight text-white">{title}</h3>
+        <h3 className="text-sm font-semibold tracking-tight text-white inline-flex items-center gap-1">
+          {title}
+          {helpKey ? <MetricHelpButton helpKey={helpKey} /> : null}
+        </h3>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {rangeLabel ? (
             <span className="rounded-lg border border-white/10 bg-zinc-900/90 px-2.5 py-1.5 text-[11px] font-medium text-zinc-400">

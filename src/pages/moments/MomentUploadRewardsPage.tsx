@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import StatusBadge from '../../components/ui/StatusBadge';
 import {
   adminService,
@@ -172,7 +173,7 @@ const MomentUploadRewardsPage: React.FC = () => {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold">Moment upload rewards</h1>
+        <SectionHeading title="Moment upload rewards" helpKey="content.moments_rewards" level={1} />
         <p className="mt-1 text-sm text-muted-foreground">
           Approve coin rewards for creator uploads. Content is already live in the
           Moments feed; approval only credits coins.

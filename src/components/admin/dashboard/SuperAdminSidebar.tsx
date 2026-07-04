@@ -18,7 +18,6 @@ import {
   Trophy,
   UserX,
   Users,
-  Video,
   Wallet,
   Coins,
 } from 'lucide-react';
@@ -46,7 +45,7 @@ const SECTIONS: NavSection[] = [
       { to: '/users/analytics', label: 'User analytics', icon: Activity },
       { to: '/users/totals', label: 'Total users', icon: Users },
       { to: '/users/calls', label: 'Call analytics / logs', icon: Phone },
-      { to: '/finance/payments/calls', label: 'Payment call logs', icon: Video },
+      { to: '/finance/payments/logs', label: 'Payment logs', icon: Receipt },
       { to: '/finance/payments/vip', label: 'Payment VIP logs', icon: Crown },
       { to: '/finance/payments/moments', label: 'Moments premium users', icon: Sparkles },
     ],
@@ -67,6 +66,8 @@ const SECTIONS: NavSection[] = [
     title: 'Finance',
     items: [
       { to: '/finance/payouts', label: 'Payouts / settlements', icon: Wallet },
+      { to: '/finance/payouts/bd', label: 'BD withdrawals', icon: Users },
+      { to: '/finance/payouts/agency', label: 'Agency withdrawals', icon: Building2 },
       { to: '/finance/wallet', label: 'Wallet transactions', icon: Receipt },
       { to: '/finance/paid-users/coins', label: 'Paid users (coins)', icon: Wallet },
       { to: '/finance/paid-users/moments', label: 'Paid users (moments)', icon: Sparkles },

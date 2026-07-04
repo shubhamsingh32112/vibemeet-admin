@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import DataTable, { type Column } from '../../components/ui/DataTable';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import StatusBadge from '../../components/ui/StatusBadge';
 import {
   adminService,
@@ -20,7 +21,11 @@ const MomentsFreePreviewPage: React.FC = () => {
   const [browseHasPreview, setBrowseHasPreview] = useState<'yes' | 'no' | ''>('');
   const [browseVisibility, setBrowseVisibility] = useState<'PUBLIC' | 'VIP' | ''>('');
   const [browseItems, setBrowseItems] = useState<MomentsBrowseRow[]>([]);
+  const [browseTotal, setBrowseTotal] = useState(0);
+  const [browseNextCursor, setBrowseNextCursor] = useState<string | undefined>();
   const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseLoadingMore, setBrowseLoadingMore] = useState(false);
+  const [totalMomentsCount, setTotalMomentsCount] = useState<number | null>(null);
 
   const loadPreviews = useCallback(async () => {
     setLoading(true);
@@ -40,24 +45,51 @@ const MomentsFreePreviewPage: React.FC = () => {
     }
   }, []);
 
-  const loadBrowse = useCallback(async () => {
-    setBrowseLoading(true);
+  const loadBrowse = useCallback(
+    async (options?: { cursor?: string; append?: boolean }) => {
+      const append = options?.append ?? false;
+      if (append) {
+        setBrowseLoadingMore(true);
+      } else {
+        setBrowseLoading(true);
+      }
+      try {
+        const data = await adminService.browseMomentsForAdmin({
+          q: browseQ.trim() || undefined,
+          hasPreview: browseHasPreview || undefined,
+          visibilityTier: browseVisibility || undefined,
+          limit: 50,
+          cursor: options?.cursor,
+        });
+        setBrowseTotal(data.total);
+        setBrowseNextCursor(data.nextCursor);
+        setBrowseItems((prev) =>
+          append ? [...prev, ...data.items] : data.items,
+        );
+      } finally {
+        if (append) {
+          setBrowseLoadingMore(false);
+        } else {
+          setBrowseLoading(false);
+        }
+      }
+    },
+    [browseQ, browseHasPreview, browseVisibility],
+  );
+
+  const loadTotalMomentsCount = useCallback(async () => {
     try {
-      const data = await adminService.browseMomentsForAdmin({
-        q: browseQ.trim() || undefined,
-        hasPreview: browseHasPreview || undefined,
-        visibilityTier: browseVisibility || undefined,
-        limit: 30,
-      });
-      setBrowseItems(data.items);
-    } finally {
-      setBrowseLoading(false);
+      const data = await adminService.browseMomentsForAdmin({ limit: 1 });
+      setTotalMomentsCount(data.total);
+    } catch {
+      setTotalMomentsCount(null);
     }
-  }, [browseQ, browseHasPreview, browseVisibility]);
+  }, []);
 
   useEffect(() => {
     void loadPreviews();
-  }, [loadPreviews]);
+    void loadTotalMomentsCount();
+  }, [loadPreviews, loadTotalMomentsCount]);
 
   useEffect(() => {
     void loadBrowse();
@@ -301,9 +333,12 @@ const MomentsFreePreviewPage: React.FC = () => {
   return (
     <div className="space-y-8 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">Moments free previews</h1>
+        <SectionHeading title="Moments free previews" helpKey="content.moments_preview" level={1} />
         <p className="text-muted-foreground text-sm">
           Curate moments shown unlocked to non-premium users ({previews.length} / {limit}).
+          {totalMomentsCount != null ? (
+            <span> Total approved moments: {totalMomentsCount}.</span>
+          ) : null}
         </p>
         {msg ? <p className="mt-2 text-sm">{msg}</p> : null}
       </div>
@@ -314,7 +349,12 @@ const MomentsFreePreviewPage: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-medium">Add moments</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">Add moments</h2>
+          <p className="text-muted-foreground text-sm">
+            Showing {browseItems.length} of {browseTotal} matching moments
+          </p>
+        </div>
         <div className="mb-3 flex flex-wrap gap-2">
           <input
             className="rounded border px-3 py-2 text-sm"
@@ -351,7 +391,23 @@ const MomentsFreePreviewPage: React.FC = () => {
         {browseLoading ? (
           <LoadingSpinner />
         ) : (
-          <DataTable columns={browseColumns} data={browseItems} keyField="momentId" />
+          <>
+            <DataTable columns={browseColumns} data={browseItems} keyField="momentId" />
+            {browseNextCursor ? (
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  className="rounded border px-4 py-2 text-sm"
+                  disabled={browseLoadingMore}
+                  onClick={() =>
+                    void loadBrowse({ cursor: browseNextCursor, append: true })
+                  }
+                >
+                  {browseLoadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              </div>
+            ) : null}
+          </>
         )}
       </section>
     </div>

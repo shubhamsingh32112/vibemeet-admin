@@ -1,16 +1,26 @@
 import * as React from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { cn } from '../../../lib/utils';
+import { MetricHelpButton } from '../help/MetricHelpButton';
 
 type CallAnalyticsBlockProps = {
   today: { totalCalls: number; answeredCalls: number; missedCalls: number; avgCallDurationSec: number };
   dailyVolume: Array<{ date: string; calls: number }>;
   className?: string;
+  helpKey?: string;
 };
 
-export const CallAnalyticsBlock: React.FC<CallAnalyticsBlockProps> = ({ today, dailyVolume, className }) => (
+export const CallAnalyticsBlock: React.FC<CallAnalyticsBlockProps> = ({
+  today,
+  dailyVolume,
+  className,
+  helpKey = 'dashboard.call_analytics',
+}) => (
   <div className={cn('glass-panel rounded-2xl p-4', className)}>
-    <h3 className="text-sm font-semibold text-white mb-3">Call analytics</h3>
+    <h3 className="text-sm font-semibold text-white mb-3 inline-flex items-center gap-1">
+      Call analytics
+      <MetricHelpButton helpKey={helpKey} />
+    </h3>
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
       {[
         ['Total', today.totalCalls],
