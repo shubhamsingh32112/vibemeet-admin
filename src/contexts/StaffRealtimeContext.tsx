@@ -92,10 +92,20 @@ export const StaffRealtimeProvider: React.FC<ProviderProps> = ({
     if (sections.length === 0) return;
     setStale((prev) => {
       const next = { ...prev };
-      for (const s of sections) next[s] = true;
+      let changed = false;
+      for (const s of sections) {
+        if (!next[s]) {
+          next[s] = true;
+          changed = true;
+        }
+      }
+      // Avoid refreshGeneration storms when high-frequency events (e.g. creator:status)
+      // re-mark sections that are already stale.
+      if (changed) {
+        setRefreshGeneration((g) => g + 1);
+      }
       return next;
     });
-    setRefreshGeneration((g) => g + 1);
   }, []);
 
   const markFresh = useCallback((sections?: DashboardSection[]) => {

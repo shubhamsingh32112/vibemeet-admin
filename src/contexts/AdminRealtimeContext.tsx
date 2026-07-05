@@ -15,8 +15,8 @@ export const AdminRealtimeProvider: React.FC<{ children: React.ReactNode }> = ({
 );
 
 export function useAdminRealtime() {
-  const { connected, lastError, refreshGeneration } = useStaffRealtime();
-  return { refreshGeneration, connected, lastError };
+  const { connected, lastError, refreshGeneration, stale } = useStaffRealtime();
+  return { refreshGeneration, connected, lastError, stale };
 }
 
 export { useStaffRealtime } from './StaffRealtimeContext';

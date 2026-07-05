@@ -38,12 +38,19 @@ import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import CommandCenterKpiModal, {
   type CommandCenterKpiKind,
 } from '../../components/admin/dashboard/CommandCenterKpiModal';
+import {
+  invalidateDashboardSections,
+  sectionsNewlyStale,
+} from '../../utils/dashboardQueryInvalidation';
+import type { StaleMap } from '../../types/dashboardStale';
 
 const DASH = 'dashboard' as const;
 
 const SuperAdminDashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const { refreshGeneration } = useAdminRealtime();
+  const { refreshGeneration, stale } = useAdminRealtime();
+  const prevStaleRef = React.useRef<StaleMap>(stale);
+  const invalidateTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
   const { dateRange } = useAdminDateRange('today');
   const [revenueHistoryOpen, setRevenueHistoryOpen] = React.useState(false);
   const [kpiDrilldown, setKpiDrilldown] = React.useState<CommandCenterKpiKind | null>(null);
@@ -55,8 +62,19 @@ const SuperAdminDashboardPage: React.FC = () => {
 
   React.useEffect(() => {
     if (refreshGeneration === 0) return;
-    void queryClient.invalidateQueries({ queryKey: [DASH] });
-  }, [refreshGeneration, queryClient]);
+    const newlyStale = sectionsNewlyStale(prevStaleRef.current, stale);
+    prevStaleRef.current = stale;
+    if (newlyStale.length === 0) return;
+
+    if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+    invalidateTimerRef.current = setTimeout(() => {
+      invalidateDashboardSections(queryClient, newlyStale);
+    }, 1500);
+
+    return () => {
+      if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+    };
+  }, [refreshGeneration, stale, queryClient]);
 
   const overview = useQuery({
     queryKey: [DASH, 'overview', dateRange.preset, dashboardDateParams.from, dashboardDateParams.to],
