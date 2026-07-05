@@ -50,7 +50,7 @@ const SuperAdminDashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { refreshGeneration, stale } = useAdminRealtime();
   const prevStaleRef = React.useRef<StaleMap>(stale);
-  const invalidateTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const invalidateTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { dateRange } = useAdminDateRange('today');
   const [revenueHistoryOpen, setRevenueHistoryOpen] = React.useState(false);
   const [kpiDrilldown, setKpiDrilldown] = React.useState<CommandCenterKpiKind | null>(null);
