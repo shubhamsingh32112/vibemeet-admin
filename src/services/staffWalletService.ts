@@ -14,7 +14,10 @@ export type StaffWalletSummary = {
   balance: number;
   totalEarningsCoins: number;
   totalWithdrawnCoins: number;
+  /** @deprecated Use activeWithdrawalCount — includes pending and approved */
   pendingWithdrawalCount: number;
+  activeWithdrawalCount: number;
+  canRequestWithdrawal: boolean;
   payoutAccount: StaffPayoutAccount | null;
   payoutAccountBound: boolean;
   /** % of host earnings per settled call (e.g. 5 for BD, 15 for agency). */

@@ -187,9 +187,9 @@ const StaffWalletPage: React.FC<Props> = ({ api, basePath, portalLabel }) => {
           </p>
         </div>
         <div className={card}>
-          <p className="text-[10px] uppercase tracking-wide text-zinc-500">Pending requests</p>
+          <p className="text-[10px] uppercase tracking-wide text-zinc-500">Active requests</p>
           <p className="mt-2 text-2xl font-bold text-amber-300">
-            {summary?.pendingWithdrawalCount ?? 0}
+            {summary?.activeWithdrawalCount ?? summary?.pendingWithdrawalCount ?? 0}
           </p>
         </div>
       </div>
@@ -249,7 +249,8 @@ const StaffWalletPage: React.FC<Props> = ({ api, basePath, portalLabel }) => {
             <h2 className="text-sm font-semibold text-white">Request withdrawal</h2>
           </div>
           <p className="text-xs text-zinc-500">
-            Minimum 1,000 coins. One request per 24 hours. Sent to super admin for approval.
+            Minimum 1,000 coins. Only one active request at a time (pending or approved). Sent to
+            super admin for approval.
           </p>
           <input
             type="number"
@@ -262,13 +263,22 @@ const StaffWalletPage: React.FC<Props> = ({ api, basePath, portalLabel }) => {
           />
           <button
             type="submit"
-            disabled={withdrawing || !summary?.payoutAccountBound}
+            disabled={
+              withdrawing ||
+              !summary?.payoutAccountBound ||
+              summary?.canRequestWithdrawal === false
+            }
             className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
           >
             {withdrawing ? 'Submitting…' : 'Submit withdrawal request'}
           </button>
           {!summary?.payoutAccountBound ? (
             <p className="text-xs text-amber-400">Bind a payout account first.</p>
+          ) : summary?.canRequestWithdrawal === false ? (
+            <p className="text-xs text-amber-400">
+              You already have an active withdrawal request. Wait until it is rejected or paid before
+              submitting another.
+            </p>
           ) : null}
         </form>
       </div>
