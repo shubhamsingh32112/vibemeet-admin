@@ -1417,6 +1417,37 @@ export const adminService = {
     const res = await api.post('/admin/moments/upload-rewards/reject', { id });
     return res.data.data;
   },
+
+  listAllMomentsForAdmin: async (params?: {
+    q?: string;
+    type?: 'photo' | 'video';
+    moderationStatus?: string;
+    processingStatus?: string;
+    uploadRewardStatus?: 'pending' | 'approved' | 'rejected';
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ items: MomentsGalleryRow[]; nextCursor?: string; total: number }> => {
+    const res = await api.get('/admin/moments/all', { params });
+    return res.data.data;
+  },
+
+  deleteMomentAsAdmin: async (
+    momentId: string,
+    options?: { deductCoins?: boolean; reason?: string },
+  ): Promise<{
+    momentId: string;
+    coinsClawedBack: number;
+    deductCoins: boolean;
+    creatorNewBalance: number;
+  }> => {
+    const res = await api.delete(`/admin/moments/${momentId}`, {
+      data: {
+        deductCoins: options?.deductCoins ?? false,
+        reason: options?.reason,
+      },
+    });
+    return res.data.data;
+  },
 };
 
 export interface MomentsFreePreviewRow {
@@ -1471,4 +1502,27 @@ export interface MomentUploadRewardRow {
   thumbnailUrl?: string;
   uploadRewardStatus: string;
   rewardCoins: number;
+}
+
+export interface MomentsGalleryRow {
+  momentId: string;
+  caption?: string | null;
+  type: 'photo' | 'video';
+  viewsCount: number;
+  likesCount: number;
+  commentsCount: number;
+  processingStatus: string;
+  moderationStatus: string;
+  visibilityTier?: 'PUBLIC' | 'VIP';
+  uploadRewardStatus: string;
+  coinsRewarded: number;
+  createdAt: string;
+  thumbnailUrl?: string;
+  inFreePreview?: boolean;
+  creator: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    verified: boolean;
+  };
 }

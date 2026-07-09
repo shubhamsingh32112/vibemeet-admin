@@ -392,6 +392,11 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
     body: 'Free preview settings for moments content.',
     timezone: 'none',
   },
+  'content.moments_gallery': {
+    title: 'All moments',
+    body: 'Gallery of all creator moments with optional upload-reward clawback on admin delete.',
+    timezone: 'none',
+  },
   'settings.page': {
     title: 'Settings',
     body: 'Platform configuration for super admins.',

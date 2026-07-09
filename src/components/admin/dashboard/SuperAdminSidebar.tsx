@@ -9,6 +9,7 @@ import {
   Crown,
   Headphones,
   LayoutDashboard,
+  LayoutGrid,
   LineChart,
   ListOrdered,
   Phone,
@@ -88,6 +89,7 @@ const SECTIONS: NavSection[] = [
     id: 'content',
     title: 'Content',
     items: [
+      { to: '/moments/gallery', label: 'All moments', icon: LayoutGrid },
       { to: '/moments/free-previews', label: 'Moments free previews', icon: Sparkles },
       { to: '/moments/upload-rewards', label: 'Moment upload rewards', icon: Coins },
     ],
