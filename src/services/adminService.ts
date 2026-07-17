@@ -162,6 +162,34 @@ export interface UserAnalytics {
   referralCodeUsed?: string | null;
   referrerLabel?: string | null;
   referrerIsAgency?: boolean;
+  loginCount?: number;
+  latestLoginAt?: string | null;
+  interactiveLoginCount?: number;
+  sessionRestoreCount?: number;
+}
+
+export type WebsiteAudienceCategory =
+  | 'created_on_website'
+  | 'preexisting_then_website';
+
+export interface WebsiteUser {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  username: string | null;
+  avatar: unknown;
+  coins: number;
+  accountCreatedAt: string;
+  websiteAudienceCategory: WebsiteAudienceCategory;
+  websiteAudienceSince: string;
+  firstWebsiteLoginAt: string | null;
+  lastWebsiteLoginAt: string | null;
+}
+
+export interface AttributionCoverageMeta {
+  trackingStart: string;
+  coverage: string;
+  timezone: string;
 }
 
 export interface AdminAgencyBrief {
@@ -841,6 +869,64 @@ export const adminService = {
     };
   },
 
+  getWebsiteUsers: async (params?: {
+    audience?: WebsiteAudienceCategory | 'all';
+    query?: string;
+    sort?: 'website_since' | 'last_website_login';
+    direction?: 'asc' | 'desc';
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    users: WebsiteUser[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    meta: AttributionCoverageMeta & {
+      audience: WebsiteAudienceCategory | 'all';
+      sort: 'website_since' | 'last_website_login';
+      direction: 'asc' | 'desc';
+      range: { from: string; to: string } | null;
+    };
+  }> => {
+    const res = await api.get('/admin/users/website', { params });
+    return res.data.data;
+  },
+
+  getUsersLoginAnalytics: async (params?: {
+    cohort?: 'first_time' | 'relogin' | 'all';
+    activityKind?: 'interactive_login' | 'session_restore' | 'all';
+    query?: string;
+    sort?: string;
+    referrerAgencyId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    users: UserAnalytics[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    meta: AttributionCoverageMeta & {
+      effectiveFilters: {
+        cohort: 'first_time' | 'relogin' | 'all';
+        activityKind: 'interactive_login' | 'session_restore' | 'all';
+        sort: string;
+      };
+      range: { from: string; to: string } | null;
+      classifiedEventCount: number;
+      unknownEventCount: number;
+      authSyncCaveat: string;
+    };
+  }> => {
+    const res = await api.get('/admin/users/login-analytics', { params });
+    return res.data.data;
+  },
+
   getUsersSummary: async () => {
     const res = await api.get('/admin/analytics/users/summary');
     return res.data.data as {
@@ -1299,7 +1385,9 @@ export const adminService = {
     const endpoint = params?.cached
       ? '/admin/leaderboards/hosts/cached'
       : '/admin/leaderboards/hosts';
-    const { cached: _c, ...rest } = params ?? {};
+    const rest = params
+      ? { period: params.period, sort: params.sort, limit: params.limit }
+      : undefined;
     const res = await api.get(endpoint, { params: rest });
     return res.data.data;
   },

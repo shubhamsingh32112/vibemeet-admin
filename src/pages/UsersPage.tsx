@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import DataTable, { type Column } from '../components/ui/DataTable';
 import StatusBadge from '../components/ui/StatusBadge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -14,18 +14,33 @@ import { adminDateRangeQueryParams } from '../utils/dateRange';
 import { formatDateTime } from '../utils/dateTime';
 import { SectionHeading } from '../components/admin/help/SectionHeading';
 
+function adminErrorMessage(error: unknown, fallback: string): string {
+  const candidate = error as { response?: { data?: { error?: string } }; message?: string };
+  return candidate.response?.data?.error || candidate.message || fallback;
+}
+
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<UserAnalytics[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [loginType, setLoginType] = useState<'first_time' | 'relogin' | 'all'>('first_time');
+  const [activityKind, setActivityKind] = useState<
+    'interactive_login' | 'session_restore' | 'all'
+  >('all');
   const [referrerAgencyId, setReferrerAgencyId] = useState('');
   const [agencies, setAgencies] = useState<AdminAgencyBrief[]>([]);
   const [sortBy, setSortBy] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [coverageMeta, setCoverageMeta] = useState<{
+    trackingStart: string;
+    unknownEventCount: number;
+    authSyncCaveat: string;
+  } | null>(null);
+  const requestIdRef = useRef(0);
+  const rangeKeyRef = useRef('');
   const { dateRange } = useAdminDateRange('today');
 
   // Ledger drill-down
@@ -39,27 +54,32 @@ const UsersPage: React.FC = () => {
   const [adjustReason, setAdjustReason] = useState('');
 
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
       setError('');
-      const data = await adminService.getUsersAnalytics({
+      const data = await adminService.getUsersLoginAnalytics({
+        cohort: loginType,
+        activityKind,
         query: search || undefined,
-        role: roleFilter !== 'all' ? roleFilter : undefined,
         sort: sortBy || undefined,
         referrerAgencyId: referrerAgencyId || undefined,
         ...adminDateRangeQueryParams(dateRange),
         page,
         limit: 50,
       });
+      if (requestId !== requestIdRef.current) return;
       setUsers(data.users);
       setTotalUsers(data.total);
       setTotalPages(data.totalPages);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to load');
+      setCoverageMeta(data.meta);
+    } catch (err: unknown) {
+      if (requestId !== requestIdRef.current) return;
+      setError(adminErrorMessage(err, 'Failed to load'));
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [search, roleFilter, sortBy, referrerAgencyId, dateRange.preset, dateRange.from, dateRange.to, page]);
+  }, [search, loginType, activityKind, sortBy, referrerAgencyId, dateRange, page]);
 
   useEffect(() => {
     let ok = true;
@@ -77,8 +97,18 @@ const UsersPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const rangeKey = `${dateRange.preset}:${dateRange.from ?? ''}:${dateRange.to ?? ''}`;
+    const timer = window.setTimeout(() => {
+      if (rangeKeyRef.current && rangeKeyRef.current !== rangeKey && page !== 1) {
+        rangeKeyRef.current = rangeKey;
+        setPage(1);
+        return;
+      }
+      rangeKeyRef.current = rangeKey;
+      void load();
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [dateRange, load, page]);
 
   const openLedger = async (userId: string) => {
     try {
@@ -86,8 +116,8 @@ const UsersPage: React.FC = () => {
       setLedgerLoading(true);
       const data = await adminService.getUserLedger(userId);
       setLedger(data);
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to load ledger');
+    } catch (err: unknown) {
+      alert(adminErrorMessage(err, 'Failed to load ledger'));
       setSelectedUserId(null);
     } finally {
       setLedgerLoading(false);
@@ -121,8 +151,8 @@ const UsersPage: React.FC = () => {
       setAdjustAmount('');
       setAdjustReason('');
       load();
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to adjust coins');
+    } catch (err: unknown) {
+      alert(adminErrorMessage(err, 'Failed to adjust coins'));
     }
   };
 
@@ -161,6 +191,16 @@ const UsersPage: React.FC = () => {
           }
           label={row.role}
         />
+      ),
+    },
+    {
+      key: 'authActivity',
+      header: 'Auth activity',
+      render: (row) => (
+        <span className="text-xs text-zinc-400">
+          {row.loginCount ?? 0} sync{row.loginCount === 1 ? '' : 's'}
+          {row.latestLoginAt ? ` · ${formatDateTime(row.latestLoginAt)}` : ''}
+        </span>
       ),
     },
     {
@@ -286,8 +326,19 @@ const UsersPage: React.FC = () => {
         <div>
           <SectionHeading title="Users Analytics" helpKey="users.page" level={1} />
           <p className="text-xs text-zinc-500 mt-1">
-            Table filters users by join date (<code className="text-zinc-400">createdAt</code>) in the header IST
-            range. Signups vs logins are different metrics — see Total users for charts.
+            First-time uses accounts created in the selected IST range. Relogin uses accounts
+            created before the range with matching auth activity. Wallet, call, and chat columns
+            are account totals, not range totals.
+          </p>
+          <p className="text-xs text-amber-300/70 mt-1">
+            {coverageMeta?.authSyncCaveat ??
+              'Auth activity means backend synchronization unless Interactive login is selected.'}
+            {coverageMeta?.unknownEventCount
+              ? ` ${coverageMeta.unknownEventCount.toLocaleString()} historical events have unknown classification.`
+              : ''}
+            {coverageMeta?.trackingStart
+              ? ` Explicit event classification is available from ${formatDateTime(coverageMeta.trackingStart)}.`
+              : ''}
           </p>
         </div>
         <button
@@ -312,17 +363,28 @@ const UsersPage: React.FC = () => {
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
         />
         <select
-          value={roleFilter}
+          value={loginType}
           onChange={(e) => {
-            setRoleFilter(e.target.value);
+            setLoginType(e.target.value as typeof loginType);
             setPage(1);
           }}
           className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none"
         >
-          <option value="all">All Roles</option>
-          <option value="user">Users</option>
-          <option value="creator">Creators</option>
-          <option value="admin">Admins</option>
+          <option value="first_time">Login type: First-time</option>
+          <option value="relogin">Login type: Relogin</option>
+          <option value="all">Login type: All</option>
+        </select>
+        <select
+          value={activityKind}
+          onChange={(e) => {
+            setActivityKind(e.target.value as typeof activityKind);
+            setPage(1);
+          }}
+          className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-200 focus:outline-none"
+        >
+          <option value="all">Activity: All auth activity</option>
+          <option value="interactive_login">Activity: Interactive login</option>
+          <option value="session_restore">Activity: Session restore</option>
         </select>
         <select
           value={referrerAgencyId}

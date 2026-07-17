@@ -105,6 +105,35 @@ export type DashboardRazorpayBalance = {
   raw: unknown;
 };
 
+export type DashboardRazorpayCollectedAmount = {
+  configured: true;
+  amountSubunits: string | null;
+  amountMajor: string | null;
+  currency: string | null;
+  paymentCount: number;
+  currencyBuckets: Array<{
+    currency: string;
+    amountSubunits: string;
+    amountMajor: string;
+    paymentCount: number;
+  }>;
+  requestedRange: { from: string; to: string } | null;
+  effectiveRange: { from: string | null; to: string };
+  asOf: string;
+  cache: 'miss' | 'hit' | 'stale';
+  stale: boolean;
+  dataMode: 'provider_scan' | 'projection';
+  timestampBasis: 'payment_created_at';
+  completeness: {
+    complete: boolean;
+    status: 'not_started' | 'pending' | 'running' | 'failed' | 'complete';
+    backfillAsOf: string | null;
+    completedAt: string | null;
+    projectedPayments: number;
+  };
+  note: string;
+};
+
 export async function fetchDashboardOverview(params?: DashboardDateParams): Promise<DashboardOverview> {
   const res = await api.get('/admin/dashboard/overview', { params: withDateParams(params) });
   return res.data.data;
@@ -252,6 +281,15 @@ export async function fetchDashboardGeo() {
 
 export async function fetchDashboardRazorpayBalance(): Promise<DashboardRazorpayBalance> {
   const res = await api.get('/admin/dashboard/razorpay-balance');
+  return res.data.data;
+}
+
+export async function fetchDashboardRazorpayCollectedAmount(
+  params?: DashboardDateParams
+): Promise<DashboardRazorpayCollectedAmount> {
+  const res = await api.get('/admin/dashboard/razorpay-collected-amount', {
+    params: withDateParams(params),
+  });
   return res.data.data;
 }
 

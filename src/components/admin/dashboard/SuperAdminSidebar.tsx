@@ -44,6 +44,7 @@ const SECTIONS: NavSection[] = [
     title: 'User management',
     items: [
       { to: '/users/analytics', label: 'User analytics', icon: Activity },
+      { to: '/users/website', label: 'Website users', icon: Users },
       { to: '/users/totals', label: 'Total users', icon: Users },
       { to: '/users/calls', label: 'Call analytics / logs', icon: Phone },
       { to: '/finance/payments/logs', label: 'Payment logs', icon: Receipt },

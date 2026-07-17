@@ -27,6 +27,7 @@ import BlockedHostsPage from './pages/BlockedHostsPage';
 import RevenueSplitPage from './pages/RevenueSplitPage';
 import LeaderboardsPage from './pages/LeaderboardsPage';
 import UserTotalsPage from './pages/users/UserTotalsPage';
+import WebsiteUsersPage from './pages/users/WebsiteUsersPage';
 import MomentsPaidUsersPage from './pages/users/MomentsPaidUsersPage';
 import VipPaidUsersPage from './pages/users/VipPaidUsersPage';
 import CoinsPaidUsersPage from './pages/users/CoinsPaidUsersPage';
@@ -309,6 +310,7 @@ const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<SuperAdminDashboardPage />} />
         {/* User management */}
         <Route path="users/analytics" element={<UsersPage />} />
+        <Route path="users/website" element={<WebsiteUsersPage />} />
         <Route path="users/totals" element={<UserTotalsPage />} />
         <Route path="users/calls" element={<CallsPage />} />
         {/* Host management */}

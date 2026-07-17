@@ -152,6 +152,13 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
     source: 'Razorpay balance API',
     filterScope: 'Live API snapshot',
   },
+  'dashboard.razorpay_collected_amount': {
+    title: 'Razorpay Collected Amount',
+    body: 'Gross amount from Razorpay payments with captured=true in the selected period. Refunded captured payments remain included. All time uses the durable projection and is visibly partial until its historical backfill completes. This is not the available balance, fee-adjusted settlement, or amount deposited in the bank.',
+    timezone: 'header_range',
+    source: 'Razorpay Payments API (payment.created_at)',
+    filterScope: 'Header date filter (exact half-open IST range)',
+  },
   'dashboard.alerts': {
     title: 'Alerts',
     body: 'Operational alerts (fraud signals, urgent support). Mostly live counts.',
@@ -161,9 +168,16 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
   // ── Users ──
   'users.page': {
     title: 'Users',
-    body: 'End-user accounts (role=user). List respects header IST date filter on joined date when applicable.',
+    body: 'End-user cohorts. First-time means accounts created in the selected range; Relogin means pre-range accounts with auth synchronization activity in the range.',
     timezone: 'header_range',
     filterScope: 'Header date filter (IST)',
+  },
+  'users.website.page': {
+    title: 'Website users',
+    body: 'Forward-only website attribution from explicit web auth claims. Created on website and pre-existing then website are immutable audience categories; activity before tracking began cannot be reconstructed.',
+    timezone: 'header_range',
+    source: 'User website attribution fields / UserLoginEvent',
+    filterScope: 'Header date filter on websiteAudienceSince (IST)',
   },
   'users.table.user': {
     title: 'User',

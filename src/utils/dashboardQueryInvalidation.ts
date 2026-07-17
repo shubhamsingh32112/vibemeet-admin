@@ -6,7 +6,7 @@ const DASH = 'dashboard' as const;
 /** Maps stale dashboard sections to React Query key suffixes under [DASH, …]. */
 const SECTION_QUERY_SUFFIXES: Partial<Record<DashboardSection, string[]>> = {
   overview: ['overview', 'call-analytics'],
-  revenue: ['revenue', 'razorpay-balance'],
+  revenue: ['revenue', 'razorpay-balance', 'razorpay-collected-amount'],
   realtime: ['live-calls'],
   calls: ['live-calls', 'call-analytics'],
   creators: ['top-hosts'],

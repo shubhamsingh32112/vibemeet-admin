@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   Clock,
@@ -20,6 +20,7 @@ import {
   fetchDashboardOverview,
   fetchDashboardPayouts,
   fetchDashboardRazorpayBalance,
+  fetchDashboardRazorpayCollectedAmount,
   fetchDashboardRevenue,
   fetchDashboardTopAgencies,
   fetchDashboardTopBds,
@@ -33,6 +34,7 @@ import AlertsPanel from '../../components/admin/dashboard/AlertsPanel';
 import CallAnalyticsBlock from '../../components/admin/dashboard/CallAnalyticsBlock';
 import PayoutTable from '../../components/admin/dashboard/PayoutTable';
 import RazorpayBalancePanel from '../../components/admin/dashboard/RazorpayBalancePanel';
+import RazorpayCollectedAmountCard from '../../components/admin/dashboard/RazorpayCollectedAmountCard';
 import RevenueDailyBalanceModal from '../../components/admin/dashboard/RevenueDailyBalanceModal';
 import { SectionHeading } from '../../components/admin/help/SectionHeading';
 import CommandCenterKpiModal, {
@@ -56,7 +58,7 @@ const SuperAdminDashboardPage: React.FC = () => {
   const [kpiDrilldown, setKpiDrilldown] = React.useState<CommandCenterKpiKind | null>(null);
   const dashboardDateParams = React.useMemo(
     () => adminDateRangeQueryParams(dateRange),
-    [dateRange.preset, dateRange.from, dateRange.to]
+    [dateRange]
   );
   const headerRangeLabel = dateRangePresetLabel(dateRange.preset);
 
@@ -123,6 +125,19 @@ const SuperAdminDashboardPage: React.FC = () => {
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
+  const razorpayCollected = useQuery({
+    queryKey: [
+      DASH,
+      'razorpay-collected-amount',
+      dateRange.preset,
+      dashboardDateParams.from,
+      dashboardDateParams.to,
+    ],
+    queryFn: () => fetchDashboardRazorpayCollectedAmount(dashboardDateParams),
+    staleTime: dateRange.preset === 'all' ? 60 * 60_000 : 60_000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
 
   const ov = overview.data;
   const rechargePoints = ov?.rechargeDailySeries?.points ?? ov?.walletFlowSeries?.points ?? [];
@@ -147,8 +162,8 @@ const SuperAdminDashboardPage: React.FC = () => {
           <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">MatchVibe</p>
           <SectionHeading title="Command center" helpKey="dashboard.page" level={2} className="mt-0" />
           <p className="text-xs text-zinc-500 mt-1 max-w-xl">
-            Call and payout aggregates follow the selected header date range; recharge collection always uses IST
-            calendar days. Live call tiles remain realtime proxies.{' '}
+            Call, payout, and Razorpay Collected Amount follow the selected header date range; recharge collection
+            always uses IST calendar days. Live call tiles remain realtime proxies.{' '}
             <Link className="text-violet-400 hover:underline" to="/overview">
               Legacy operations overview
             </Link>
@@ -157,6 +172,13 @@ const SuperAdminDashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-3">
+        <RazorpayCollectedAmountCard
+          data={razorpayCollected.data}
+          loading={razorpayCollected.isLoading}
+          fetching={razorpayCollected.isFetching}
+          error={razorpayCollected.isError}
+          rangeLabel={headerRangeLabel}
+        />
         <KPIStatCard
           title="Recharge collection (today)"
           value={ov?.rechargeCollectionTodayInr ?? ov?.revenueDailyBalance ?? 0}
