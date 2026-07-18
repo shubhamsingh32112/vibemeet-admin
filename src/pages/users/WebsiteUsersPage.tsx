@@ -34,9 +34,12 @@ const WebsiteUsersPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [meta, setMeta] = useState<AttributionCoverageMeta | null>(null);
+  const [uniqueVisits, setUniqueVisits] = useState<number | null>(null);
+  const [visitMeta, setVisitMeta] = useState<AttributionCoverageMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const requestId = useRef(0);
+  const visitRequestId = useRef(0);
   const rangeKeyRef = useRef('');
   const { dateRange } = useAdminDateRange('today');
 
@@ -77,6 +80,24 @@ const WebsiteUsersPage: React.FC = () => {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [audience, search, sort, page, dateRange]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const id = ++visitRequestId.current;
+      void adminService
+        .getWebsiteVisits(adminDateRangeQueryParams(dateRange))
+        .then((data) => {
+          if (id !== visitRequestId.current) return;
+          setUniqueVisits(data.uniqueVisitors);
+          setVisitMeta(data.meta);
+        })
+        .catch(() => {
+          if (id !== visitRequestId.current) return;
+          setUniqueVisits(null);
+        });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [dateRange]);
 
   const columns: Column<WebsiteUser>[] = [
     {
@@ -119,17 +140,41 @@ const WebsiteUsersPage: React.FC = () => {
 
   return (
     <div>
-      <SectionHeading title="Website Users" helpKey="users.website.page" level={1} />
-      <p className="mt-1 text-xs text-zinc-500">
-        Forward-only analytics claims from website auth synchronization; these fields are not
-        security assertions.
-      </p>
-      {meta && (
-        <p className="mt-1 text-xs text-amber-300/80">
-          Website attribution available from {formatDateTime(meta.trackingStart)}. Earlier
-          website activity cannot be reconstructed reliably.
-        </p>
-      )}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <SectionHeading title="Website Users" helpKey="users.website.page" level={1} />
+          <p className="mt-1 text-xs text-zinc-500">
+            Forward-only analytics claims from website auth synchronization; these fields are not
+            security assertions.
+          </p>
+          {meta && (
+            <p className="mt-1 text-xs text-amber-300/80">
+              Website attribution available from {formatDateTime(meta.trackingStart)}. Earlier
+              website activity cannot be reconstructed reliably.
+            </p>
+          )}
+        </div>
+        <div className="shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
+          <SectionHeading
+            title="Website visits"
+            helpKey="users.website.visits"
+            level={3}
+            className="justify-end"
+          />
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-white">
+            {uniqueVisits === null ? '—' : uniqueVisits.toLocaleString()}
+          </p>
+          <p className="mt-0.5 text-[11px] text-zinc-500">
+            Unique browsers × days (no login needed)
+          </p>
+          {visitMeta && (
+            <p className="mt-1 max-w-[220px] text-[10px] leading-snug text-amber-300/70">
+              Available from {formatDateTime(visitMeta.trackingStart)}. Same browser counts once
+              per day.
+            </p>
+          )}
+        </div>
+      </div>
 
       <div className="my-4 flex flex-wrap items-center gap-3">
         <input

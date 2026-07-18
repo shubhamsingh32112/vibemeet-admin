@@ -895,6 +895,19 @@ export const adminService = {
     return res.data.data;
   },
 
+  getWebsiteVisits: async (params?: {
+    from?: string;
+    to?: string;
+  }): Promise<{
+    uniqueVisitors: number;
+    meta: AttributionCoverageMeta & {
+      range: { from: string; to: string } | null;
+    };
+  }> => {
+    const res = await api.get('/admin/analytics/website-visits', { params });
+    return res.data.data;
+  },
+
   getUsersLoginAnalytics: async (params?: {
     cohort?: 'first_time' | 'relogin' | 'all';
     activityKind?: 'interactive_login' | 'session_restore' | 'all';

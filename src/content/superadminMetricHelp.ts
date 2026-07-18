@@ -179,6 +179,13 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
     source: 'User website attribution fields / UserLoginEvent',
     filterScope: 'Header date filter on websiteAudienceSince (IST)',
   },
+  'users.website.visits': {
+    title: 'Website visits',
+    body: 'Anonymous homepage traffic only — login is not required. Each browser gets a local visitor ID; the same browser counts once per IST calendar day (100 opens the same day = 1; Mon + Tue = 2). Not the same as Website users (auth sync).',
+    timezone: 'header_range',
+    source: 'WebsiteHomepageVisitDay',
+    filterScope: 'Header date filter on IST day keys; count rows (visitor × day)',
+  },
   'users.table.user': {
     title: 'User',
     body: 'Display name, email, or phone for the end user.',
