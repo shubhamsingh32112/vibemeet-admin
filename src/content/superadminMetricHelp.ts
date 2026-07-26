@@ -44,6 +44,13 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
     source: 'Redis creator presence',
     filterScope: 'Live snapshot',
   },
+  'dashboard.users_online_5m': {
+    title: 'Users online (5m)',
+    body: 'Fans with socket activity in the last 5 minutes. Uses a Redis recent-activity marker (300s TTL) refreshed on connect and heartbeat; not deleted on disconnect so recently closed sessions still count until the window expires.',
+    timezone: 'realtime',
+    source: 'Redis user:recent-activity',
+    filterScope: 'Trailing 5 minutes (wall clock)',
+  },
   'dashboard.hosts_on_call': {
     title: 'Hosts on call',
     body: 'Creators currently in an active video call according to live Redis presence.',

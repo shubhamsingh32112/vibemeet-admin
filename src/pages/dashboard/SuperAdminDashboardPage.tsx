@@ -200,6 +200,15 @@ const SuperAdminDashboardPage: React.FC = () => {
           onClick={() => setKpiDrilldown('live_calls')}
         />
         <KPIStatCard
+          title="Users online (5m)"
+          value={ov?.usersOnline ?? 0}
+          icon={<Users className="h-5 w-5" />}
+          accent="green"
+          footnote={ov?.usersOnlineNote ?? 'Tap to list recently active fans'}
+          helpKey="dashboard.users_online_5m"
+          onClick={() => setKpiDrilldown('users_online')}
+        />
+        <KPIStatCard
           title="Hosts online"
           value={ov?.hostsOnline ?? ov?.onlineHosts ?? 0}
           icon={<Radio className="h-5 w-5" />}

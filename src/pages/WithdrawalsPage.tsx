@@ -306,12 +306,20 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false, var
             </>
           )}
           {row.status === 'approved' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); openAction(row, 'mark-paid'); }}
-              className="px-2 py-0.5 text-xs bg-blue-700 hover:bg-blue-600 text-white rounded transition"
-            >
-              Mark Paid
-            </button>
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); openAction(row, 'mark-paid'); }}
+                className="px-2 py-0.5 text-xs bg-blue-700 hover:bg-blue-600 text-white rounded transition"
+              >
+                Mark Paid
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); openAction(row, 'reject'); }}
+                className="px-2 py-0.5 text-xs bg-red-700 hover:bg-red-600 text-white rounded transition"
+              >
+                Reject
+              </button>
+            </>
           )}
         </div>
       ),
@@ -478,7 +486,9 @@ const WithdrawalsPage: React.FC<WithdrawalsPageProps> = ({ embedded = false, var
             ? actionType === 'approve'
               ? `Approve withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)}? Coins are not deducted until you mark it as paid.`
               : actionType === 'reject'
-              ? `Reject withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)}? No coins will be deducted.`
+              ? actionTarget.status === 'approved'
+                ? `Cancel approval and reject withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)}? No coins were deducted; they can request again.`
+                : `Reject withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)}? No coins will be deducted.`
               : `Mark withdrawal of ${actionTarget.amount.toLocaleString()} coins for ${partyName(actionTarget, variant)} as paid? This will deduct ${actionTarget.amount.toLocaleString()} coins and confirms external payment was completed.`
             : ''
         }

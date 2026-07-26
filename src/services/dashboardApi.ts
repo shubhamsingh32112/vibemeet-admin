@@ -26,6 +26,8 @@ export type DashboardOverview = {
   hostsOffline?: number;
   hostsTotal?: number;
   presenceNote?: string;
+  usersOnline?: number;
+  usersOnlineNote?: string;
   totalAgencies: number;
   totalBds: number;
   pendingPayouts: number;
@@ -158,6 +160,22 @@ export async function fetchDashboardLiveCalls() {
       durationSeconds: number;
       revenueCoins: number;
       startedAt: string;
+    }>;
+    note?: string;
+  };
+}
+
+export async function fetchDashboardUsersOnline(limit = 50) {
+  const res = await api.get('/admin/dashboard/users-online', { params: { limit } });
+  return res.data.data as {
+    total: number;
+    users: Array<{
+      id: string;
+      firebaseUid: string;
+      username: string | null;
+      email: string | null;
+      displayName: string | null;
+      avatar: string | null;
     }>;
     note?: string;
   };

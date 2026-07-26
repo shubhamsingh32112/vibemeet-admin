@@ -5,6 +5,7 @@ import api from '../../../config/api';
 import { adminService, type CreatorPerformance } from '../../../services/adminService';
 import {
   fetchDashboardLiveCalls,
+  fetchDashboardUsersOnline,
   type DashboardOverview,
 } from '../../../services/dashboardApi';
 import StatusBadge from '../../ui/StatusBadge';
@@ -12,6 +13,7 @@ import LoadingSpinner from '../../ui/LoadingSpinner';
 
 export type CommandCenterKpiKind =
   | 'live_calls'
+  | 'users_online'
   | 'hosts_online'
   | 'hosts_on_call'
   | 'hosts_offline'
@@ -65,6 +67,15 @@ type LiveCallRow = {
   startedAt: string;
 };
 
+type OnlineUserRow = {
+  id: string;
+  firebaseUid: string;
+  username: string | null;
+  email: string | null;
+  displayName: string | null;
+  avatar: string | null;
+};
+
 type CommandCenterKpiModalProps = {
   open: boolean;
   kind: CommandCenterKpiKind | null;
@@ -85,6 +96,12 @@ const META: Record<
       'Recent creator-side call activity in the last 5 minutes. Count on the KPI card is a realtime proxy, not exact concurrent calls.',
     viewAllHref: '/users/calls',
     viewAllLabel: 'Open call logs',
+  },
+  users_online: {
+    title: 'Users online (5m)',
+    description: 'Fans with socket activity in the last 5 minutes.',
+    viewAllHref: '/users/analytics',
+    viewAllLabel: 'Open user analytics',
   },
   hosts_online: {
     title: 'Hosts online',
@@ -151,6 +168,9 @@ export const CommandCenterKpiModal: React.FC<CommandCenterKpiModalProps> = ({
   const [hostTotal, setHostTotal] = React.useState(0);
   const [liveCalls, setLiveCalls] = React.useState<LiveCallRow[]>([]);
   const [liveNote, setLiveNote] = React.useState<string | undefined>();
+  const [onlineUsers, setOnlineUsers] = React.useState<OnlineUserRow[]>([]);
+  const [onlineUsersTotal, setOnlineUsersTotal] = React.useState(0);
+  const [onlineUsersNote, setOnlineUsersNote] = React.useState<string | undefined>();
   const [agencies, setAgencies] = React.useState<AgencyRow[]>([]);
   const [bds, setBds] = React.useState<BdRow[]>([]);
 
@@ -173,6 +193,9 @@ export const CommandCenterKpiModal: React.FC<CommandCenterKpiModalProps> = ({
       setHosts([]);
       setHostTotal(0);
       setLiveCalls([]);
+      setOnlineUsers([]);
+      setOnlineUsersTotal(0);
+      setOnlineUsersNote(undefined);
       setAgencies([]);
       setBds([]);
 
@@ -193,6 +216,12 @@ export const CommandCenterKpiModal: React.FC<CommandCenterKpiModalProps> = ({
           if (cancelled) return;
           setLiveCalls(data.calls ?? []);
           setLiveNote(data.note);
+        } else if (kind === 'users_online') {
+          const data = await fetchDashboardUsersOnline(50);
+          if (cancelled) return;
+          setOnlineUsers(data.users ?? []);
+          setOnlineUsersTotal(data.total ?? 0);
+          setOnlineUsersNote(data.note);
         } else if (kind === 'agencies') {
           const res = await api.get('/admin/agencies');
           if (cancelled) return;
@@ -226,6 +255,8 @@ export const CommandCenterKpiModal: React.FC<CommandCenterKpiModalProps> = ({
     switch (kind) {
       case 'live_calls':
         return overview?.liveCallsProxy ?? liveCalls.length;
+      case 'users_online':
+        return overview?.usersOnline ?? onlineUsersTotal;
       case 'hosts_online':
         return overview?.hostsOnline ?? overview?.onlineHosts ?? hostTotal;
       case 'hosts_on_call':
@@ -277,6 +308,11 @@ export const CommandCenterKpiModal: React.FC<CommandCenterKpiModalProps> = ({
             {overview?.presenceNote &&
             (kind === 'hosts_online' || kind === 'hosts_on_call' || kind === 'hosts_offline') ? (
               <p className="mt-1 text-[11px] text-zinc-600">{overview.presenceNote}</p>
+            ) : null}
+            {kind === 'users_online' && (onlineUsersNote || overview?.usersOnlineNote) ? (
+              <p className="mt-1 text-[11px] text-zinc-600">
+                {onlineUsersNote || overview?.usersOnlineNote}
+              </p>
             ) : null}
           </div>
           <button
@@ -378,6 +414,47 @@ export const CommandCenterKpiModal: React.FC<CommandCenterKpiModalProps> = ({
                       ))}
                     </ul>
                   )}
+                </>
+              )}
+
+              {kind === 'users_online' && (
+                <>
+                  {onlineUsers.length === 0 ? (
+                    <p className="px-3 py-10 text-center text-sm text-zinc-500">
+                      No fans active in the last 5 minutes.
+                    </p>
+                  ) : (
+                    <table className="w-full text-left text-sm">
+                      <thead className="sticky top-0 bg-zinc-950/95 backdrop-blur">
+                        <tr className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                          <th className="px-3 py-2.5">User</th>
+                          <th className="px-3 py-2.5">Email</th>
+                          <th className="px-3 py-2.5">ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {onlineUsers.map((u) => (
+                          <tr key={u.id} className="border-t border-white/[0.04] hover:bg-white/[0.02]">
+                            <td className="px-3 py-2.5">
+                              <p className="font-medium text-white">
+                                {u.displayName?.trim() || u.username || 'User'}
+                              </p>
+                              {u.username ? (
+                                <p className="text-[11px] text-zinc-500">@{u.username}</p>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-2.5 text-zinc-400">{u.email || '—'}</td>
+                            <td className="px-3 py-2.5 font-mono text-[11px] text-zinc-500">{u.id}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                  {onlineUsersTotal > onlineUsers.length ? (
+                    <p className="px-3 py-2 text-[11px] text-zinc-500">
+                      Showing first {onlineUsers.length} of {onlineUsersTotal.toLocaleString()} users.
+                    </p>
+                  ) : null}
                 </>
               )}
 

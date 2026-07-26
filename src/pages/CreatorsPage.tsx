@@ -115,7 +115,7 @@ const CreatorsPage: React.FC = () => {
   };
 
   const handleDeactivate = async (row: CreatorPerformance) => {
-    if (!confirm(`Deactivate ${row.name}? They will be hidden from the app but their profile remains.`)) return;
+    if (!confirm(`Deactivate ${row.name}? They will be hidden from users and locked out of the host app until you reactivate them.`)) return;
     try {
       await adminService.deactivateCreator(row.creatorId);
       load();
