@@ -2,7 +2,6 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Building2,
   Clock,
   PhoneCall,
   Radio,
@@ -234,33 +233,6 @@ const SuperAdminDashboardPage: React.FC = () => {
           footnote="Tap to list offline hosts"
           helpKey="dashboard.hosts_offline"
           onClick={() => setKpiDrilldown('hosts_offline')}
-        />
-        <KPIStatCard
-          title="Agencies"
-          value={ov?.totalAgencies ?? 0}
-          icon={<Building2 className="h-5 w-5" />}
-          accent="blue"
-          footnote="Tap to view agencies"
-          helpKey="dashboard.total_agencies"
-          onClick={() => setKpiDrilldown('agencies')}
-        />
-        <KPIStatCard
-          title="BDs"
-          value={ov?.totalBds ?? 0}
-          icon={<Users className="h-5 w-5" />}
-          accent="amber"
-          footnote="Tap to view BDs"
-          helpKey="dashboard.total_bds"
-          onClick={() => setKpiDrilldown('bds')}
-        />
-        <KPIStatCard
-          title="Pending payouts"
-          value={ov?.pendingPayouts ?? 0}
-          icon={<Wallet className="h-5 w-5" />}
-          accent="amber"
-          footnote={ov?.pendingPayoutsNote ?? 'Tap to view pending requests'}
-          helpKey="dashboard.pending_payouts"
-          onClick={() => setKpiDrilldown('pending_payouts')}
         />
         <KPIStatCard
           title="Call minutes (selected range)"
