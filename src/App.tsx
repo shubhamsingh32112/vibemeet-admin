@@ -38,6 +38,7 @@ import MomentsPremiumUsersPage from './pages/finance/MomentsPremiumUsersPage';
 import FinancePayoutsPage from './pages/finance/FinancePayoutsPage';
 import BdStaffWithdrawalsPage from './pages/finance/BdStaffWithdrawalsPage';
 import AgencyStaffWithdrawalsPage from './pages/finance/AgencyStaffWithdrawalsPage';
+import PaymentErrorCheckPage from './pages/finance/PaymentErrorCheckPage';
 import RevenueAnalyticsPage from './pages/revenue/RevenueAnalyticsPage';
 import SystemHealthPage from './pages/monitoring/SystemHealthPage';
 import SettingsPage from './pages/settings/SettingsPage';
@@ -327,6 +328,7 @@ const AppRoutes: React.FC = () => {
         <Route path="finance/payouts/bd" element={<BdStaffWithdrawalsPage />} />
         <Route path="finance/payouts/agency" element={<AgencyStaffWithdrawalsPage />} />
         <Route path="finance/wallet" element={<WalletTransactionsPage />} />
+        <Route path="finance/payment-error-check" element={<PaymentErrorCheckPage />} />
         <Route path="finance/paid-users/coins" element={<CoinsPaidUsersPage />} />
         <Route path="finance/paid-users/moments" element={<MomentsPaidUsersPage />} />
         <Route path="finance/paid-users/vip" element={<VipPaidUsersPage />} />

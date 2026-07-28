@@ -21,6 +21,7 @@ import {
   Users,
   Wallet,
   Coins,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -71,6 +72,7 @@ const SECTIONS: NavSection[] = [
       { to: '/finance/payouts/bd', label: 'BD withdrawals', icon: Users },
       { to: '/finance/payouts/agency', label: 'Agency withdrawals', icon: Building2 },
       { to: '/finance/wallet', label: 'Wallet transactions', icon: Receipt },
+      { to: '/finance/payment-error-check', label: 'Payment error check', icon: AlertTriangle },
       { to: '/finance/paid-users/coins', label: 'Paid users (coins)', icon: Wallet },
       { to: '/finance/paid-users/moments', label: 'Paid users (moments)', icon: Sparkles },
       { to: '/finance/paid-users/vip', label: 'Paid users (VIP)', icon: Crown },

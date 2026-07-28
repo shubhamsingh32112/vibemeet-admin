@@ -321,6 +321,13 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
     timezone: 'IST',
     source: 'MomentsPremiumMembership',
   },
+  'finance.payment_error_check': {
+    title: 'Payment error check',
+    body: 'Scans Razorpay captured wallet payments in a custom time range (default past 24h) and flags payments that did not credit coins in Mongo.',
+    timezone: 'custom_range',
+    source: 'Razorpay payments + CoinTransaction',
+    filterScope: 'Page from/to range (IST inputs, UTC compare)',
+  },
 
   // ── Hosts ──
   'hosts.bds': {
