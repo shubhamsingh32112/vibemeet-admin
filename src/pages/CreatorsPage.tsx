@@ -294,7 +294,7 @@ const CreatorsPage: React.FC = () => {
             className="tabular-nums text-sky-300"
             title={
               onlinePeriod === 'today'
-                ? 'Available online time; resets at midnight 00:00 server time'
+                ? 'Available online time; resets at midnight 00:00 IST'
                 : `Available online time (${onlinePeriod})`
             }
           >
