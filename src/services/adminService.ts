@@ -69,6 +69,34 @@ export interface CoinFlow {
   net: number;
 }
 
+export type PaymentErrorCheckRow = {
+  username: string | null;
+  email: string | null;
+  phone: string | null;
+  userId: string | null;
+  amountInr: number;
+  coins: number | null;
+  amountLabel: string;
+  paymentId: string;
+  orderId: string | null;
+  razorpayLabel: string;
+  mongoTxLabel: string;
+  walletNow: number | null;
+  whenUtc: string;
+  createdAtIso: string;
+  issue: 'OK_CREDITED' | 'PAID_BUT_PENDING' | 'PAID_BUT_FAILED' | 'NO_COIN_TRANSACTION';
+};
+
+export type PaymentErrorCheckResult = {
+  configured: boolean;
+  from: string;
+  to: string;
+  scannedPayments: number;
+  capturedWalletPayments: number;
+  gotCoins: PaymentErrorCheckRow[];
+  paidNoCoins: PaymentErrorCheckRow[];
+};
+
 export interface AbuseSignals {
   shortCallPct: number;
   zeroDuration30d: number;
@@ -1043,6 +1071,14 @@ export const adminService = {
   }) => {
     const res = await api.get('/admin/finance/payment-logs', { params });
     return res.data.data;
+  },
+
+  getPaymentErrorCheck: async (params?: {
+    from?: string;
+    to?: string;
+  }): Promise<PaymentErrorCheckResult> => {
+    const res = await api.get('/admin/finance/payment-error-check', { params });
+    return res.data.data as PaymentErrorCheckResult;
   },
 
   getFinancePayoutsSummary: async (period: 'today' | '7d' | '30d' = '30d') => {
