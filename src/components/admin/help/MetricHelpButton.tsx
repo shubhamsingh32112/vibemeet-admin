@@ -20,7 +20,6 @@ const timezoneLabels: Record<NonNullable<MetricHelpContent['timezone']>, string>
   header_range: 'Header date filter (IST)',
   realtime: 'Live / realtime',
   none: 'Not time-bound',
-  custom_range: 'Custom page time range',
 };
 
 export function MetricHelpButton({ help: helpProp, helpKey, className, size = 'sm' }: Props) {

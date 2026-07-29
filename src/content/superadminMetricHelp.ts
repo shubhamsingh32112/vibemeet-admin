@@ -1,4 +1,4 @@
-export type MetricHelpTimezone = 'IST' | 'header_range' | 'realtime' | 'none' | 'custom_range';
+export type MetricHelpTimezone = 'IST' | 'header_range' | 'realtime' | 'none';
 
 export type MetricHelpContent = {
   title: string;
@@ -324,7 +324,7 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
   'finance.payment_error_check': {
     title: 'Payment error check',
     body: 'Scans Razorpay captured wallet payments in a custom time range (default past 24h) and flags payments that did not credit coins in Mongo.',
-    timezone: 'custom_range',
+    timezone: 'header_range',
     source: 'Razorpay payments + CoinTransaction',
     filterScope: 'Page from/to range (IST inputs, UTC compare)',
   },
