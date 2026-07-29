@@ -1,4 +1,4 @@
-export type MetricHelpTimezone = 'IST' | 'header_range' | 'realtime' | 'none';
+export type MetricHelpTimezone = 'IST' | 'header_range' | 'realtime' | 'none' | 'custom_range';
 
 export type MetricHelpContent = {
   title: string;
