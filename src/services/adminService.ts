@@ -118,8 +118,12 @@ export interface CreatorPerformance {
   totalCalls: number;
   totalMinutes: number;
   totalEarned: number;
+  freeCallEarnings?: number;
+  paidCallEarnings?: number;
   avgCallDurationSec: number;
   lastCallAt: string | null;
+  callsToday?: number;
+  calls7d?: number;
   calls30d: number;
   minutes30d: number;
   earned30d: number;
@@ -132,8 +136,10 @@ export interface CreatorPerformance {
   currentEarningsPerMinute: number;
   /** @deprecated Use avgEarningsPerMinute */
   earningsPerMinute: number;
-  /** Seconds available online in current daily period (23:59 reset); matches creator home. */
+  /** Seconds available online in current calendar day (midnight reset); matches creator home. */
   onlineTodaySeconds?: number;
+  online7dSeconds?: number;
+  online30dSeconds?: number;
   abuseSignals: AbuseSignals;
 }
 

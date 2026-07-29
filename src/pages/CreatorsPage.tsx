@@ -8,7 +8,6 @@ import { SectionHeading } from '../components/admin/help/SectionHeading';
 import { adminService, type CreatorPerformance } from '../services/adminService';
 import { creatorService } from '../services/creatorService';
 import { userService, type User } from '../services/userService';
-import CreatorEditModal from '../components/CreatorEditModal';
 
 const CreatorsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -22,6 +21,8 @@ const CreatorsPage: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [presenceFilter, setPresenceFilter] = useState('');
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [onlinePeriod, setOnlinePeriod] = useState<'today' | '7d' | '30d'>('today');
+  const [callsPeriod, setCallsPeriod] = useState<'today' | '7d' | '30d'>('today');
   const [presenceCounts, setPresenceCounts] = useState<{
     online: number;
     on_call: number;
@@ -32,7 +33,6 @@ const CreatorsPage: React.FC = () => {
   // Modals
   const [resetPresenceTarget, setResetPresenceTarget] = useState<CreatorPerformance | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingRow, setEditingRow] = useState<CreatorPerformance | null>(null);
   const [adjustTarget, setAdjustTarget] = useState<CreatorPerformance | null>(null);
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
@@ -254,20 +254,48 @@ const CreatorsPage: React.FC = () => {
     },
     {
       key: 'onlineTodaySeconds',
-      header: 'Online mins today',
+      header: (
+        <div className="flex flex-col gap-1">
+          <span>Online mins</span>
+          <select
+            value={onlinePeriod}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) =>
+              setOnlinePeriod(e.target.value as 'today' | '7d' | '30d')
+            }
+            className="bg-zinc-900 border border-zinc-700 rounded px-1.5 py-0.5 text-[10px] text-zinc-300 font-normal"
+          >
+            <option value="today">Today</option>
+            <option value="7d">7 days</option>
+            <option value="30d">30 days</option>
+          </select>
+        </div>
+      ),
       sortable: true,
-      getValue: (row) => Math.floor((row.onlineTodaySeconds ?? 0) / 60),
+      getValue: (row) => {
+        const seconds =
+          onlinePeriod === '7d'
+            ? (row.online7dSeconds ?? row.onlineTodaySeconds ?? 0)
+            : onlinePeriod === '30d'
+              ? (row.online30dSeconds ?? row.onlineTodaySeconds ?? 0)
+              : (row.onlineTodaySeconds ?? 0);
+        return Math.floor(seconds / 60);
+      },
       render: (row) => {
-        const seconds = row.onlineTodaySeconds ?? 0;
+        const seconds =
+          onlinePeriod === '7d'
+            ? (row.online7dSeconds ?? row.onlineTodaySeconds ?? 0)
+            : onlinePeriod === '30d'
+              ? (row.online30dSeconds ?? row.onlineTodaySeconds ?? 0)
+              : (row.onlineTodaySeconds ?? 0);
         const minutes = Math.floor(seconds / 60);
-        const remainder = seconds % 60;
         return (
           <span
             className="tabular-nums text-sky-300"
             title={
-              remainder > 0
-                ? `${minutes} min ${remainder} sec (available online; resets 23:59 server time)`
-                : 'Available online time; resets 23:59 server time'
+              onlinePeriod === 'today'
+                ? 'Available online time; resets at midnight 00:00 server time'
+                : `Available online time (${onlinePeriod})`
             }
           >
             {minutes}
@@ -276,30 +304,69 @@ const CreatorsPage: React.FC = () => {
       },
     },
     {
-      key: 'price',
-      header: 'Price/min',
-      sortable: true,
-      render: (row) => <span className="tabular-nums">{row.price}</span>,
-    },
-    {
       key: 'minutes30d',
-      header: 'Mins (30d)',
+      header: 'Talk mins (30d)',
       sortable: true,
       render: (row) => <span className="tabular-nums">{row.minutes30d}</span>,
     },
     {
       key: 'totalCalls',
-      header: 'Total Calls',
+      header: (
+        <div className="flex flex-col gap-1">
+          <span>Total calls</span>
+          <select
+            value={callsPeriod}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) =>
+              setCallsPeriod(e.target.value as 'today' | '7d' | '30d')
+            }
+            className="bg-zinc-900 border border-zinc-700 rounded px-1.5 py-0.5 text-[10px] text-zinc-300 font-normal"
+          >
+            <option value="today">Today</option>
+            <option value="7d">7 days</option>
+            <option value="30d">30 days</option>
+          </select>
+        </div>
+      ),
       sortable: true,
-      render: (row) => <span className="tabular-nums">{row.totalCalls}</span>,
+      getValue: (row) =>
+        callsPeriod === '7d'
+          ? (row.calls7d ?? 0)
+          : callsPeriod === '30d'
+            ? row.calls30d
+            : (row.callsToday ?? 0),
+      render: (row) => {
+        const value =
+          callsPeriod === '7d'
+            ? (row.calls7d ?? 0)
+            : callsPeriod === '30d'
+              ? row.calls30d
+              : (row.callsToday ?? 0);
+        return <span className="tabular-nums">{value}</span>;
+      },
     },
     {
-      key: 'totalEarned',
-      header: 'Total Earned',
+      key: 'freeCallEarnings',
+      header: 'Free call coins',
       sortable: true,
+      getValue: (row) => row.freeCallEarnings ?? 0,
       render: (row) => (
-        <span className="tabular-nums text-emerald-400">
-          {row.totalEarned.toLocaleString()}
+        <span className="tabular-nums text-sky-300">
+          {(row.freeCallEarnings ?? 0).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      key: 'paidCallEarnings',
+      header: 'Paid call coins',
+      sortable: true,
+      getValue: (row) => row.paidCallEarnings ?? 0,
+      render: (row) => (
+        <span
+          className="tabular-nums text-emerald-400"
+          title={`All-time total earned: ${row.totalEarned.toLocaleString()}`}
+        >
+          {(row.paidCallEarnings ?? row.totalEarned).toLocaleString()}
         </span>
       ),
     },
@@ -318,9 +385,9 @@ const CreatorsPage: React.FC = () => {
           <Link
             to={`/hosts/all/${row.creatorId}`}
             onClick={(e) => e.stopPropagation()}
-            className="px-2 py-1 text-xs bg-emerald-900/30 border border-emerald-800 rounded text-emerald-300 hover:text-emerald-100 transition min-h-[36px] inline-flex items-center"
+            className="px-2 py-1 text-xs bg-violet-900/30 border border-violet-700 rounded text-violet-300 hover:text-violet-100 transition min-h-[36px] inline-flex items-center"
           >
-            View
+            View / Edit
           </Link>
           <button
             type="button"
@@ -334,16 +401,6 @@ const CreatorsPage: React.FC = () => {
             title="Add or deduct coins (audited)"
           >
             Coins
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingRow(row);
-            }}
-            className="px-2 py-1 text-xs bg-violet-900/30 border border-violet-700 rounded text-violet-300 hover:text-violet-100 transition min-h-[36px]"
-          >
-            Edit
           </button>
           <button
             type="button"
@@ -593,14 +650,6 @@ const CreatorsPage: React.FC = () => {
           }
         }}
       />
-
-      {editingRow && (
-        <CreatorEditModal
-          row={editingRow}
-          onClose={() => setEditingRow(null)}
-          onSaved={() => load()}
-        />
-      )}
 
       <ConfirmDialog
         open={!!adjustTarget}

@@ -17,6 +17,8 @@ type Props = {
   row: CreatorPerformance;
   onClose: () => void;
   onSaved: () => void;
+  /** Inline page layout (no overlay) for admin host detail. */
+  variant?: 'modal' | 'page';
 };
 
 function categoriesToString(cats: string[] | undefined): string {
@@ -38,7 +40,12 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
 
 const GalleryContentType = 'image/jpeg' as const;
 
-const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
+const CreatorEditModal: React.FC<Props> = ({
+  row,
+  onClose,
+  onSaved,
+  variant = 'modal',
+}) => {
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -280,16 +287,26 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
     }
   };
 
+  const shellClass =
+    variant === 'page'
+      ? 'w-full max-w-3xl'
+      : 'fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto';
+
+  const panelClass =
+    variant === 'page'
+      ? 'bg-zinc-900 border border-zinc-700/80 rounded-2xl shadow-xl w-full overflow-hidden flex flex-col'
+      : 'bg-zinc-900 border border-zinc-700/80 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col';
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+    <div className={shellClass}>
       <div
-        className="bg-zinc-900 border border-zinc-700/80 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
+        className={panelClass}
         role="dialog"
         aria-labelledby="creator-edit-title"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 shrink-0">
           <h2 id="creator-edit-title" className="text-lg font-semibold text-white">
-            Edit creator
+            {variant === 'page' ? 'View / Edit host' : 'Edit creator'}
           </h2>
           <button
             type="button"
@@ -301,7 +318,13 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-4 py-4 space-y-5">
+        <div
+          className={
+            variant === 'page'
+              ? 'px-4 py-4 space-y-5'
+              : 'overflow-y-auto flex-1 px-4 py-4 space-y-5'
+          }
+        >
           {loading && <p className="text-sm text-zinc-400">Loading profile…</p>}
           {loadError && (
             <p className="text-sm text-red-400">
@@ -547,7 +570,7 @@ const CreatorEditModal: React.FC<Props> = ({ row, onClose, onSaved }) => {
             onClick={onClose}
             className="min-h-[44px] px-4 rounded-xl bg-zinc-800 text-zinc-200 border border-zinc-700"
           >
-            Cancel
+            {variant === 'page' ? 'Back' : 'Cancel'}
           </button>
           <button
             type="button"

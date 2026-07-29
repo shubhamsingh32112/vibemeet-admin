@@ -3,7 +3,7 @@ import { HelpColumnHeader } from '../admin/help/HelpColumnHeader';
 
 export interface Column<T> {
   key: string;
-  header: string;
+  header: React.ReactNode;
   sortable?: boolean;
   width?: string;
   render?: (row: T) => React.ReactNode;

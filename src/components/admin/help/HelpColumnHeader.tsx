@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import { MetricHelpButton } from './MetricHelpButton';
 import type { MetricHelpContent } from '../../../content/superadminMetricHelp';
 
 type Props = {
-  label: string;
+  label: ReactNode;
   helpKey?: string;
   help?: MetricHelpContent;
 };
