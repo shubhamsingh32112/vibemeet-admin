@@ -359,6 +359,68 @@ export interface WalletPricingConfig {
   updatedByAdminId: string | null;
 }
 
+export interface TelegramRewardConfig {
+  enabled: boolean;
+  channelUrl: string;
+  channelChatId: string;
+  rewardCoins: number;
+  updatedAt: string | null;
+}
+
+export type ConsumerRewardTaskSlice = {
+  enabled: boolean;
+  coins: number;
+  minSeconds?: number;
+  minPurchaseInr?: number;
+  targetCount?: number;
+};
+
+export interface ConsumerRewardsConfig {
+  enabled: boolean;
+  tasks: Record<string, ConsumerRewardTaskSlice>;
+  dailyRewardBudgetCoins?: number;
+  dailyBudgetMode?: 'alert_only';
+  readiness?: {
+    botTokenSet: boolean;
+    webhookSecretSet: boolean;
+    botUsernameSet: boolean;
+    telegramChannelConfigured: boolean;
+    telegramRewardEnabled: boolean;
+    consumerEnabled: boolean;
+    mongoTxnNote: string;
+  };
+  updatedAt: string | null;
+}
+
+export interface RewardsMonitorPayload {
+  range: 'today' | '7d';
+  dateFrom: string;
+  dateTo: string;
+  coinsIssued: number;
+  redisIssuanceToday: number;
+  dailyBudget: number;
+  budgetMode: string;
+  budgetUtilizationPct: number;
+  topEarners: Array<{ userId: string; coins: number }>;
+  countsBySource: Record<string, { count: number; coins: number }>;
+  topReferrers: Array<{ userId: string; coins: number; count: number }>;
+  softAlerts: string[];
+}
+
+export interface RewardsReconReport {
+  dateKey: string;
+  reward_tx_sum_coins: number;
+  reward_tx_count: number;
+  claim_event_count_by_task: Record<string, number>;
+  claim_estimated_coins: number;
+  wallet_sample_users: number;
+  wallet_mismatch_users_count: number;
+  discrepancy_max: number;
+  ok: boolean;
+  notes: string[];
+  generatedAt: string;
+}
+
 export interface AdminCall {
   callId: string;
   ownerUserId: string;
@@ -1429,6 +1491,48 @@ export const adminService = {
   }): Promise<{ bdBps: number; agencyBps: number }> => {
     const res = await api.put('/admin/platform-revenue', body);
     return res.data.data;
+  },
+
+  getTelegramReward: async (): Promise<TelegramRewardConfig> => {
+    const res = await api.get('/admin/telegram-reward');
+    return res.data.data;
+  },
+
+  updateTelegramReward: async (body: {
+    enabled: boolean;
+    channelUrl: string;
+    channelChatId: string;
+    rewardCoins: number;
+  }): Promise<TelegramRewardConfig> => {
+    const res = await api.put('/admin/telegram-reward', body);
+    return res.data.data;
+  },
+
+  getConsumerRewards: async (): Promise<ConsumerRewardsConfig> => {
+    const res = await api.get('/admin/consumer-rewards');
+    return res.data.data;
+  },
+
+  updateConsumerRewards: async (body: {
+    enabled: boolean;
+    tasks: Record<string, ConsumerRewardTaskSlice>;
+    dailyRewardBudgetCoins?: number;
+    dailyBudgetMode?: 'alert_only';
+  }): Promise<ConsumerRewardsConfig> => {
+    const res = await api.put('/admin/consumer-rewards', body);
+    return res.data.data;
+  },
+
+  getRewardsMonitor: async (range: 'today' | '7d' = 'today'): Promise<RewardsMonitorPayload> => {
+    const res = await api.get('/admin/rewards/monitor', { params: { range } });
+    return res.data.data;
+  },
+
+  getRewardsRecon: async (run = false): Promise<RewardsReconReport | null> => {
+    const res = await api.get('/admin/rewards/recon', {
+      params: run ? { run: '1' } : undefined,
+    });
+    return res.data.data ?? null;
   },
 
   getLeaderboardHosts: async (params?: {
