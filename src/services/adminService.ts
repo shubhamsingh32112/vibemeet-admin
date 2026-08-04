@@ -84,7 +84,7 @@ export type PaymentErrorCheckRow = {
   walletNow: number | null;
   whenUtc: string;
   createdAtIso: string;
-  issue: 'OK_CREDITED' | 'PAID_BUT_PENDING' | 'PAID_BUT_FAILED' | 'NO_COIN_TRANSACTION';
+  issue: 'OK_CREDITED' | 'PAID_BUT_PENDING' | 'PAID_BUT_FAILED' | 'NO_COIN_TRANSACTION' | 'CREDITED_USER_DELETED';
 };
 
 export type PaymentErrorCheckResult = {
