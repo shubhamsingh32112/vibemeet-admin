@@ -323,9 +323,9 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
   },
   'finance.payment_error_check': {
     title: 'Payment error check',
-    body: 'Scans Razorpay captured wallet payments in a custom time range (default past 24h) and flags payments that did not credit coins in Mongo.',
+    body: 'Scans Razorpay captured wallet payments in a custom time range (default past 24h) and flags payments that did not credit coins in Mongo. Captures that were credited then had the account deleted show under Got coins as “credited (user/ledger deleted)”, not as Paid no coins.',
     timezone: 'header_range',
-    source: 'Razorpay payments + CoinTransaction',
+    source: 'Razorpay payments + CoinTransaction + CheckoutContext',
     filterScope: 'Page from/to range (IST inputs, UTC compare)',
   },
 

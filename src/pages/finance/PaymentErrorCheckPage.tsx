@@ -66,7 +66,8 @@ const PaymentErrorCheckPage: React.FC = () => {
         <SectionHeading title="Payment error check" helpKey="finance.payment_error_check" level={1} />
         <p className="text-sm text-zinc-500 mt-1">
           Compare Razorpay captured wallet payments against Mongo coin credits. Default range is the past 24
-          hours (max 7 days).
+          hours (max 7 days). Rows marked “credited (user/ledger deleted)” were credited successfully; the
+          account was deleted afterward.
         </p>
       </div>
 
