@@ -46,6 +46,7 @@ import MomentsFreePreviewPage from './pages/moments/MomentsFreePreviewPage';
 import MomentUploadRewardsPage from './pages/moments/MomentUploadRewardsPage';
 import MomentsGalleryPage from './pages/moments/MomentsGalleryPage';
 import AdminCreatorViewPage from './pages/AdminCreatorViewPage';
+import CreatorReferralsPage from './pages/CreatorReferralsPage';
 import BdHostDetailPage from './pages/bd/BdHostDetailPage';
 import BdLoginPage from './pages/bd/BdLoginPage';
 import BdHomePage from './pages/bd/BdHomePage';
@@ -321,6 +322,7 @@ const AppRoutes: React.FC = () => {
         <Route path="hosts/agencies/:agencyId" element={<AgencyDetailPage />} />
         <Route path="hosts/all" element={<CreatorsPage />} />
         <Route path="hosts/all/:creatorId" element={<AdminCreatorViewPage />} />
+        <Route path="hosts/creator-referrals" element={<CreatorReferralsPage />} />
         <Route path="hosts/blocked" element={<BlockedHostsPage />} />
         <Route path="hosts/leaderboard" element={<LeaderboardsPage />} />
         {/* Finance */}

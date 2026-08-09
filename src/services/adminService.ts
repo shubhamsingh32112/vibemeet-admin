@@ -367,6 +367,62 @@ export interface TelegramRewardConfig {
   updatedAt: string | null;
 }
 
+export interface CreatorReferralConfig {
+  enabled: boolean;
+  rewardCoins: number;
+  updatedAt: string | null;
+}
+
+export interface CreatorReferralListRow {
+  creatorId: string;
+  creatorUserId: string;
+  name: string;
+  isDisabled: boolean;
+  referralCode: string | null;
+  referredCount: number;
+  completedBoth: number;
+  rewardedCount: number;
+  coinsPaid: number;
+  eligibleUnpaid: number;
+}
+
+export interface CreatorReferralsListResponse {
+  rows: CreatorReferralListRow[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreatorReferralDetailRow {
+  userId: string;
+  name: string;
+  email: string | null;
+  referralCodeUsed: string;
+  telegramJoined: boolean;
+  telegramJoinedAt: string | null;
+  videoCallCompleted: boolean;
+  videoCallCompletedAt: string | null;
+  rewarded: boolean;
+  rewardedAt: string | null;
+  rewardCoins: number | null;
+  joinedAt: string | null;
+  eligibleUnpaid: boolean;
+}
+
+export interface CreatorReferralDetailResponse {
+  creatorUserId: string;
+  creatorId: string | null;
+  name: string;
+  isDisabled: boolean;
+  referralCode: string | null;
+  configRewardCoins: number;
+  configEnabled: boolean;
+  referrals: CreatorReferralDetailRow[];
+}
+
 export type ConsumerRewardTaskSlice = {
   enabled: boolean;
   coins: number;
@@ -1533,6 +1589,35 @@ export const adminService = {
       params: run ? { run: '1' } : undefined,
     });
     return res.data.data ?? null;
+  },
+
+  getCreatorReferralConfig: async (): Promise<CreatorReferralConfig> => {
+    const res = await api.get('/admin/creator-referrals/config');
+    return res.data.data;
+  },
+
+  updateCreatorReferralConfig: async (body: {
+    enabled?: boolean;
+    rewardCoins?: number;
+  }): Promise<CreatorReferralConfig> => {
+    const res = await api.put('/admin/creator-referrals/config', body);
+    return res.data.data;
+  },
+
+  listCreatorReferrals: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<CreatorReferralsListResponse> => {
+    const res = await api.get('/admin/creator-referrals', { params });
+    return res.data.data;
+  },
+
+  getCreatorReferralDetail: async (
+    creatorUserId: string
+  ): Promise<CreatorReferralDetailResponse> => {
+    const res = await api.get(`/admin/creator-referrals/${creatorUserId}`);
+    return res.data.data;
   },
 
   getLeaderboardHosts: async (params?: {

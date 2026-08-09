@@ -22,6 +22,7 @@ import {
   Wallet,
   Coins,
   AlertTriangle,
+  Gift,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -60,6 +61,7 @@ const SECTIONS: NavSection[] = [
       { to: '/hosts/bds', label: 'BDs', icon: Users },
       { to: '/hosts/agencies', label: 'Agencies', icon: Building2 },
       { to: '/hosts/all', label: 'All hosts', icon: Users },
+      { to: '/hosts/creator-referrals', label: 'Creators referrals', icon: Gift },
       { to: '/hosts/blocked', label: 'Blocked hosts', icon: UserX },
       { to: '/hosts/leaderboard', label: 'Leaderboard', icon: Trophy },
     ],

@@ -348,6 +348,12 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
     timezone: 'header_range',
     filterScope: 'Header date filter (IST) where applicable',
   },
+  'hosts.creator-referrals': {
+    title: 'Creators referrals',
+    body: 'Creator affiliate codes (CR-…), referred user progress (Telegram + video call), and coin rewards paid to creators.',
+    timezone: 'header_range',
+    filterScope: 'Live config; list is not date-filtered',
+  },
   'hosts.blocked': {
     title: 'Blocked hosts',
     body: 'Creators blocked from the platform.',
