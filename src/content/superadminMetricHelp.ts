@@ -350,7 +350,7 @@ export const SUPERADMIN_METRIC_HELP: Record<string, MetricHelpContent> = {
   },
   'hosts.creator-referrals': {
     title: 'Creators referrals',
-    body: 'Creator affiliate codes (CR-…), referred user progress (Telegram + video call), and coin rewards paid to creators.',
+    body: 'Creator affiliate codes (CR-…). Stages: signup attach, Telegram claim, and first purchase (coins / VIP / Moments Premium). Configure coin amounts per stage.',
     timezone: 'header_range',
     filterScope: 'Live config; list is not date-filtered',
   },

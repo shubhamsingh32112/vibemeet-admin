@@ -369,7 +369,9 @@ export interface TelegramRewardConfig {
 
 export interface CreatorReferralConfig {
   enabled: boolean;
-  rewardCoins: number;
+  attachCoins: number;
+  telegramCoins: number;
+  purchaseCoins: number;
   updatedAt: string | null;
 }
 
@@ -380,10 +382,10 @@ export interface CreatorReferralListRow {
   isDisabled: boolean;
   referralCode: string | null;
   referredCount: number;
-  completedBoth: number;
-  rewardedCount: number;
+  attachPaid: number;
+  telegramPaid: number;
+  purchasePaid: number;
   coinsPaid: number;
-  eligibleUnpaid: number;
 }
 
 export interface CreatorReferralsListResponse {
@@ -401,15 +403,19 @@ export interface CreatorReferralDetailRow {
   name: string;
   email: string | null;
   referralCodeUsed: string;
+  attachRewarded: boolean;
+  attachRewardedAt: string | null;
+  attachRewardCoins: number | null;
   telegramJoined: boolean;
   telegramJoinedAt: string | null;
-  videoCallCompleted: boolean;
-  videoCallCompletedAt: string | null;
-  rewarded: boolean;
-  rewardedAt: string | null;
-  rewardCoins: number | null;
+  telegramRewarded: boolean;
+  telegramRewardedAt: string | null;
+  telegramRewardCoins: number | null;
+  purchaseRewarded: boolean;
+  purchaseRewardedAt: string | null;
+  purchaseRewardCoins: number | null;
+  coinsEarned: number;
   joinedAt: string | null;
-  eligibleUnpaid: boolean;
 }
 
 export interface CreatorReferralDetailResponse {
@@ -418,7 +424,9 @@ export interface CreatorReferralDetailResponse {
   name: string;
   isDisabled: boolean;
   referralCode: string | null;
-  configRewardCoins: number;
+  attachCoins: number;
+  telegramCoins: number;
+  purchaseCoins: number;
   configEnabled: boolean;
   referrals: CreatorReferralDetailRow[];
 }
@@ -1598,7 +1606,9 @@ export const adminService = {
 
   updateCreatorReferralConfig: async (body: {
     enabled?: boolean;
-    rewardCoins?: number;
+    attachCoins?: number;
+    telegramCoins?: number;
+    purchaseCoins?: number;
   }): Promise<CreatorReferralConfig> => {
     const res = await api.put('/admin/creator-referrals/config', body);
     return res.data.data;
